@@ -1,5 +1,5 @@
 export async function useClientConfig() {
-  const clientCode = useRuntimeConfig().public.CLIENT_CODE;
+  const clientCode = useRuntimeConfig().public.clientCode;
 
   const siteConfig = await import(`~~/configs/${clientCode}/site.json`).then(
     (m) => m.default,
