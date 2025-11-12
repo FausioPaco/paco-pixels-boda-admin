@@ -36,4 +36,8 @@ export const getEventService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
       method: 'delete',
     });
   },
+
+  async getEventTypes(): Promise<EventType[]> {
+    return $fetch<EventType[]>(`${RESOURCE}/Types`);
+  },
 });

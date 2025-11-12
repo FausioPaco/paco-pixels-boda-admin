@@ -11,6 +11,7 @@ export interface Event {
   slug: string | null;
   eventTypeId: number | undefined;
   eventTypeName?: string | undefined;
+  eventTypeIcon?: string | undefined;
   created_At: Date;
 }
 
@@ -19,6 +20,7 @@ export interface EventType {
   name: string;
   slug: string;
   description?: string | undefined;
+  icon: string;
   active: boolean;
 }
 
