@@ -1,4 +1,6 @@
 {
+  "entity": "Mariée",
+  "title": "Painel da Mariée",
   "logoPrimarySmall": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762951325/logo-primary-small_zrppl0.png",
   "logoPrimaryLarge": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762951325/logo-primary-large_fqcecd.png",
   "logoSecondarySmall": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762951324/logo-secondary-small_hs7mru.png",
@@ -18,6 +20,7 @@
   "link": "https://mariee.pacopixels.co.mz",
   "simpleLink": "mariee.pacopixels.co.mz",
   "seo": {
+    "titleBase": "Painel da Mariée",
     "url": "https://mariee.pacopixels.co.mz",
     "name": "Mariée Eventos",
     "image": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762952698/seo_k7rsjx.jpg"
