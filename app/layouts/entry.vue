@@ -34,28 +34,37 @@ onMounted(async () => {
       class="hidden w-full flex-col items-center justify-center md:flex md:w-1/2 md:px-8"
     >
       <!-- Main Logo -->
-      <NuxtImg
-        :src="siteConfig.logoSecondaryLarge"
-        width="716"
-        height="247"
-        class="h-auto w-[395px]"
-        format="webp"
-        alt="Mariee Logo"
-      />
+      <div class="flex flex-1 items-center">
+        <NuxtImg
+          :src="siteConfig.logoSecondaryLarge"
+          width="716"
+          height="247"
+          class="h-auto w-[520px]"
+          format="webp"
+          alt="Mariee Logo"
+        />
+      </div>
 
       <!-- Partnership -->
       <div
         v-if="siteConfig.showPartnership"
-        class="mt-auto flex flex-col items-center gap-2"
+        class="flex flex-col items-center gap-2 py-4"
       >
         <small class="text-white">Em parceria exclusiva com</small>
-        <NuxtImg
-          :src="siteConfig.bodaPartnerLogo"
-          width="196"
-          height="61"
-          format="webp"
-          alt="Boda Logo"
-        />
+        <NuxtLink
+          href="https://boda.pacopixels.co.mz/"
+          target="_blank"
+          external
+        >
+          <NuxtImg
+            :src="siteConfig.bodaPartnerLogo"
+            width="196"
+            height="61"
+            format="webp"
+            alt="Boda Logo"
+            class="h-auto w-[120px] max-w-full"
+          />
+        </NuxtLink>
       </div>
     </div>
 
@@ -68,6 +77,7 @@ onMounted(async () => {
             width="537"
             height="185"
             format="webp"
+            class="h-auto w-[200px] max-w-full"
             alt="Logotipo"
           />
         </div>
