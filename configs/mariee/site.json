@@ -1,9 +1,26 @@
 {
+  "logoPrimarySmall": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762951325/logo-primary-small_zrppl0.png",
+  "logoPrimaryLarge": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762951325/logo-primary-large_fqcecd.png",
+  "logoSecondarySmall": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762951324/logo-secondary-small_hs7mru.png",
+  "logoSecondaryLarge": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762951324/logo-secondary-large_d8ffdy.png",
+  "faviconSVG": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762952312/favicon_aonwnw.svg",
+  "faviconIco": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762952256/favicon_tvhkci.ico",
+  "faviconApple": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762952284/apple-touch-icon_wqhuxt.png",
+  "faviconAndroid192": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762952382/android-chrome-192x192_axxyzm.png",
+  "faviconAndroid512": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762952358/android-chrome-512x512_q3uqa2.png",
+  "manifestFile": "https://res.cloudinary.com/dwdlzepds/raw/upload/v1762952504/site_zta7dz.webmanifest",
+  "loginBackgroundImage": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762952933/login-hero-container_oyjojo.webp",
+  "loginFallbackBackgroundImage": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762952935/login-hero-container_nvuot3.jpg",
+  "showPartnerLogo": true,
+  "showPartnership": true,
+  "loginTitle": "O seu espaço com a Mariée",
+  "loginDescription": "Entre no seu espaço exclusivo de colaboração, onde a Mariee organiza e partilha consigo cada etapa da jornada até ao grande dia.",
   "link": "https://mariee.pacopixels.co.mz",
   "simpleLink": "mariee.pacopixels.co.mz",
   "seo": {
     "url": "https://mariee.pacopixels.co.mz",
     "name": "Mariée Assessoria",
-    "image": "https://res.cloudinary.com/dwdlzepds/image/upload/v1750956749/Seo_tl1gqk.jpg"
-  }
+    "image": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762952698/seo_k7rsjx.jpg"
+  },
+  "bodaPartnerLogo": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762953067/boda-partner-logo_nlfxyd.png"
 }

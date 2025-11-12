@@ -25,13 +25,21 @@ export default defineNuxtConfig({
       link: [
         {
           rel: 'icon',
-          type: 'image/x-icon',
-          href: siteConfig.favicon,
+          type: 'image/svg+xml',
+          href: siteConfig.faviconSVG,
         },
         {
           rel: 'shortcut icon',
-          type: 'image/x-icon',
-          href: siteConfig.favicon,
+          href: siteConfig.faviconIco,
+        },
+        {
+          rel: 'apple-touch-icon',
+          sizes: '180x180',
+          href: siteConfig.faviconApple,
+        },
+        {
+          rel: 'manifest',
+          href: siteConfig.manifestFile,
         },
       ],
     },
