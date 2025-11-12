@@ -81,8 +81,9 @@ onMounted(async () => {
             alt="Logotipo"
           />
         </div>
-
-        <slot></slot>
+        <div class="flex-1">
+          <slot></slot>
+        </div>
       </main>
     </div>
   </div>
