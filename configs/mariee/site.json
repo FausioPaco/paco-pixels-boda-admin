@@ -13,6 +13,7 @@
   "manifestFile": "https://res.cloudinary.com/dwdlzepds/raw/upload/v1762952504/site_zta7dz.webmanifest",
   "loginBackgroundImage": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762952933/login-hero-container_oyjojo.webp",
   "loginFallbackBackgroundImage": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762952935/login-hero-container_nvuot3.jpg",
+  "loginBackgroundColor": "#1F1C0E",
   "showPartnerLogo": true,
   "showPartnership": true,
   "loginTitle": "O seu espaço com a Mariée",

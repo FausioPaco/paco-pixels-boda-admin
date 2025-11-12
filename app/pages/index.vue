@@ -1,14 +1,24 @@
 <script lang="ts" setup>
 const { siteConfig } = await useClientConfig();
 
+useHead({
+  title: `Gestão inteligente de eventos com a elegância da ${siteConfig.entity}`,
+  meta: [
+    {
+      name: 'description',
+      content: siteConfig.description,
+    },
+  ],
+});
+
 useSeoMeta({
-  title: siteConfig.title,
+  title: `Gestão inteligente de eventos com a elegância da ${siteConfig.entity}`,
   description: siteConfig.description,
   ogType: 'website',
   ogTitle: siteConfig.description,
   ogDescription: siteConfig.description,
   ogImage: siteConfig.seo?.image,
-  ogUrl: siteConfig.seo?.url || siteConfig.link,
+  ogUrl: siteConfig.seo?.url || siteConfig.link || '/',
   ogSiteName: siteConfig.seo?.name || siteConfig.coupleNames,
   twitterCard: 'summary_large_image',
   twitterTitle: siteConfig.title,
@@ -18,6 +28,10 @@ useSeoMeta({
 </script>
 <template>
   <div>
-    <h2>Olá Mundo</h2>
+    <NuxtLayout name="entry">
+      <div>
+        <h2>Olá Mundo</h2>
+      </div>
+    </NuxtLayout>
   </div>
 </template>
