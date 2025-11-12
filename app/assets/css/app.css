@@ -1,0 +1,6 @@
+@import url('./modules/animations.css');
+@import url('./modules/form.css');
+
+html {
+  scroll-behavior: smooth;
+}

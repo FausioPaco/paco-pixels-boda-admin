@@ -1,0 +1,11 @@
+.form-control {
+  @apply text-grey-700 focus:border-primary-700 disabled:bg-grey-50 disabled:text-grey-400 w-full rounded border bg-white p-3 text-left text-sm leading-tight outline-none transition duration-300 ease-in focus:shadow-md;
+}
+
+.form-control-lg {
+  @apply py-3.5;
+}
+
+::placeholder {
+  @apply text-sm;
+}
