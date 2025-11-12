@@ -1,13 +1,18 @@
 import { getGuestService } from '~/services/guestService';
 
-export const useGuestsList = async (params?: GuestParameters | undefined) => {
+export const useGuestsList = async (
+  overrides?: GuestParameters | undefined,
+) => {
   const guests = useState<Guest[]>('guests-list', () => []);
   const pagination = useState<PaginationData<Guest> | null>(
     'guests-pagination',
     () => null,
   );
-  const queryParameters = params ?? {
-    eventId: Number(useRuntimeConfig().public.EVENT_ID),
+
+  const eventStore = useEventStore();
+  const eventId = eventStore.ensureSelected();
+
+  const queryParameters: GuestParameters = {
     guestId: undefined,
     categoryId: undefined,
     availability_Type: '',
@@ -16,6 +21,8 @@ export const useGuestsList = async (params?: GuestParameters | undefined) => {
     endDate: '',
     pageNumber: 1,
     pageSize: 10,
+    ...overrides,
+    eventId,
   };
 
   const nuxtApp = useNuxtApp();

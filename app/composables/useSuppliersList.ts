@@ -1,20 +1,25 @@
 import { getSupplierService } from '~/services/supplierService';
 
 export const useSuppliersList = async (
-  params?: SupplierParameters | undefined,
+  overrides?: SupplierParameters | undefined,
 ) => {
   const suppliers = useState<Supplier[]>('suppliers-list', () => []);
   const pagination = useState<PaginationData<Supplier> | null>(
     'suppliers-pagination',
     () => null,
   );
-  const queryParameters = params ?? {
-    eventId: Number(useRuntimeConfig().public.EVENT_ID),
+
+  const eventStore = useEventStore();
+  const eventId = eventStore.ensureSelected();
+
+  const queryParameters: SupplierParameters = {
     searchQuery: '',
     startDate: '',
     endDate: '',
     pageNumber: 1,
     pageSize: 10,
+    ...overrides,
+    eventId,
   };
 
   const nuxtApp = useNuxtApp();

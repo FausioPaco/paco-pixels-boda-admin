@@ -1,22 +1,26 @@
 import { getDeskService } from '~/services/deskService';
 
-export const useDesksList = async (params?: DeskParameters | undefined) => {
+export const useDesksList = async (overrides?: DeskParameters | undefined) => {
   const desks = useState<Desk[]>('desks-list', () => []);
+
+  const eventStore = useEventStore();
+  const eventId = eventStore.ensureSelected();
+
   const pagination = useState<PaginationData<Desk> | null>(
     'desks-pagination',
     () => null,
   );
-  const queryParameters =
-    params ??
-    ({
-      eventId: Number(useRuntimeConfig().public.EVENT_ID),
-      availability_Type: '',
-      searchQuery: '',
-      startDate: '',
-      endDate: '',
-      pageNumber: 1,
-      pageSize: 10,
-    } as DeskParameters);
+
+  const queryParameters: DeskParameters = {
+    availability_Type: '',
+    searchQuery: '',
+    startDate: '',
+    endDate: '',
+    pageNumber: 1,
+    pageSize: 10,
+    ...overrides,
+    eventId,
+  };
 
   const nuxtApp = useNuxtApp();
 
