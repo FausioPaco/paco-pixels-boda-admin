@@ -1,11 +1,12 @@
-import fs from 'fs';
-import path from 'path';
+/* eslint-env node */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-const clientCode = process.env.CLIENT_CODE || 'mariee';
-
-const sitePath = path.resolve(`./configs/${clientCode}/site.json`);
-const siteConfig = JSON.parse(fs.readFileSync(sitePath, 'utf-8'));
 const isProd = process.env.NODE_ENV === 'production';
+const clientCode = process.env.NUXT_PUBLIC_CLIENT_CODE || 'mariee';
+
+const sitePath = resolve(`./configs/${clientCode}/site.json`);
+const siteConfig = JSON.parse(readFileSync(sitePath, 'utf-8'));
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -85,14 +86,14 @@ export default defineNuxtConfig({
     },
   },
   svgo: {
-    autoImportPath: './assets/icons/',
+    autoImportPath: '@/assets/icons/',
     componentPrefix: 'icon',
   },
   runtimeConfig: {
     public: {
-      API_BASE_URL: process.env.API_BASE_URL,
-      API_IMAGE_BASE_URL: process.env.API_IMAGE_BASE_URL,
-      CLIENT_CODE: process.env.CLIENT_CODE,
+      apiBaseUrl: '',
+      apiImageUrl: '',
+      clientCode,
     },
   },
 
