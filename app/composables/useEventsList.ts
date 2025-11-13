@@ -10,7 +10,6 @@ export const useEventsList = async (params?: EventParameters | undefined) => {
   const queryParameters =
     params ??
     ({
-      eventId: undefined,
       searchQuery: '',
       startDate: '',
       endDate: '',
@@ -18,10 +17,21 @@ export const useEventsList = async (params?: EventParameters | undefined) => {
       pageSize: 10,
     } as EventParameters);
 
+  const key = computed(() =>
+    [
+      'events-list',
+      queryParameters.searchQuery,
+      queryParameters.startDate,
+      queryParameters.endDate,
+      queryParameters.pageNumber,
+      queryParameters.pageSize,
+    ].join('|'),
+  );
+
   const nuxtApp = useNuxtApp();
 
   const { data, refresh, status } = await useAsyncData(
-    'events-list',
+    key,
     () => getEventService(nuxtApp.$api).getAllEvents(queryParameters),
     {
       transform(input) {

@@ -67,11 +67,11 @@ onMounted(() => {
       class="relative flex w-full flex-col items-center px-4 py-5"
     >
       <div
-        class="flex min-w-full max-w-full flex-col items-stretch justify-stretch md:min-w-[45vw] lg:min-w-[60vw] xl:min-w-[75vw]"
+        class="flex min-w-full flex-col items-stretch justify-stretch md:min-w-[45vw] md:max-w-[1400px] lg:min-w-[60vw] xl:min-w-[60vw]"
       >
         <!-- Filters & Counter -->
         <div
-          class="flex w-full animate-fadeIn flex-col md:flex-row md:justify-between"
+          class="flex w-full animate-fadeIn flex-col md:flex-row md:items-start md:justify-between"
         >
           <div class="w-full md:w-1/2">
             <BaseInput
@@ -104,7 +104,7 @@ onMounted(() => {
           </div>
 
           <div
-            class="flex w-full flex-col justify-start gap-4 md:w-1/2 md:flex-row md:items-end md:justify-end md:gap-2 md:pt-5"
+            class="flex w-full flex-col justify-start gap-4 md:w-1/2 md:flex-row md:justify-end md:gap-2 md:pt-6"
           >
             <BaseButton
               icon="add"
@@ -149,7 +149,7 @@ onMounted(() => {
         <!-- Data -->
         <div
           v-if="!isRefreshing && !isError && events.length > 0"
-          class="flex flex-col flex-wrap gap-3 md:flex-row"
+          class="my-4 flex flex-col flex-wrap gap-4 md:flex-row"
         >
           <EventItem v-for="event in events" :key="event.id" :event="event" />
         </div>

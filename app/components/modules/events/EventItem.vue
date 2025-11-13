@@ -9,7 +9,7 @@ const props = withDefaults(
   }>(),
   {
     showActions: true,
-    iconSize: 40,
+    iconSize: 80,
   },
 );
 
@@ -34,34 +34,37 @@ const goToEvent = () => {
 
 <template>
   <article
-    class="border-primary-100 bg-primary-50/70 text-grey-700 relative flex flex-col justify-between rounded-2xl border shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+    class="border-primary-100 bg-primary-50/70 text-grey-700 hover:border-3 hover:border-primary-700 relative flex flex-col justify-between rounded-2xl border shadow-sm outline-2 transition hover:-translate-y-0.5 hover:shadow-md md:min-w-[220px] lg:min-w-[320px]"
   >
     <!-- topo: ícone + 3 dots -->
-    <div class="flex items-start justify-between px-6 pt-6">
+    <div
+      class="relative flex flex-col items-center justify-center px-6 pb-8 pt-6"
+    >
+      <button
+        v-if="showActions"
+        type="button"
+        class="text-grey-200 hover:bg-primary-100 hover:text-grey-400 absolute right-1 top-1 rounded-full p-4"
+        @click.stop="emit('open-actions', event)"
+      >
+        <icon-dots :width="20" :height="20" :font-controlled="false" />
+      </button>
+
       <div
-        class="bg-primary-50 flex h-16 w-16 items-center justify-center rounded-full"
+        class="bg-primary-50 mt-6 flex h-16 w-16 items-center justify-center rounded-full"
       >
         <component
           :is="`icon-${iconName}`"
           :font-controlled="false"
           :width="iconSize"
           :height="iconSize"
+          class="text-primary-700/90"
         />
       </div>
-
-      <button
-        v-if="showActions"
-        type="button"
-        class="text-grey-200 hover:bg-primary-100 hover:text-grey-400 rounded-full p-1.5"
-        @click.stop="emit('open-actions', event)"
-      >
-        <icon-dots :width="20" :height="20" :font-controlled="false" />
-      </button>
     </div>
 
     <!-- conteúdo clicável -->
     <button
-      class="flex flex-1 flex-col justify-between px-6 pb-5 pt-4"
+      class="border-primary-100 flex flex-1 flex-col justify-between rounded-bl-2xl rounded-br-2xl bg-white px-6 pb-5 pt-4"
       @click="goToEvent"
     >
       <div class="space-y-1.5">
