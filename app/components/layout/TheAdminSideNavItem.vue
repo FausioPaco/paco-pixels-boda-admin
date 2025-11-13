@@ -10,7 +10,7 @@ defineProps<IAdminSideNavProps>();
 </script>
 <template>
   <li
-    class="text-grey-500 hover:text-primary-600 hover:bg-primary-100 relative flex h-full cursor-pointer items-center py-3 transition-all"
+    class="text-grey-400 hover:text-primary-600 hover:bg-primary-100 relative flex h-full cursor-pointer items-center py-3 transition-all duration-[400] ease-in md:pl-3"
     :class="active ? 'bg-primary-50 text-primary-700' : undefined"
   >
     <NuxtLink

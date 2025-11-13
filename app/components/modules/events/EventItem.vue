@@ -25,6 +25,7 @@ const goToEvent = () => {
     id: props.event.id,
     name: props.event.name,
     slug: props.event.slug,
+    icon: iconName.value,
     eventTypeId: props.event.eventTypeId ?? undefined,
   });
 

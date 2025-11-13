@@ -4,12 +4,14 @@ export interface SelectedEvent {
   id: number;
   name: string;
   slug?: string | undefined;
+  icon?: string | undefined;
   eventTypeId?: number | undefined;
 }
 
 const COOKIE_ID = 'current_event_id';
 const COOKIE_NAME = 'current_event_name';
 const COOKIE_SLUG = 'current_event_slug';
+const COOKIE_ICON = 'current_event_icon';
 
 export const useEventStore = defineStore('event', () => {
   const selected = ref<SelectedEvent | null>(null);
@@ -44,26 +46,49 @@ export const useEventStore = defineStore('event', () => {
       sameSite: 'lax',
     });
 
+    const iconCookie = useCookie<string | null>(COOKIE_ICON, {
+      expires: expirationDate,
+      secure: true,
+      sameSite: 'lax',
+    });
+
     if (!ev) {
       idCookie.value = null;
       nameCookie.value = null;
       slugCookie.value = null;
+      iconCookie.value = null;
       return;
     }
 
     idCookie.value = ev.id;
     nameCookie.value = ev.name;
     slugCookie.value = ev.slug ?? null;
+    iconCookie.value = ev.icon ?? null;
   };
 
   // API pública
   const selectEvent = (ev: SelectedEvent) => {
-    selected.value = { id: ev.id, name: ev.name, slug: ev.slug ?? undefined };
+    selected.value = {
+      id: ev.id,
+      name: ev.name,
+      slug: ev.slug ?? undefined,
+      icon: ev.icon ?? undefined,
+    };
     persist(selected.value);
   };
 
-  const selectEventById = (id: number, name?: string, slug?: string | null) => {
-    selected.value = { id, name: name ?? 'Evento', slug: slug ?? undefined };
+  const selectEventById = (
+    id: number,
+    name?: string,
+    slug?: string | null,
+    icon?: string | null,
+  ) => {
+    selected.value = {
+      id,
+      name: name ?? 'Evento',
+      slug: slug ?? undefined,
+      icon: icon ?? undefined,
+    };
     persist(selected.value);
   };
 
@@ -76,12 +101,14 @@ export const useEventStore = defineStore('event', () => {
     const id = useCookie<number | null>(COOKIE_ID);
     const name = useCookie<string | null>(COOKIE_NAME);
     const slug = useCookie<string | null>(COOKIE_SLUG);
+    const icon = useCookie<string | null>(COOKIE_ICON);
 
     if (id.value) {
       selected.value = {
         id: id.value,
         name: name.value ?? 'Evento',
         slug: slug.value ?? undefined,
+        icon: icon.value ?? undefined,
       };
     }
   };

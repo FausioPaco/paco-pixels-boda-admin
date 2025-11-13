@@ -5,7 +5,7 @@
 
     <!-- Main content -->
     <div id="admin-content" class="flex-grow overflow-hidden">
-      <main id="main" role="main" class="min-h-screen bg-[#f3e3e3]">
+      <main id="main" role="main" class="min-h-screen bg-[#FBFBFB]">
         <TheAdminHeader />
         <div class="p-3">
           <slot></slot>

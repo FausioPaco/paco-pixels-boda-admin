@@ -27,7 +27,7 @@ useSeoMeta({
 });
 
 definePageMeta({
-  name: 'Visão Geral',
+  name: 'Pagina Inicial',
   middleware: ['auth'],
 });
 </script>

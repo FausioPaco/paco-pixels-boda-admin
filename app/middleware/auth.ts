@@ -9,11 +9,11 @@ export default defineNuxtRouteMiddleware((to) => {
   const { user } = storeToRefs(store);
   const token = useCookie<string>('token');
 
-  if (token.value && isStaffUser(user.value?.roleName) && to?.name === '') {
+  if (token.value && isStaffUser(user.value?.roleName) && to?.path === '/') {
     return navigateTo('/eventos');
   }
 
-  if (!token.value && to?.name !== '') {
+  if (!token.value && to?.path !== '/') {
     abortNavigation();
     return navigateTo('/');
   }

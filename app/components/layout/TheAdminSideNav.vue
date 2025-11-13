@@ -3,6 +3,7 @@ import { ADMIN_MAIN_LINKS } from '#shared/constants/links';
 
 const route = useRoute();
 const { siteConfig } = await useClientConfig();
+const eventStore = useEventStore();
 
 const checkActiveClass = (link: string) => {
   if (link === '/admin') {
@@ -18,11 +19,11 @@ const checkActiveClass = (link: string) => {
 </script>
 <template>
   <aside
-    class="bg-primary-50 min-h-screen w-40 overflow-y-auto shadow-sm transition-all duration-300 ease-linear md:min-w-60"
+    class="bg-primary-50/20 min-h-screen w-[80px] overflow-y-auto shadow-md drop-shadow-sm transition-all duration-300 ease-linear md:min-w-60"
   >
     <!-- Logo -->
     <div class="mb-4 flex items-center justify-center px-3 py-6">
-      <NuxtLink to="/admin" class="block px-2 no-underline">
+      <NuxtLink to="/admin" class="block no-underline">
         <NuxtImg
           :src="siteConfig.logoPrimarySmall"
           width="537"
@@ -34,9 +35,38 @@ const checkActiveClass = (link: string) => {
       </NuxtLink>
     </div>
 
+    <!-- Voltar e Nome do Evento -->
+    <div
+      class="text-grey-500/50 my-6 hidden justify-center gap-6 md:flex md:flex-col md:items-center"
+    >
+      <NuxtLink
+        to="/eventos"
+        class="text-grey-400 hover:text-primary-700 group mr-2 flex cursor-pointer gap-1 text-sm no-underline transition-colors duration-300 ease-in"
+      >
+        <IconArrowLeft
+          :font-controlled="false"
+          class="group-hover:text-primary-700 size-[20px] transition-transform group-hover:-translate-x-1"
+        />
+        <span>Voltar para eventos</span>
+      </NuxtLink>
+
+      <!-- Nome do Evento -->
+      <div class="text-primary-700 flex items-end gap-2 font-semibold">
+        <component
+          :is="`icon-${eventStore.selected?.icon}`"
+          :font-controlled="false"
+          class="text-primary-700 block size-[24px]"
+        />
+        <span class="block">
+          {{ truncate(eventStore.selected?.name ?? '', 16) }}
+        </span>
+      </div>
+    </div>
+
     <!-- Principal -->
-    <ul class="pl-0 md:mt-4 md:pl-3">
-      <small class="text-primary-700/50 mb-2 hidden text-xs font-bold md:block"
+    <ul class="pl-0 md:mt-4">
+      <small
+        class="text-primary-700/70 mb-4 hidden text-xs font-bold md:block md:pl-2"
         >Gestão do Evento</small
       >
       <div class="flex flex-col gap-y-1">
