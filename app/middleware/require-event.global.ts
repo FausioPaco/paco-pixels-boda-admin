@@ -6,7 +6,7 @@ export default defineNuxtRouteMiddleware((to) => {
   store.loadFromCookies();
 
   if (!store.eventId) {
-    return navigateTo('/selecionar-evento');
+    return navigateTo('/eventos');
   }
 });
 

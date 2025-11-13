@@ -47,7 +47,7 @@ const onSubmit = handleSubmit(async (values) => {
     .then((userData) => {
       isSuccess = true;
       store.setUserData(userData);
-      router.push('/admin');
+      router.push('/eventos');
     })
     .catch((err) => {
       console.log(err.data);
