@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import type { IButtonProps } from '#shared/types/button';
+
 defineOptions({
   name: 'BaseButton',
   inheritAttrs: false,
@@ -34,7 +36,7 @@ const getButtonClass = computed(() => {
   const btnClasses = [];
 
   btnClasses.push(
-    'font-semibold  transition-all duration-300 rounded-md hover:-translate-y-0.5 disabled:bg-grey-100 disabled:text-grey-400 disabled:border-grey-100',
+    'font-semibold transition-all duration-300 rounded-md hover:-translate-y-0.5 disabled:bg-grey-100 disabled:text-grey-400 disabled:border-grey-100',
   );
 
   btnClasses.push(getButtonStyleClass());

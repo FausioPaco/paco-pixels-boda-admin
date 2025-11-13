@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import type { IButtonExternalLinkProps } from '#shared/types/button';
+
 defineOptions({
   name: 'BaseButtonExternalLink',
   inheritAttrs: false,

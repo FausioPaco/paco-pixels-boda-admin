@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { IInputProps } from '#shared/types/input';
 defineOptions({
   name: 'BaseInput',
   inheritAttrs: false,

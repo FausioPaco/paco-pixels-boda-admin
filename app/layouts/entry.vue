@@ -71,7 +71,9 @@ onMounted(async () => {
     <!-- Content -->
     <div class="md:w-1/2">
       <main id="main" role="main" class="flex min-h-screen flex-col">
-        <div class="mb-4 flex items-end justify-center gap-x-2 pt-8">
+        <div
+          class="border-grey-100/60 mb-4 flex items-end justify-center gap-x-2 border-b pb-6 pt-8 md:border-none md:pb-0"
+        >
           <NuxtImg
             :src="siteConfig.logoPrimarySmall"
             width="537"
@@ -81,7 +83,7 @@ onMounted(async () => {
             alt="Logotipo"
           />
         </div>
-        <div class="flex-1">
+        <div class="flex flex-1 flex-col justify-center">
           <slot></slot>
         </div>
       </main>

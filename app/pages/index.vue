@@ -29,9 +29,9 @@ useSeoMeta({
 <template>
   <div>
     <NuxtLayout name="entry">
-      <div>
-        <h2>Olá Mundo</h2>
-      </div>
+      <section class="flex flex-col items-center justify-center">
+        <Login />
+      </section>
     </NuxtLayout>
   </div>
 </template>
