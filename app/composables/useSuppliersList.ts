@@ -12,20 +12,36 @@ export const useSuppliersList = async (
   const eventStore = useEventStore();
   const eventId = eventStore.ensureSelected();
 
-  const queryParameters: SupplierParameters = {
-    searchQuery: '',
-    startDate: '',
-    endDate: '',
-    pageNumber: 1,
-    pageSize: 10,
-    ...overrides,
-    eventId,
-  };
+  const queryParameters =
+    (overrides as SupplierParameters | undefined) ??
+    reactive<SupplierParameters>({
+      searchQuery: '',
+      startDate: '',
+      endDate: '',
+      pageNumber: 1,
+      pageSize: 10,
+      eventId,
+    });
+
+  queryParameters.eventId = eventId;
 
   const nuxtApp = useNuxtApp();
+  const key = computed(() =>
+    [
+      'suppliers-list',
+      queryParameters.eventId,
+      queryParameters.searchQuery,
+      queryParameters.startDate,
+      queryParameters.endDate,
+      queryParameters.pageNumber,
+      queryParameters.pageSize,
+    ].join('|'),
+  );
 
   const { data, refresh, status } = await useAsyncData(
-    () => getSupplierService(nuxtApp.$api).getAllSuppliers(queryParameters),
+    key,
+    () =>
+      getSupplierService(nuxtApp.$api).getAllSuppliers(toRaw(queryParameters)),
     {
       transform(input) {
         const { data, ...paginationData } = input;

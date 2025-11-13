@@ -11,22 +11,40 @@ export const useDesksList = async (overrides?: DeskParameters | undefined) => {
     () => null,
   );
 
-  const queryParameters: DeskParameters = {
-    availability_Type: '',
-    searchQuery: '',
-    startDate: '',
-    endDate: '',
-    pageNumber: 1,
-    pageSize: 10,
-    ...overrides,
-    eventId,
-  };
+  // Se a página não enviar params, criamos um reactive com defaults
+  const queryParameters =
+    (overrides as DeskParameters | undefined) ??
+    reactive<DeskParameters>({
+      availability_Type: '',
+      searchQuery: '',
+      startDate: '',
+      endDate: '',
+      pageNumber: 1,
+      pageSize: 10,
+      eventId,
+    });
+
+  // Garantir que o eventId é sempre o do store
+  queryParameters.eventId = eventId;
 
   const nuxtApp = useNuxtApp();
 
+  const key = computed(() =>
+    [
+      'desks-list',
+      queryParameters.eventId,
+      queryParameters.availability_Type,
+      queryParameters.searchQuery,
+      queryParameters.startDate,
+      queryParameters.endDate,
+      queryParameters.pageNumber,
+      queryParameters.pageSize,
+    ].join('|'),
+  );
+
   const { data, refresh, status } = await useAsyncData(
-    `desks-list`,
-    () => getDeskService(nuxtApp.$api).getAllDesks(queryParameters),
+    key,
+    () => getDeskService(nuxtApp.$api).getAllDesks(toRaw(queryParameters)),
     {
       transform(input) {
         const { data, ...paginationData } = input;

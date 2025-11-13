@@ -12,24 +12,41 @@ export const useGuestsList = async (
   const eventStore = useEventStore();
   const eventId = eventStore.ensureSelected();
 
-  const queryParameters: GuestParameters = {
-    guestId: undefined,
-    categoryId: undefined,
-    availability_Type: '',
-    searchQuery: '',
-    startDate: '',
-    endDate: '',
-    pageNumber: 1,
-    pageSize: 10,
-    ...overrides,
-    eventId,
-  };
+  const queryParameters =
+    (overrides as GuestParameters | undefined) ??
+    reactive<GuestParameters>({
+      guestId: undefined,
+      categoryId: undefined,
+      availability_Type: '',
+      searchQuery: '',
+      startDate: '',
+      endDate: '',
+      pageNumber: 1,
+      pageSize: 10,
+      eventId,
+    });
+
+  queryParameters.eventId = eventId;
 
   const nuxtApp = useNuxtApp();
+  const key = computed(() =>
+    [
+      'guests-list',
+      queryParameters.eventId,
+      queryParameters.guestId,
+      queryParameters.categoryId,
+      queryParameters.availability_Type,
+      queryParameters.searchQuery,
+      queryParameters.startDate,
+      queryParameters.endDate,
+      queryParameters.pageNumber,
+      queryParameters.pageSize,
+    ].join('|'),
+  );
 
   const { data, refresh, status } = await useAsyncData(
-    `guests-list`,
-    () => getGuestService(nuxtApp.$api).getAllGuests(queryParameters),
+    key,
+    () => getGuestService(nuxtApp.$api).getAllGuests(toRaw(queryParameters)),
     {
       transform(input) {
         const { data, ...paginationData } = input;

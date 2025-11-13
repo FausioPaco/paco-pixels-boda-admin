@@ -67,7 +67,7 @@ onMounted(() => {
       class="relative flex w-full flex-col items-center px-4 py-5"
     >
       <div
-        class="flex min-w-full flex-col items-stretch justify-stretch md:min-w-[45vw] md:max-w-[1400px] lg:min-w-[60vw] xl:min-w-[60vw]"
+        class="flex min-w-full flex-col items-stretch justify-stretch md:min-w-[45vw] md:max-w-[1400px] lg:min-w-[65vw] xl:min-w-[75vw]"
       >
         <!-- Filters & Counter -->
         <div
