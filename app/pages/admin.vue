@@ -11,6 +11,7 @@ useHead({
 
 definePageMeta({
   name: 'Visão Geral',
+  pageName: 'Visão Geral',
   middleware: ['auth'],
 });
 </script>

@@ -11,6 +11,7 @@ useHead({
 
 definePageMeta({
   name: 'Convidados',
+  pageName: 'Convidados',
   middleware: ['auth'],
 });
 </script>
