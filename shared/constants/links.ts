@@ -4,19 +4,19 @@ export const ADMIN_MAIN_LINKS: AdminLink[] = [
   {
     label: 'Início',
     link: '/admin',
-    icon: 'home-alt',
+    icon: 'dashboard-home',
     restricted: false,
   },
   {
     label: 'Convidados',
     link: '/admin/convidados',
-    icon: 'shopping-bag',
+    icon: 'dashboard-guests',
     restricted: false,
   },
   {
     label: 'Mesas',
     link: '/admin/mesas',
-    icon: 'boxes',
+    icon: 'dashboard-desks',
     restricted: false,
   },
 ];

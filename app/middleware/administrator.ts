@@ -8,6 +8,6 @@ export default defineNuxtRouteMiddleware(() => {
     !isAdministrator(user?.roleName) ||
     !isSuperAdministrator(user?.roleName)
   ) {
-    return navigateTo('/login');
+    return navigateTo('/');
   }
 });

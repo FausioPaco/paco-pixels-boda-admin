@@ -25,6 +25,11 @@ useSeoMeta({
   twitterDescription: siteConfig.description,
   twitterImage: siteConfig.seo?.image,
 });
+
+definePageMeta({
+  name: 'Visão Geral',
+  middleware: ['auth'],
+});
 </script>
 <template>
   <div>
