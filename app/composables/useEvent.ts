@@ -4,6 +4,8 @@ export const useEvent = async (eventId: number | string) => {
   const event = useState<BodaEvent | null>('get-event', () => null);
   const nuxtApp = useNuxtApp();
 
+  const key = 'get-event-' + eventId;
+
   const { data, refresh, status } = await useAsyncData(
     'get-event-' + eventId,
     () => getEventService(nuxtApp.$api).getEvent(eventId),
@@ -24,6 +26,12 @@ export const useEvent = async (eventId: number | string) => {
     },
   );
 
+  const refreshEvent = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key);
+    }
+    await refresh();
+  };
   watchEffect(() => {
     if (data.value) {
       event.value = data.value;
@@ -33,6 +41,6 @@ export const useEvent = async (eventId: number | string) => {
   return {
     event,
     isRefreshing: status.value === 'pending',
-    refreshEvent: refresh,
+    refreshEvent,
   };
 };

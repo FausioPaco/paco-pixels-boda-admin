@@ -7,7 +7,9 @@ const props = defineProps<{
   eventId: number;
 }>();
 
-const { event } = await useEvent(props.eventId);
+const { event, refreshEvent } = await useEvent(props.eventId);
+
+const showFormModal = ref<boolean>(false);
 
 // helpers
 const eventName = computed(() => event.value?.name ?? '');
@@ -39,6 +41,20 @@ const suppliersCount = computed(() => event.value?.suppliersCount ?? 0);
 
 // placeholder por enquanto (ajustas quando tiveres no modelo)
 const budgetDisplay = computed(() => '--');
+const eventStore = useEventStore();
+
+const onFormSuccess = async () => {
+  showFormModal.value = false;
+  eventStore.selectEvent({
+    id: event.value?.id ?? 0,
+    name: event.value?.name ?? '',
+    slug: event.value?.slug ?? '',
+    icon: event.value?.eventTypeIcon ?? '',
+    eventTypeId: event.value?.eventTypeId ?? undefined,
+  });
+
+  refreshEvent({ force: true });
+};
 </script>
 
 <template>
@@ -48,6 +64,7 @@ const budgetDisplay = computed(() => '--');
         v-if="event"
         type="button"
         class="text-primary-700 flex items-center gap-1 text-xs font-medium hover:underline"
+        @click.prevent="showFormModal = true"
       >
         <span>Editar</span>
         <IconPencil
@@ -59,7 +76,7 @@ const budgetDisplay = computed(() => '--');
 
     <div class="grid gap-6 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <!-- Coluna esquerda: info do evento -->
-      <dl class="grid grid-cols-1 gap-2 md:grid-cols-2">
+      <dl class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-2">
         <!-- Nome do Evento -->
         <div class="flex flex-col gap-1">
           <dt class="text-grey-300 text-xs font-medium uppercase tracking-wide">
@@ -136,7 +153,7 @@ const budgetDisplay = computed(() => '--');
           <div class="text-grey-700/60 mb-1 flex items-center gap-2 text-xs">
             <IconDashboardSuppliers
               :font-controlled="false"
-              class="text-primary-700 size-[20px]"
+              class="text-primary-700 size-[16px]"
             />
             <span>Fornecedores</span>
           </div>
@@ -150,7 +167,7 @@ const budgetDisplay = computed(() => '--');
           <div class="text-grey-700/60 mb-1 flex items-center gap-2 text-xs">
             <IconCalendar
               :font-controlled="false"
-              class="text-primary-700 size-[20px]"
+              class="text-primary-700 size-[16px]"
             />
             <span>Dias restantes</span>
           </div>
@@ -160,5 +177,13 @@ const budgetDisplay = computed(() => '--');
         </div>
       </div>
     </div>
+
+    <LazyEventFormModal
+      v-if="event"
+      :show="showFormModal"
+      :event="event"
+      @close-modal="showFormModal = false"
+      @success="onFormSuccess"
+    />
   </BaseCard>
 </template>
