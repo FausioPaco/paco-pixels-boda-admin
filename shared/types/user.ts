@@ -4,6 +4,7 @@ export type User = {
   email: string;
   roleId: number;
   roleName: string;
+  partnerId?: number;
   created_At: Date;
 };
 

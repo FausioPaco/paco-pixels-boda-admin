@@ -14,7 +14,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (e: 'open-actions', event: BodaEvent): void;
+  (e: 'update' | 'remove' | 'open-actions', event: BodaEvent): void;
 }>();
 
 const iconName = computed(() => props.event.eventTypeIcon || 'event-wedding');
@@ -30,6 +30,25 @@ const goToEvent = () => {
 
   navigateTo('/admin');
 };
+
+const showMenu = ref(false);
+
+const toggleMenu = (e: MouseEvent) => {
+  e.stopPropagation();
+  showMenu.value = !showMenu.value;
+};
+
+const onEditClick = (e: MouseEvent) => {
+  e.stopPropagation();
+  showMenu.value = false;
+  emit('update', props.event);
+};
+
+const onRemoveClick = (e: MouseEvent) => {
+  e.stopPropagation();
+  showMenu.value = false;
+  emit('remove', props.event);
+};
 </script>
 
 <template>
@@ -40,14 +59,52 @@ const goToEvent = () => {
     <div
       class="relative flex flex-col items-center justify-center px-6 pb-8 pt-6"
     >
-      <button
+      <!-- Event Item Menu -->
+      <div v-if="showActions" class="absolute right-3 top-3">
+        <div class="relative">
+          <button
+            type="button"
+            class="border-grey-100 text-grey-400 hover:bg-grey-50 flex h-8 w-8 items-center justify-center rounded-full border bg-white"
+            @click.stop="toggleMenu"
+          >
+            <icon-dots :width="20" :height="20" :font-controlled="false" />
+          </button>
+
+          <Transition name="fade">
+            <div
+              v-if="showMenu"
+              class="border-grey-100 absolute right-0 z-20 mt-2 w-44 rounded-xl border bg-white p-1 shadow-lg"
+            >
+              <button
+                type="button"
+                class="hover:bg-grey-50 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
+                @click.stop="onEditClick"
+              >
+                <IconPencil :font-controlled="false" class="h-4 w-4" />
+                <span>Editar evento</span>
+              </button>
+
+              <button
+                type="button"
+                class="text-danger-700 hover:bg-danger-50 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
+                @click.stop="onRemoveClick"
+              >
+                <IconCloseSimple :font-controlled="false" class="h-4 w-4" />
+                <span>Remover</span>
+              </button>
+            </div>
+          </Transition>
+        </div>
+      </div>
+
+      <!-- <button
         v-if="showActions"
         type="button"
         class="text-grey-200 hover:bg-primary-100 hover:text-grey-400 absolute right-1 top-1 rounded-full p-4"
         @click.stop="emit('open-actions', event)"
       >
         <icon-dots :width="20" :height="20" :font-controlled="false" />
-      </button>
+      </button> -->
 
       <div
         class="bg-primary-50 mt-6 flex h-16 w-16 items-center justify-center rounded-full"

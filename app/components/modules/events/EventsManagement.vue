@@ -1,14 +1,16 @@
 <script setup lang="ts">
-// import { useToast } from 'vue-toastification';
-
-//const toast = useToast();
 const showFormModal = ref<boolean>(false);
+const showRemoveModal = ref<boolean>(false);
+
+const selectedEvent = ref<BodaEvent | null>(null);
+const eventToRemove = ref<BodaEvent | null>(null);
+
 const queryParameters = reactive<EventParameters>({
   searchQuery: '',
   startDate: '',
   endDate: '',
   pageNumber: 1,
-  pageSize: 8,
+  pageSize: 20,
 });
 
 const { events, pagination, isRefreshing, isError, refreshEvents } =
@@ -45,10 +47,31 @@ const isFirstTime = computed(
     searchQuery.value === '',
 );
 
-const onSuccess = () => {
+const onCreateEvent = () => {
+  selectedEvent.value = null;
+  showFormModal.value = true;
+};
+
+const onEventUpdate = (event: BodaEvent) => {
+  selectedEvent.value = event;
+  showFormModal.value = true;
+};
+
+const onEventRemove = (event: BodaEvent) => {
+  eventToRemove.value = event;
+  showRemoveModal.value = true;
+};
+
+const onFormSuccess = async () => {
   showFormModal.value = false;
   queryParameters.pageNumber = 1;
   queryParameters.searchQuery = '';
+
+  refreshEvents({ force: true });
+};
+
+const onRemoveSuccess = async () => {
+  showRemoveModal.value = false;
   refreshEvents({ force: true });
 };
 
@@ -118,7 +141,7 @@ onMounted(() => {
               icon="add"
               size="md"
               btn-type="primary"
-              @click.prevent="showFormModal = true"
+              @click.prevent="onCreateEvent"
             >
               Criar Evento
             </BaseButton>
@@ -151,7 +174,7 @@ onMounted(() => {
           description="Crie o seu primeiro evento para começar a organizar os lugares dos seus convidados de forma mais eficiente."
           button-label="Criar evento"
           button-icon="add"
-          @action="showFormModal = true"
+          @action="onCreateEvent"
         />
 
         <!-- Data -->
@@ -159,7 +182,13 @@ onMounted(() => {
           v-if="!isRefreshing && !isError && events.length > 0"
           class="my-4 flex flex-col flex-wrap gap-4 md:flex-row"
         >
-          <EventItem v-for="event in events" :key="event.id" :event="event" />
+          <EventItem
+            v-for="event in events"
+            :key="event.id"
+            :event="event"
+            @update="onEventUpdate"
+            @remove="onEventRemove"
+          />
         </div>
 
         <!-- Pagination -->
@@ -174,7 +203,14 @@ onMounted(() => {
       <LazyEventFormModal
         :show="showFormModal"
         @close-modal="showFormModal = false"
-        @success="onSuccess"
+        @success="onFormSuccess"
+      />
+
+      <LazyEventRemoveModal
+        :show="showRemoveModal"
+        :event="eventToRemove"
+        @close-modal="showRemoveModal = false"
+        @success="onRemoveSuccess"
       />
     </section>
   </div>

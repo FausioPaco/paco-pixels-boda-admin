@@ -6,7 +6,7 @@ const { siteConfig } = await useClientConfig();
     class="border-grey-100/60 flex items-center justify-between border-b pb-4 pt-3"
   >
     <!-- Logo -->
-    <NuxtLink to="/" class="block px-2 no-underline">
+    <NuxtLink to="/eventos" class="block px-2 no-underline">
       <NuxtImg
         :src="siteConfig.logoPrimarySmall"
         width="537"
