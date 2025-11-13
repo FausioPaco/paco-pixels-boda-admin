@@ -1,4 +1,4 @@
-export interface Event {
+export interface BodaEvent {
   id: number;
   name: string;
   description: string;
@@ -8,10 +8,11 @@ export interface Event {
   fileCount: number;
   suppliersCount: number;
   initials: string;
-  slug: string | null;
+  slug: string | undefined;
   eventTypeId: number | undefined;
   eventTypeName?: string | undefined;
   eventTypeIcon?: string | undefined;
+  event_Date?: Date | undefined;
   created_At: Date;
 }
 

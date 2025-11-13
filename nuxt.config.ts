@@ -99,8 +99,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      apiBaseUrl: '',
-      apiImageUrl: '',
+      apiBaseUrl: process.env.NUXT_API_BASE_URL,
+      apiImageUrl: process.env.NUXT_API_IMAGE_BASE_URL,
       clientCode,
     },
   },

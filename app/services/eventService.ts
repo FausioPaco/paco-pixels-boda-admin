@@ -4,18 +4,20 @@ import { fetchWithPagination } from '~/composables/fetchWithPagination';
 const RESOURCE = '/Events';
 
 export const getEventService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
-  async getAllEvents(parameters: EventParameters): Promise<Pagination<Event>> {
-    return fetchWithPagination<Event>($fetch, RESOURCE, {
+  async getAllEvents(
+    parameters: EventParameters,
+  ): Promise<Pagination<BodaEvent>> {
+    return fetchWithPagination<BodaEvent>($fetch, RESOURCE, {
       query: parameters,
     });
   },
 
-  async getEvent(eventId: number | string): Promise<Event> {
-    return $fetch<Event>(`${RESOURCE}/Get/${eventId}`);
+  async getEvent(eventId: number | string): Promise<BodaEvent> {
+    return $fetch<BodaEvent>(`${RESOURCE}/Get/${eventId}`);
   },
 
-  async createEvent(newEvent: EventInput): Promise<Event> {
-    return $fetch<Event>(`${RESOURCE}/Create`, {
+  async createEvent(newEvent: EventInput): Promise<BodaEvent> {
+    return $fetch<BodaEvent>(`${RESOURCE}/Create`, {
       method: 'post',
       body: newEvent,
     });

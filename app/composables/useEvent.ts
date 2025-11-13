@@ -1,7 +1,7 @@
 import { getEventService } from '~/services/eventService';
 
 export const useEvent = async (eventId: number | string) => {
-  const event = useState<Event | null>('get-event', () => null);
+  const event = useState<BodaEvent | null>('get-event', () => null);
   const nuxtApp = useNuxtApp();
 
   const { data, refresh, status } = await useAsyncData(

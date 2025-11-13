@@ -1,8 +1,8 @@
 import { getEventService } from '~/services/eventService';
 
 export const useEventsList = async (params?: EventParameters | undefined) => {
-  const events = useState<Event[]>('events-list', () => []);
-  const pagination = useState<PaginationData<Event> | null>(
+  const events = useState<BodaEvent[]>('events-list', () => []);
+  const pagination = useState<PaginationData<BodaEvent> | null>(
     'events-pagination',
     () => null,
   );

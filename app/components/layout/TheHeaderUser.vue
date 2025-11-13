@@ -17,7 +17,7 @@ const logout = () => {
 };
 </script>
 <template>
-  <div class="relative z-50 mx-2 hidden lg:block">
+  <div class="relative z-50 mx-2 block">
     <!-- User Name -->
     <div
       class="text-grey-800 flex cursor-pointer items-center lg:space-x-3"
