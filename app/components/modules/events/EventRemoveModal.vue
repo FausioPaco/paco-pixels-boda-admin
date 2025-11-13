@@ -53,51 +53,54 @@ const onConfirmRemove = async () => {
 </script>
 
 <template>
-  <BaseModal
-    icon="WarningCircle"
-    :show="show"
-    title="Remover evento"
-    @close-modal="closeModal"
-  >
-    <div class="px-4 pb-4 pt-2">
-      <p class="text-grey-500 text-sm">
-        Tens a certeza que pretendes remover o evento
-        <span class="text-grey-900 font-semibold"> “{{ event?.name }}” </span>
-        ?
-      </p>
+  <BaseModal :show="show" title="Remover evento" @close-modal="closeModal">
+    <p class="text-grey-600 mb-4 text-center text-base md:text-lg">
+      Tens a certeza que pretendes remover o evento
+      <span class="font-bold">“{{ event?.name }}” </span>?
+    </p>
 
-      <p class="text-grey-400 mt-2 text-xs">
+    <div class="my-4 flex items-center justify-center gap-1">
+      <icon-warning
+        :font-controlled="false"
+        class="text-danger-700 block h-4 w-4"
+      ></icon-warning>
+      <p class="text-danger-700 text-center text-sm">
         Esta acção não pode ser anulada. Poderás sempre criar um novo evento
         mais tarde.
       </p>
+    </div>
 
-      <BaseError v-if="serverErrors.hasErrors" class="mt-4">
-        {{ serverErrors.message }}
-      </BaseError>
-
-      <div class="mt-6 flex items-center gap-3">
-        <BaseButton
-          type="button"
-          class="my-1"
-          size="md"
-          :disabled="isSubmiting"
-          :loading="isSubmiting"
-          @click="onConfirmRemove"
-        >
-          Remover evento
-        </BaseButton>
-
-        <BaseButton
-          type="button"
-          btn-type="outline-primary"
-          class="my-1"
-          size="md"
-          :disabled="isSubmiting"
-          @click="closeModal"
-        >
-          Cancelar
-        </BaseButton>
+    <div class="w-full">
+      <div v-if="isSubmiting" class="mt-4 flex items-center justify-center">
+        <BaseLoading size="md" orientation="horizontal" />
       </div>
+
+      <BaseError v-if="serverErrors.hasErrors">{{
+        serverErrors.message
+      }}</BaseError>
+    </div>
+
+    <div class="flex w-full justify-center gap-3">
+      <BaseButton
+        type="submit"
+        btn-type="primary"
+        class="my-1"
+        size="md"
+        :disabled="isSubmiting"
+        :loading="isSubmiting"
+        @click="onConfirmRemove"
+        >Remover agora</BaseButton
+      >
+
+      <BaseButton
+        type="button"
+        btn-type="outline-primary"
+        class="my-1"
+        size="md"
+        :disabled="isSubmiting"
+        @click="$emit('closeModal')"
+        >Cancelar</BaseButton
+      >
     </div>
   </BaseModal>
 </template>

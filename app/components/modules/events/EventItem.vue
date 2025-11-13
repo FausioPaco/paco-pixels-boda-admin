@@ -64,10 +64,15 @@ const onRemoveClick = (e: MouseEvent) => {
         <div class="relative">
           <button
             type="button"
-            class="border-grey-100 text-grey-400 hover:bg-grey-50 flex h-8 w-8 items-center justify-center rounded-full border bg-white"
+            class="border-primary-100 text-grey-400 hover:bg-primary-500/10 group flex h-8 w-8 items-center justify-center rounded-full border transition-colors duration-300 ease-in"
             @click.stop="toggleMenu"
           >
-            <icon-dots :width="20" :height="20" :font-controlled="false" />
+            <icon-dots
+              :width="20"
+              :height="20"
+              :font-controlled="false"
+              class="hover:text-primary-600 group-hover:text-primary-600"
+            />
           </button>
 
           <Transition name="fade">
@@ -80,7 +85,7 @@ const onRemoveClick = (e: MouseEvent) => {
                 class="hover:bg-grey-50 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
                 @click.stop="onEditClick"
               >
-                <IconPencil :font-controlled="false" class="h-4 w-4" />
+                <IconPencil :font-controlled="false" class="block h-4 w-4" />
                 <span>Editar evento</span>
               </button>
 
@@ -89,22 +94,16 @@ const onRemoveClick = (e: MouseEvent) => {
                 class="text-danger-700 hover:bg-danger-50 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
                 @click.stop="onRemoveClick"
               >
-                <IconCloseSimple :font-controlled="false" class="h-4 w-4" />
+                <IconCloseSimple
+                  :font-controlled="false"
+                  class="block h-3 w-3"
+                />
                 <span>Remover</span>
               </button>
             </div>
           </Transition>
         </div>
       </div>
-
-      <!-- <button
-        v-if="showActions"
-        type="button"
-        class="text-grey-200 hover:bg-primary-100 hover:text-grey-400 absolute right-1 top-1 rounded-full p-4"
-        @click.stop="emit('open-actions', event)"
-      >
-        <icon-dots :width="20" :height="20" :font-controlled="false" />
-      </button> -->
 
       <div
         class="bg-primary-50 mt-6 flex h-16 w-16 items-center justify-center rounded-full"

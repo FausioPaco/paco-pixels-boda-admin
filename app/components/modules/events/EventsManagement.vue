@@ -202,6 +202,7 @@ onMounted(() => {
 
       <LazyEventFormModal
         :show="showFormModal"
+        :event="selectedEvent"
         @close-modal="showFormModal = false"
         @success="onFormSuccess"
       />
