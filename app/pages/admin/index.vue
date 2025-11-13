@@ -1,5 +1,13 @@
+<script setup lang="ts">
+const eventStore = useEventStore();
+eventStore.loadFromCookies();
+</script>
+
 <template>
   <div>
-    <h2 class="text-grey-400">Olá Mundo</h2>
+    <LazyEventOverview
+      v-if="eventStore.selected"
+      :event-id="eventStore.selected.id"
+    />
   </div>
 </template>
