@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import type { ISelectProps } from '#shared/types/select';
 defineOptions({
   name: 'BaseSelect',
   inheritAttrs: false,

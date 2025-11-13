@@ -70,6 +70,13 @@ export const useDesksList = async (overrides?: DeskParameters | undefined) => {
     }
   });
 
+  const refreshDesks = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key.value);
+    }
+    await refresh();
+  };
+
   return {
     desks,
     pagination,
@@ -77,6 +84,6 @@ export const useDesksList = async (overrides?: DeskParameters | undefined) => {
     isRefreshing: status.value === 'pending',
     isError: status.value === 'error',
     isSuccess: status.value === 'success',
-    refreshDesks: refresh,
+    refreshDesks,
   };
 };

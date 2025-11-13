@@ -39,4 +39,5 @@ export interface EventInput {
   initials: string;
   eventTypeId?: number | undefined;
   slug?: string | undefined;
+  event_Date?: Date | undefined;
 }

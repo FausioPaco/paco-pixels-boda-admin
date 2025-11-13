@@ -45,6 +45,13 @@ const isFirstTime = computed(
     searchQuery.value === '',
 );
 
+const onSuccess = () => {
+  showFormModal.value = false;
+  queryParameters.pageNumber = 1;
+  queryParameters.searchQuery = '';
+  refreshEvents({ force: true });
+};
+
 onMounted(() => {
   refreshEvents();
 });
@@ -71,6 +78,7 @@ onMounted(() => {
       >
         <!-- Filters & Counter -->
         <div
+          v-if="!isRefreshing"
           class="flex w-full animate-fadeIn flex-col md:flex-row md:items-start md:justify-between"
         >
           <div class="w-full md:w-1/2">
@@ -104,7 +112,7 @@ onMounted(() => {
           </div>
 
           <div
-            class="flex w-full flex-col justify-start gap-4 md:w-1/2 md:flex-row md:justify-end md:gap-2 md:pt-6"
+            class="flex h-fit w-full flex-col justify-start gap-4 md:w-1/2 md:flex-row md:justify-end md:gap-2 md:pt-6"
           >
             <BaseButton
               icon="add"
@@ -163,11 +171,11 @@ onMounted(() => {
         />
       </div>
 
-      <!-- <LazyDesksFormModal
-      :show="showFormModal"
-      @close-modal="showFormModal = false"
-      @success="refreshDesks()"
-    /> -->
+      <LazyEventFormModal
+        :show="showFormModal"
+        @close-modal="showFormModal = false"
+        @success="onSuccess"
+      />
     </section>
   </div>
 </template>

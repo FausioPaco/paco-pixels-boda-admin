@@ -34,7 +34,7 @@ const goToEvent = () => {
 
 <template>
   <article
-    class="border-primary-100 bg-primary-50/70 text-grey-700 hover:border-3 hover:border-primary-700 relative flex flex-col justify-between rounded-2xl border shadow-sm outline-2 transition hover:-translate-y-0.5 hover:shadow-md md:min-w-[220px] lg:min-w-[320px]"
+    class="border-primary-100 bg-primary-50/70 text-grey-700 hover:border-3 hover:border-primary-700 relative flex w-full flex-col justify-between rounded-2xl border shadow-sm outline-2 transition hover:-translate-y-0.5 hover:shadow-md md:w-[300px] md:min-w-[220px] lg:min-w-[320px]"
   >
     <!-- topo: ícone + 3 dots -->
     <div
@@ -69,7 +69,7 @@ const goToEvent = () => {
     >
       <div class="space-y-1.5">
         <h3 class="text-grey-800 line-clamp-2 text-lg font-semibold">
-          {{ event.name }}
+          {{ truncate(event.name, 28) }}
         </h3>
 
         <p class="text-grey-300 text-sm">

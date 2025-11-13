@@ -58,6 +58,13 @@ export const useEventsList = async (params?: EventParameters | undefined) => {
     }
   });
 
+  const refreshEvents = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key.value);
+    }
+    await refresh();
+  };
+
   return {
     events,
     pagination,
@@ -65,6 +72,6 @@ export const useEventsList = async (params?: EventParameters | undefined) => {
     isRefreshing: status.value === 'pending',
     isError: status.value === 'error',
     isSuccess: status.value === 'success',
-    refreshEvents: refresh,
+    refreshEvents,
   };
 };
