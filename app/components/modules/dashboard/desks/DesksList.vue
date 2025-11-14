@@ -98,9 +98,9 @@ onMounted(() => {
     >
       <!-- Filters & Counter -->
       <div
-        class="flex w-full animate-fadeIn flex-col md:flex-row md:justify-between"
+        class="flex w-full animate-fadeIn flex-col lg:flex-row lg:justify-between"
       >
-        <div class="w-full md:w-1/2">
+        <div class="w-full lg:w-1/2">
           <BaseInput
             id="deskName"
             v-model="searchQuery"
@@ -138,7 +138,7 @@ onMounted(() => {
         </div>
 
         <div
-          class="flex w-full flex-col justify-start gap-4 md:w-1/2 md:flex-row md:items-end md:justify-end md:gap-2 md:pt-5"
+          class="flex w-full flex-col justify-start gap-4 lg:w-1/2 lg:flex-row lg:items-end lg:justify-end lg:gap-2 lg:pt-5"
         >
           <BaseButton
             v-if="isAdministrator || isSuperAdministrator"

@@ -3,9 +3,10 @@ import { getDeskService } from '~/services/deskService';
 export const useDesk = async (deskId: number) => {
   const desk = useState<Desk | null>('get-desk', () => null);
   const nuxtApp = useNuxtApp();
+  const key = 'get-desk-' + deskId;
 
   const { data, refresh, status } = await useAsyncData(
-    'get-desk-' + deskId,
+    key,
     () => getDeskService(nuxtApp.$api).getDesk(deskId),
     {
       default: () => null,
@@ -30,9 +31,16 @@ export const useDesk = async (deskId: number) => {
     }
   });
 
+  const refreshDesk = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key);
+    }
+    await refresh();
+  };
+
   return {
     desk,
     isRefreshing: status.value === 'pending',
-    refreshDesk: refresh,
+    refreshDesk,
   };
 };

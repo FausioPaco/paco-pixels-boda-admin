@@ -2,6 +2,7 @@
 interface ICardProps {
   title?: string;
   description?: string;
+  backLink?: string | undefined;
 }
 
 defineOptions({
@@ -11,6 +12,7 @@ defineOptions({
 withDefaults(defineProps<ICardProps>(), {
   title: '',
   description: '',
+  backLink: undefined,
 });
 </script>
 <template>
@@ -22,9 +24,17 @@ withDefaults(defineProps<ICardProps>(), {
       class="mb-4 flex flex-col space-y-2 md:flex-row md:items-end md:justify-between md:space-y-0"
     >
       <div class="py-1 md:py-3">
-        <h2 v-if="title" class="text-xl font-bold text-gray-900 md:text-2xl">
-          {{ title }}
-        </h2>
+        <div class="flex items-center gap-2">
+          <NuxtLink v-if="backLink" :to="backLink">
+            <IconArrowLeft
+              :font-controlled="false"
+              class="text-grey-400 hover:text-primary-500 size-[24px] transition-colors duration-300"
+            />
+          </NuxtLink>
+          <h2 v-if="title" class="text-xl font-bold text-gray-900 md:text-2xl">
+            {{ title }}
+          </h2>
+        </div>
         <p v-if="description" class="text-grey-400 mt-1 text-sm md:text-base">
           {{ description }}
         </p>

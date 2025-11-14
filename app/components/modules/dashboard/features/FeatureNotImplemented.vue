@@ -7,7 +7,9 @@
       class="text-primary-700 mb-4 block size-[120px]"
     />
 
-    <h3 class="text-grey-800 mb-3 text-4xl font-bold leading-snug md:text-5xl">
+    <h3
+      class="text-primary-700 mb-3 text-2xl font-bold leading-snug md:text-3xl"
+    >
       Funcionalidade indisponível
     </h3>
 
