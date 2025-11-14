@@ -4,8 +4,10 @@ export const useGuest = async (guestId: number) => {
   const guest = useState<Guest | null>('get-guest', () => null);
   const nuxtApp = useNuxtApp();
 
+  const key = 'get-guest-' + guestId;
+
   const { data, refresh, status } = await useAsyncData(
-    'get-guest-' + guestId,
+    key,
     () => getGuestService(nuxtApp.$api).getGuest(guestId),
     {
       default: () => null,
@@ -30,9 +32,16 @@ export const useGuest = async (guestId: number) => {
     }
   });
 
+  const refreshGuest = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key);
+    }
+    await refresh();
+  };
+
   return {
     guest,
     isRefreshing: status.value === 'pending',
-    refreshGuest: refresh,
+    refreshGuest,
   };
 };

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useAuthStore } from '@/stores/auth';
 import { useToast } from 'vue-toastification';
 import { getDeskService } from '~/services/deskService';
 
@@ -17,12 +16,11 @@ const showFormModal = ref<boolean>(false);
 const showRemoveModal = ref<boolean>(false);
 const showExportFormatModal = ref<boolean>(false);
 
-const { isAdministrator, isSuperAdministrator } = useAuthStore();
 const { refreshGuest } = await useGuest(props.guest.id);
 const desk = ref<Desk | null | undefined>(undefined);
 const isLoadingDesk = ref(false);
 const showForExport = ref(false);
-const invitationRef = ref();
+const qrCodeRef = ref();
 const isExporting = ref(false);
 
 const deskService = getDeskService(useNuxtApp().$api);
@@ -45,7 +43,7 @@ const guestsPeopleCount = computed(() => {
 });
 
 const refreshDetails = async () => {
-  await refreshGuest();
+  await refreshGuest({ force: true });
   await fetchDeskById(props.guest.deskId);
 };
 
@@ -61,12 +59,12 @@ const exportInvitationAsImage = async () => {
   try {
     isExporting.value = true;
 
-    const el = invitationRef.value?.el;
+    const el = qrCodeRef.value?.el;
 
     if (!el || !(el instanceof HTMLElement)) {
       throw new Error('Elemento DOM não disponível');
     }
-    const canvas = await $html2canvas(invitationRef.value?.el, {
+    const canvas = await $html2canvas(qrCodeRef.value?.el, {
       scale: 2,
       useCORS: true,
       backgroundColor: '#ffffff',
@@ -77,11 +75,11 @@ const exportInvitationAsImage = async () => {
     // Criar download direto da imagem
     const link = document.createElement('a');
     link.href = image;
-    link.download = `Convite_${props.guest.localId}.png`;
+    link.download = `QRCode_${props.guest.localId}.png`;
     link.click();
   } catch (err) {
     console.error(err);
-    toast.error('Erro ao exportar o convite');
+    toast.error('Erro ao exportar o QRCode');
   } finally {
     isExporting.value = false;
     showForExport.value = false;
@@ -94,10 +92,10 @@ const exportInvitationAsPdf = async () => {
     showForExport.value = true;
     await nextTick();
 
-    const el = invitationRef.value?.el;
+    const el = qrCodeRef.value?.el;
 
     if (!el || !(el instanceof HTMLElement)) {
-      throw new Error('Elemento DOM do convite não encontrado.');
+      throw new Error('Elemento DOM do QRCode não encontrado.');
     }
 
     const canvas = await $html2canvas(el, {
@@ -115,7 +113,7 @@ const exportInvitationAsPdf = async () => {
     const pdfWidth = pxToMm(imgProps.width);
     const pdfHeight = pxToMm(imgProps.height);
 
-    // Criar o PDF com o tamanho exato do convite
+    // Criar o PDF com o tamanho exato do QRCode
     const pdf = new $jsPDF({
       orientation: pdfHeight > pdfWidth ? 'portrait' : 'landscape',
       unit: 'mm',
@@ -125,31 +123,29 @@ const exportInvitationAsPdf = async () => {
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
     const guestId = props.guest?.localId ?? 'convidado';
-    pdf.save(`Convite_${siteConfig.initials}-${guestId}.pdf`);
+    pdf.save(`QRCode_${siteConfig.initials}-${guestId}.pdf`);
   } catch (err) {
     console.error(err);
-    toast.error('Ocorreu um erro ao exportar o convite em PDF.');
+    toast.error('Ocorreu um erro ao exportar o QRCode em PDF.');
   } finally {
     isExporting.value = false;
     showForExport.value = false;
   }
 };
 
-const copyInvitationLink = async () => {
-  try {
-    const link = `${siteConfig.link}?convite=${props.guest.localId}`;
+// const copyInvitationLink = async () => {
+//   try {
+//     const link = `${siteConfig.link}?QRCode=${props.guest.localId}`;
 
-    await navigator.clipboard.writeText(link);
-    toast.success('Link do convite copiado com sucesso!');
-  } catch (error) {
-    console.error(error);
-    toast.error('Erro ao copiar o link do convite.');
-  }
-};
+//     await navigator.clipboard.writeText(link);
+//     toast.success('Link do QRCode copiado com sucesso!');
+//   } catch (error) {
+//     console.error(error);
+//     toast.error('Erro ao copiar o link do QRCode.');
+//   }
+// };
 
 const startExport = (format: ExportInvitationFormat) => {
-  console.log('Fired');
-
   if (format === 'png') {
     exportInvitationAsImage();
   } else if (format === 'pdf') {
@@ -160,13 +156,12 @@ const startExport = (format: ExportInvitationFormat) => {
 };
 
 onMounted(() => {
-  const componentName = siteConfig.invitationComponent;
+  const componentName = siteConfig.qrCodeComponent;
 
   if (componentName) {
     try {
       InvitationComponent.value = defineAsyncComponent(
-        () =>
-          import(`~/components/modules/admin/invitations/${componentName}.vue`),
+        () => import(`~/components/modules/admin/qrcodes/${componentName}.vue`),
       );
     } catch (err) {
       console.error('Erro ao carregar componente:', err);
@@ -175,45 +170,29 @@ onMounted(() => {
 });
 </script>
 <template>
-  <div class="py-2">
+  <BaseCard
+    :title="guest.name"
+    description="Verifique todos os detalhes deste convidado aqui"
+    back-link="/admin/convidados"
+  >
     <div
       class="flex w-full animate-fadeIn flex-col px-3 md:flex-row md:justify-between"
     >
       <!-- Guest Info -->
-      <div class="md:w-1/2 md:px-10">
+      <div class="md:w-1/2">
         <div
           class="mb-3 flex flex-col justify-between md:items-center lg:flex-row"
         >
-          <!-- Main Title  -->
-          <div class="mb-4 mt-2 flex items-center gap-2">
-            <NuxtLink to="/admin/convidados">
-              <IconArrowLeft
-                :font-controlled="false"
-                class="text-grey-400 hover:text-primary-500 size-[24px] transition-colors duration-300"
-              />
-            </NuxtLink>
-            <h4
-              class="text-grey-400 font-bold"
-              :class="
-                guest.name.length > 35
-                  ? 'text-lg md:text-xl'
-                  : 'text-xl md:text-2xl'
-              "
-            >
-              {{ guest.name }}
-            </h4>
-          </div>
-
           <!-- Main Links: Generate Invitation & Generate Confirmation Link -->
           <div class="my-3 flex gap-2">
-            <BaseButton
+            <!-- <BaseButton
               btn-type="outline-primary"
               btn-size="sm"
               icon="copy"
               @click="copyInvitationLink"
             >
               Copiar Link
-            </BaseButton>
+            </BaseButton> -->
             <BaseButton
               btn-type="primary"
               btn-size="sm"
@@ -221,7 +200,7 @@ onMounted(() => {
               :disabled="isExporting"
               @click="showExportFormatModal = true"
             >
-              {{ isExporting ? 'A gerar convite...' : 'Baixar Convite' }}
+              {{ isExporting ? 'A gerar QR Code...' : 'Gerar QR Code' }}
             </BaseButton>
           </div>
         </div>
@@ -267,10 +246,7 @@ onMounted(() => {
         </BaseDescriptionList>
 
         <!-- Main Actions -->
-        <div
-          v-if="isAdministrator || isSuperAdministrator"
-          class="my-4 flex items-center space-x-2"
-        >
+        <div class="my-4 flex items-center space-x-2">
           <BaseButton
             type="button"
             size="sm"
@@ -304,7 +280,7 @@ onMounted(() => {
     </div>
 
     <!-- Example Invitation -->
-    <!-- <component :is="InvitationComponent" ref="invitationRef" :guest="guest" /> -->
+    <!-- <component :is="InvitationComponent" ref="qrCodeRef" :guest="guest" /> -->
 
     <!-- Modals -->
     <LazyGuestsFormModal
@@ -328,10 +304,10 @@ onMounted(() => {
     />
 
     <!-- Invitation File -->
-    <!-- <div
+    <div
       class="pointer-events-none fixed left-[-9999px] top-[-9999px] opacity-0"
     >
-      <component :is="InvitationComponent" ref="invitationRef" :guest="guest" />
-    </div> -->
-  </div>
+      <component :is="InvitationComponent" ref="qrCodeRef" :guest="guest" />
+    </div>
+  </BaseCard>
 </template>

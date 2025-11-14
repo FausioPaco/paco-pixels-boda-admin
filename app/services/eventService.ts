@@ -42,4 +42,14 @@ export const getEventService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
   async getEventTypes(): Promise<EventType[]> {
     return $fetch<EventType[]>(`${RESOURCE}/Types`);
   },
+
+  async uploadQRImage({ file, eventId }: FileInput): Promise<string> {
+    const formData = new FormData();
+    formData.append('FileUpload', file);
+
+    return $fetch<string>(`${RESOURCE}/UploadQrTemplate/${eventId}`, {
+      method: 'post',
+      body: formData,
+    });
+  },
 });

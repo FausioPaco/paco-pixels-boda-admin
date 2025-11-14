@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import GuestList from './GuestsList.vue';
-import GuestsInvitatIonModel from './GuestsInvitationModel.vue';
-type GuestTab = 'LIST' | 'INVITATION';
+import GuestsQRCodeImage from './GuestsQRCodeImage.vue';
+type GuestTab = 'LIST' | 'QRCODE';
 
 const activeTab = ref<GuestTab>('LIST');
 </script>
@@ -24,21 +24,21 @@ const activeTab = ref<GuestTab>('LIST');
       >
 
       <BaseTabItem
-        id="invitation-model"
-        icon="invitation-model"
+        id="qrcode"
+        icon="qr-code"
         :tab-position="2"
         :total-tabs="2"
-        :is-active="activeTab === 'INVITATION'"
+        :is-active="activeTab === 'QRCODE'"
         class="w-full md:w-1/2"
-        @click="activeTab = 'INVITATION'"
-        >Modelo de Convite</BaseTabItem
+        @click="activeTab = 'QRCODE'"
+        >QR Code</BaseTabItem
       >
     </BaseTab>
 
     <!-- Content -->
     <transition name="fade" mode="out-in">
       <component
-        :is="activeTab === 'LIST' ? GuestList : GuestsInvitatIonModel"
+        :is="activeTab === 'LIST' ? GuestList : GuestsQRCodeImage"
       ></component>
     </transition>
   </BaseCard>
