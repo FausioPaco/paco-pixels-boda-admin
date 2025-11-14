@@ -29,6 +29,6 @@ definePageMeta({
     </BaseBreadcumb>
 
     <!-- Counters -->
-    <!-- <LazyGuestsManagement /> -->
+    <LazyGuestsManagement />
   </div>
 </template>

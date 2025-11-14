@@ -7,9 +7,10 @@ export const useGuestCategories = async () => {
   );
 
   const nuxtApp = useNuxtApp();
+  const key = 'get-guest-categories';
 
   const { data, refresh, status } = await useAsyncData(
-    'get-guest-categories',
+    key,
     () => getGuestService(nuxtApp.$api).getGuestCategories(),
     {
       transform(input) {
@@ -33,9 +34,16 @@ export const useGuestCategories = async () => {
     }
   });
 
+  const refreshCategories = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key);
+    }
+    await refresh();
+  };
+
   return {
     categories,
     isRefreshing: status.value === 'pending',
-    refresh,
+    refreshCategories,
   };
 };
