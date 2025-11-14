@@ -15,7 +15,7 @@ const COOKIE_NAME = 'current_event_name';
 const COOKIE_SLUG = 'current_event_slug';
 const COOKIE_ICON = 'current_event_icon';
 const COOKIE_INITIALS = 'current_event_initials';
-const COOKIE_QR_CODE_URL = 'current_event_has_qrcode_url';
+const COOKIE_QR_CODE_URL = 'current_event_qrcode_url';
 
 export const useEventStore = defineStore('event', () => {
   const selected = ref<SelectedEvent | null>(null);

@@ -13,7 +13,7 @@ export interface BodaEvent {
   eventTypeName?: string | undefined;
   eventTypeIcon?: string | undefined;
   event_Date?: Date | undefined;
-  hasQRCodeImage?: boolean;
+  has_QRCode_Image?: boolean;
   qrCodeImage_Url?: string;
   created_At: Date;
 }

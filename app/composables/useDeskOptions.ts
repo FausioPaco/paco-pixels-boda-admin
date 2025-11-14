@@ -3,11 +3,12 @@ import { getDeskService } from '~/services/deskService';
 export const useDeskOptions = async () => {
   const desks = useState<DeskOption[]>('get-desk-options', () => []);
   const nuxtApp = useNuxtApp();
-  const { EVENT_ID } = useRuntimeConfig().public;
+  const eventStore = useEventStore();
+  const eventId = eventStore.ensureSelected();
 
   const { data, refresh, status } = await useAsyncData(
     'get-desk-options',
-    () => getDeskService(nuxtApp.$api).getDeskOptions(Number(EVENT_ID)),
+    () => getDeskService(nuxtApp.$api).getDeskOptions(eventId),
     {
       transform(input) {
         return {
