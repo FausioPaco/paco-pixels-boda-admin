@@ -43,3 +43,8 @@ export interface EventInput {
   slug?: string | undefined;
   event_Date?: Date | undefined;
 }
+
+export interface QRCodeFileUploadResult {
+  url: string;
+  message: string;
+}

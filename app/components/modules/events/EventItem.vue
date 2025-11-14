@@ -28,6 +28,7 @@ const goToEvent = () => {
     icon: iconName.value,
     eventTypeId: props.event.eventTypeId ?? undefined,
     initials: props.event.initials,
+    qrCodeImage_Url: props.event.qrCodeImage_Url,
   });
 
   navigateTo('/admin');

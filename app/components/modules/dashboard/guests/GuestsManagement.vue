@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import GuestList from './GuestsList.vue';
-import GuestsQRCodeImage from './GuestsQRCodeImage.vue';
+import GuestsQRCode from './GuestsQRCode.vue';
 type GuestTab = 'LIST' | 'QRCODE';
 
 const activeTab = ref<GuestTab>('LIST');
@@ -38,7 +38,7 @@ const activeTab = ref<GuestTab>('LIST');
     <!-- Content -->
     <transition name="fade" mode="out-in">
       <component
-        :is="activeTab === 'LIST' ? GuestList : GuestsQRCodeImage"
+        :is="activeTab === 'LIST' ? GuestList : GuestsQRCode"
       ></component>
     </transition>
   </BaseCard>

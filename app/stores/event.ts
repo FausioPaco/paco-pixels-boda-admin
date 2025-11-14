@@ -7,6 +7,7 @@ export interface SelectedEvent {
   icon?: string | undefined;
   eventTypeId?: number | undefined;
   initials?: string | undefined;
+  qrCodeImage_Url?: string;
 }
 
 const COOKIE_ID = 'current_event_id';
@@ -14,6 +15,7 @@ const COOKIE_NAME = 'current_event_name';
 const COOKIE_SLUG = 'current_event_slug';
 const COOKIE_ICON = 'current_event_icon';
 const COOKIE_INITIALS = 'current_event_initials';
+const COOKIE_QR_CODE_URL = 'current_event_has_qrcode_url';
 
 export const useEventStore = defineStore('event', () => {
   const selected = ref<SelectedEvent | null>(null);
@@ -27,6 +29,10 @@ export const useEventStore = defineStore('event', () => {
   );
   const eventInitials = computed<string | undefined | null>(
     () => selected.value?.initials,
+  );
+
+  const eventQRCodeUrl = computed<string | undefined | null>(
+    () => selected.value?.qrCodeImage_Url,
   );
 
   const persist = (ev: SelectedEvent | null) => {
@@ -63,12 +69,19 @@ export const useEventStore = defineStore('event', () => {
       sameSite: 'lax',
     });
 
+    const qrCodeCookie = useCookie<string | null>(COOKIE_QR_CODE_URL, {
+      expires: expirationDate,
+      secure: true,
+      sameSite: 'lax',
+    });
+
     if (!ev) {
       idCookie.value = null;
       nameCookie.value = null;
       slugCookie.value = null;
       iconCookie.value = null;
       initialsCookie.value = null;
+      qrCodeCookie.value = null;
       return;
     }
 
@@ -77,6 +90,7 @@ export const useEventStore = defineStore('event', () => {
     slugCookie.value = ev.slug ?? null;
     iconCookie.value = ev.icon ?? null;
     initialsCookie.value = ev.initials ?? null;
+    qrCodeCookie.value = ev.qrCodeImage_Url ?? null;
   };
 
   // API pública
@@ -87,6 +101,7 @@ export const useEventStore = defineStore('event', () => {
       slug: ev.slug ?? undefined,
       icon: ev.icon ?? undefined,
       initials: ev.initials,
+      qrCodeImage_Url: ev.qrCodeImage_Url,
     };
     persist(selected.value);
   };
@@ -97,6 +112,7 @@ export const useEventStore = defineStore('event', () => {
     slug?: string | null,
     icon?: string | null,
     initials?: string | null,
+    qrCodeImage_Url?: string | null,
   ) => {
     selected.value = {
       id,
@@ -104,6 +120,7 @@ export const useEventStore = defineStore('event', () => {
       slug: slug ?? undefined,
       icon: icon ?? undefined,
       initials: initials ?? undefined,
+      qrCodeImage_Url: qrCodeImage_Url ?? undefined,
     };
     persist(selected.value);
   };
@@ -119,6 +136,7 @@ export const useEventStore = defineStore('event', () => {
     const slug = useCookie<string | null>(COOKIE_SLUG);
     const icon = useCookie<string | null>(COOKIE_ICON);
     const initials = useCookie<string | null>(COOKIE_INITIALS);
+    const qrCodeImageUrl = useCookie<string | null>(COOKIE_QR_CODE_URL);
 
     if (id.value) {
       selected.value = {
@@ -127,6 +145,7 @@ export const useEventStore = defineStore('event', () => {
         slug: slug.value ?? undefined,
         icon: icon.value ?? undefined,
         initials: initials.value ?? undefined,
+        qrCodeImage_Url: qrCodeImageUrl.value ?? undefined,
       };
     }
   };
@@ -151,6 +170,7 @@ export const useEventStore = defineStore('event', () => {
     eventName,
     eventSlug,
     eventInitials,
+    eventQRCodeUrl,
     selectEvent,
     selectEventById,
     clearSelectedEvent,
