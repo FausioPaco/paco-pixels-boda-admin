@@ -6,12 +6,14 @@ export interface SelectedEvent {
   slug?: string | undefined;
   icon?: string | undefined;
   eventTypeId?: number | undefined;
+  initials?: string | undefined;
 }
 
 const COOKIE_ID = 'current_event_id';
 const COOKIE_NAME = 'current_event_name';
 const COOKIE_SLUG = 'current_event_slug';
 const COOKIE_ICON = 'current_event_icon';
+const COOKIE_INITIALS = 'current_event_initials';
 
 export const useEventStore = defineStore('event', () => {
   const selected = ref<SelectedEvent | null>(null);
@@ -22,6 +24,9 @@ export const useEventStore = defineStore('event', () => {
   const eventName = computed<string>(() => selected.value?.name ?? '');
   const eventSlug = computed<string | undefined | null>(
     () => selected.value?.slug,
+  );
+  const eventInitials = computed<string | undefined | null>(
+    () => selected.value?.initials,
   );
 
   const persist = (ev: SelectedEvent | null) => {
@@ -52,11 +57,18 @@ export const useEventStore = defineStore('event', () => {
       sameSite: 'lax',
     });
 
+    const initialsCookie = useCookie<string | null>(COOKIE_INITIALS, {
+      expires: expirationDate,
+      secure: true,
+      sameSite: 'lax',
+    });
+
     if (!ev) {
       idCookie.value = null;
       nameCookie.value = null;
       slugCookie.value = null;
       iconCookie.value = null;
+      initialsCookie.value = null;
       return;
     }
 
@@ -64,6 +76,7 @@ export const useEventStore = defineStore('event', () => {
     nameCookie.value = ev.name;
     slugCookie.value = ev.slug ?? null;
     iconCookie.value = ev.icon ?? null;
+    initialsCookie.value = ev.initials ?? null;
   };
 
   // API pública
@@ -73,6 +86,7 @@ export const useEventStore = defineStore('event', () => {
       name: ev.name,
       slug: ev.slug ?? undefined,
       icon: ev.icon ?? undefined,
+      initials: ev.initials,
     };
     persist(selected.value);
   };
@@ -82,12 +96,14 @@ export const useEventStore = defineStore('event', () => {
     name?: string,
     slug?: string | null,
     icon?: string | null,
+    initials?: string | null,
   ) => {
     selected.value = {
       id,
       name: name ?? 'Evento',
       slug: slug ?? undefined,
       icon: icon ?? undefined,
+      initials: initials ?? undefined,
     };
     persist(selected.value);
   };
@@ -102,6 +118,7 @@ export const useEventStore = defineStore('event', () => {
     const name = useCookie<string | null>(COOKIE_NAME);
     const slug = useCookie<string | null>(COOKIE_SLUG);
     const icon = useCookie<string | null>(COOKIE_ICON);
+    const initials = useCookie<string | null>(COOKIE_INITIALS);
 
     if (id.value) {
       selected.value = {
@@ -109,6 +126,7 @@ export const useEventStore = defineStore('event', () => {
         name: name.value ?? 'Evento',
         slug: slug.value ?? undefined,
         icon: icon.value ?? undefined,
+        initials: initials.value ?? undefined,
       };
     }
   };
@@ -132,6 +150,7 @@ export const useEventStore = defineStore('event', () => {
     eventId,
     eventName,
     eventSlug,
+    eventInitials,
     selectEvent,
     selectEventById,
     clearSelectedEvent,

@@ -27,6 +27,7 @@ const goToEvent = () => {
     slug: props.event.slug,
     icon: iconName.value,
     eventTypeId: props.event.eventTypeId ?? undefined,
+    initials: props.event.initials,
   });
 
   navigateTo('/admin');

@@ -1,8 +1,6 @@
 <script lang="ts" setup>
 import { useToast } from 'vue-toastification';
 import { getGuestService } from '~/services/guestService';
-import type { ServerError } from '~/types/api/error';
-import type { Guest } from '~/types/api/guest';
 
 interface IGuestCancelArrivedForm {
   show?: boolean;

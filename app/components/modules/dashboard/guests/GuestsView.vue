@@ -328,10 +328,10 @@ onMounted(() => {
     />
 
     <!-- Invitation File -->
-    <div
+    <!-- <div
       class="pointer-events-none fixed left-[-9999px] top-[-9999px] opacity-0"
     >
       <component :is="InvitationComponent" ref="invitationRef" :guest="guest" />
-    </div>
+    </div> -->
   </div>
 </template>

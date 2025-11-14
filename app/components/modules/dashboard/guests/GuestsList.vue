@@ -3,11 +3,8 @@ import { useToast } from 'vue-toastification';
 import { useGuestCategories } from '~/composables/useGuestCategories';
 import { getGuestService } from '~/services/guestService';
 
-const { EVENT_ID } = useRuntimeConfig().public;
-const { siteConfig } = await useClientConfig();
-
+const { eventInitials } = useEventStore();
 const queryParameters = reactive<GuestParameters>({
-  eventId: Number(EVENT_ID),
   guestLocalId: undefined,
   categoryId: undefined,
   availability_Type: '',
@@ -139,7 +136,7 @@ onMounted(() => {
           <BaseInputGroup
             id="guestId"
             v-model="searchId"
-            :addon="`${siteConfig.initials}-`"
+            :addon="`${eventInitials}-`"
             type="number"
             name="guestId"
             label="Número do Convite:"
@@ -267,7 +264,7 @@ onMounted(() => {
         </template>
         <template #tbody>
           <tr v-for="guest in guests" :key="guest.id">
-            <td>{{ `${siteConfig.initials}-${guest.localId}` }}</td>
+            <td>{{ `${eventInitials}-${guest.localId}` }}</td>
             <td>
               <span class="mr-2">{{ guest.name }}</span>
               <BaseBadge
