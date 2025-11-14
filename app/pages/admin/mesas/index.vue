@@ -29,6 +29,6 @@ definePageMeta({
     </BaseBreadcumb>
 
     <!-- Counters -->
-    <!-- <LazyDesksManagement /> -->
+    <LazyDesksManagement />
   </div>
 </template>

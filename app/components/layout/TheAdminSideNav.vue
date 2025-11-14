@@ -19,7 +19,7 @@ const checkActiveClass = (link: string) => {
 </script>
 <template>
   <aside
-    class="bg-primary-50/20 min-h-screen w-[80px] overflow-y-auto shadow-md drop-shadow-sm transition-all duration-300 ease-linear md:min-w-60"
+    class="bg-primary-50/20 min-h-screen w-[80px] overflow-y-auto shadow-md drop-shadow-sm transition-all duration-300 ease-linear lg:min-w-60"
   >
     <!-- Logo -->
     <div class="mb-4 flex items-center justify-center px-3 py-6">
@@ -37,7 +37,7 @@ const checkActiveClass = (link: string) => {
 
     <!-- Voltar e Nome do Evento -->
     <div
-      class="text-grey-500/50 my-6 hidden justify-center gap-6 md:flex md:flex-col md:items-center"
+      class="text-grey-500/50 my-6 hidden justify-center gap-6 lg:flex lg:flex-col lg:items-center"
     >
       <NuxtLink
         to="/eventos"
@@ -64,9 +64,9 @@ const checkActiveClass = (link: string) => {
     </div>
 
     <!-- Principal -->
-    <ul class="pl-0 md:mt-4">
+    <ul class="pl-0 lg:mt-4">
       <small
-        class="text-primary-700/70 mb-4 hidden text-xs font-bold md:block md:pl-2"
+        class="text-primary-700/70 mb-4 hidden text-xs font-bold lg:block lg:pl-2"
         >Gestão do Evento</small
       >
       <div class="flex flex-col gap-y-1">

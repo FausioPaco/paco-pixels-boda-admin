@@ -13,14 +13,14 @@ defineEmits(['click']);
 
 <template>
   <li
-    :class="isActive ? 'border-b-2 border-b-primary-600' : null"
+    :class="isActive ? 'border-b-primary-700 border-b-2' : null"
     role="presentation"
   >
     <button
       :id="id"
-      class="mb-2 flex w-full cursor-pointer items-center justify-center gap-x-3 bg-transparent text-lg outline-primary-600"
+      class="outline-primary-700 mb-2 flex w-full cursor-pointer items-center justify-center gap-x-3 bg-transparent text-lg"
       :class="
-        isActive ? 'font-bold text-primary-600' : 'font-medium text-grey-700'
+        isActive ? 'text-primary-700 font-bold' : 'text-grey-400 font-medium'
       "
       role="tab"
       :aria-setsize="totalTabs"
