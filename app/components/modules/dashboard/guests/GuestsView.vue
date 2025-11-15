@@ -161,7 +161,8 @@ onMounted(() => {
   if (componentName) {
     try {
       InvitationComponent.value = defineAsyncComponent(
-        () => import(`~/components/modules/admin/qrcodes/${componentName}.vue`),
+        () =>
+          import(`@/components/modules/dashboard/qrcodes/${componentName}.vue`),
       );
     } catch (err) {
       console.error('Erro ao carregar componente:', err);
@@ -280,7 +281,7 @@ onMounted(() => {
     </div>
 
     <!-- Example Invitation -->
-    <!-- <component :is="InvitationComponent" ref="qrCodeRef" :guest="guest" /> -->
+    <component :is="InvitationComponent" ref="qrCodeRef" :guest="guest" />
 
     <!-- Modals -->
     <LazyGuestsFormModal
@@ -304,10 +305,10 @@ onMounted(() => {
     />
 
     <!-- Invitation File -->
-    <div
+    <!-- <div
       class="pointer-events-none fixed left-[-9999px] top-[-9999px] opacity-0"
     >
       <component :is="InvitationComponent" ref="qrCodeRef" :guest="guest" />
-    </div>
+    </div> -->
   </BaseCard>
 </template>

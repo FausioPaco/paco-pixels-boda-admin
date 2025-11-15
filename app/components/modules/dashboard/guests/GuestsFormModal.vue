@@ -14,8 +14,8 @@ const props = withDefaults(defineProps<IGuestForm>(), {
   guest: null,
 });
 
-const { EVENT_ID } = useRuntimeConfig().public;
 const emit = defineEmits(['closeModal', 'success']);
+const { eventId } = useEventStore();
 
 const nuxtApp = useNuxtApp();
 const guestService = getGuestService(nuxtApp.$api);
@@ -79,7 +79,7 @@ const onSubmit = handleSubmit((values, _) => {
   serverErrors.value.hasErrors = false;
 
   const guestInput: GuestInput = {
-    eventId: Number(EVENT_ID),
+    eventId: Number(eventId!),
     people_Count: values.people,
     deskId: values.desk,
     name: values.name,

@@ -1,14 +1,21 @@
 <script setup lang="ts">
 interface IQRCodeProps {
   guest: Guest;
+  color?: 'white' | 'black';
+  indicatorColor?: 'white' | 'black';
 }
 
-defineProps<IQRCodeProps>();
+withDefaults(defineProps<IQRCodeProps>(), {
+  color: 'black',
+  indicatorColor: 'white',
+});
 
-const { eventQRCodeUrl } = useEventStore();
+const eventStore = useEventStore();
+const { apiImageUrl } = useRuntimeConfig().public;
+const { siteConfig } = await useClientConfig();
 
 const backgroundStyle = ref<Record<string, string>>({
-  backgroundImage: `url('${eventQRCodeUrl}')`,
+  backgroundImage: `url('${apiImageUrl}${eventStore.eventQRCodeUrl}')`,
   backgroundSize: 'cover',
   backgroundPosition: 'center center',
   backgroundRepeat: 'no-repeat',
@@ -16,8 +23,32 @@ const backgroundStyle = ref<Record<string, string>>({
 });
 </script>
 <template>
-  <div :style="backgroundStyle" class="h-[1000px] w-[1000px] py-2">
-    <h2>Hello World</h2>
+  <div
+    :style="backgroundStyle"
+    class="flex h-[900px] w-[900px] flex-col justify-between p-4"
+  >
+    <div class="mx-2 flex justify-between">
+      <NuxtImg
+        :src="
+          color === 'black'
+            ? siteConfig.logoPrimarySmall
+            : siteConfig.logoSecondarySmall
+        "
+        width="537"
+        height="185"
+        format="webp"
+        class="block h-auto w-[220px] max-w-full"
+        alt="Logotipo"
+      />
+
+      <div
+        class="flex flex-col px-3"
+        :class="color === 'black' ? 'text-grey-800' : 'text-white'"
+      >
+        <p class="font-script text-lg">{{ eventStore.eventTypeName }} de</p>
+        <p class="font-script text-5xl">{{ eventStore.eventName }}</p>
+      </div>
+    </div>
 
     <!-- QR Code -->
     <div
@@ -29,7 +60,11 @@ const backgroundStyle = ref<Record<string, string>>({
         width="180"
         height="180"
       />
-      <small class="text-grey-200">Indicador de mesa</small>
+      <small
+        class="text-lg"
+        :class="indicatorColor === 'black' ? 'text-grey-800' : 'text-white'"
+        >Indicador de mesa</small
+      >
     </div>
   </div>
 </template>

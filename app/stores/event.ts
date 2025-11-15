@@ -6,6 +6,7 @@ export interface SelectedEvent {
   slug?: string | undefined;
   icon?: string | undefined;
   eventTypeId?: number | undefined;
+  eventTypeName?: string | undefined;
   initials?: string | undefined;
   qrCodeImage_Url?: string;
 }
@@ -16,6 +17,7 @@ const COOKIE_SLUG = 'current_event_slug';
 const COOKIE_ICON = 'current_event_icon';
 const COOKIE_INITIALS = 'current_event_initials';
 const COOKIE_QR_CODE_URL = 'current_event_qrcode_url';
+const COOKIE_TYPE = 'current_event_type';
 
 export const useEventStore = defineStore('event', () => {
   const selected = ref<SelectedEvent | null>(null);
@@ -33,6 +35,10 @@ export const useEventStore = defineStore('event', () => {
 
   const eventQRCodeUrl = computed<string | undefined | null>(
     () => selected.value?.qrCodeImage_Url,
+  );
+
+  const eventTypeName = computed<string | undefined | null>(
+    () => selected.value?.eventTypeName,
   );
 
   const persist = (ev: SelectedEvent | null) => {
@@ -75,6 +81,12 @@ export const useEventStore = defineStore('event', () => {
       sameSite: 'lax',
     });
 
+    const eventTypeCookie = useCookie<string | null>(COOKIE_TYPE, {
+      expires: expirationDate,
+      secure: true,
+      sameSite: 'lax',
+    });
+
     if (!ev) {
       idCookie.value = null;
       nameCookie.value = null;
@@ -82,6 +94,7 @@ export const useEventStore = defineStore('event', () => {
       iconCookie.value = null;
       initialsCookie.value = null;
       qrCodeCookie.value = null;
+      eventTypeCookie.value = null;
       return;
     }
 
@@ -91,6 +104,7 @@ export const useEventStore = defineStore('event', () => {
     iconCookie.value = ev.icon ?? null;
     initialsCookie.value = ev.initials ?? null;
     qrCodeCookie.value = ev.qrCodeImage_Url ?? '';
+    eventTypeCookie.value = ev.eventTypeName ?? '';
   };
 
   // API pública
@@ -103,6 +117,7 @@ export const useEventStore = defineStore('event', () => {
       icon: ev.icon ?? undefined,
       initials: ev.initials,
       qrCodeImage_Url: ev.qrCodeImage_Url,
+      eventTypeName: ev.eventTypeName,
     };
     persist(selected.value);
   };
@@ -114,6 +129,7 @@ export const useEventStore = defineStore('event', () => {
     icon?: string | null,
     initials?: string | null,
     qrCodeImage_Url?: string | null,
+    eventTypeName?: string | null,
   ) => {
     selected.value = {
       id,
@@ -122,6 +138,7 @@ export const useEventStore = defineStore('event', () => {
       icon: icon ?? undefined,
       initials: initials ?? undefined,
       qrCodeImage_Url: qrCodeImage_Url ?? '',
+      eventTypeName: eventTypeName ?? '',
     };
     persist(selected.value);
   };
@@ -138,6 +155,7 @@ export const useEventStore = defineStore('event', () => {
     const icon = useCookie<string | null>(COOKIE_ICON);
     const initials = useCookie<string | null>(COOKIE_INITIALS);
     const qrCodeImageUrl = useCookie<string | null>(COOKIE_QR_CODE_URL);
+    const eventTypeName = useCookie<string | null>(COOKIE_TYPE);
 
     if (id.value) {
       selected.value = {
@@ -147,6 +165,7 @@ export const useEventStore = defineStore('event', () => {
         icon: icon.value ?? undefined,
         initials: initials.value ?? undefined,
         qrCodeImage_Url: qrCodeImageUrl.value ?? undefined,
+        eventTypeName: eventTypeName.value ?? undefined,
       };
     }
   };
@@ -172,6 +191,7 @@ export const useEventStore = defineStore('event', () => {
     eventSlug,
     eventInitials,
     eventQRCodeUrl,
+    eventTypeName,
     selectEvent,
     selectEventById,
     clearSelectedEvent,
