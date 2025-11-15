@@ -19,7 +19,7 @@ const { isAdministrator, isSuperAdministrator } = useAuthStore();
 const { guests, pagination, isRefreshing, isError, refreshGuests } =
   await useGuestsList(queryParameters);
 
-const { refreshDesks } = await useDesksList();
+const { refreshDesks } = await useDeskOptions();
 const { categories, refreshCategories } = await useGuestCategories();
 
 const nuxtApp = useNuxtApp();

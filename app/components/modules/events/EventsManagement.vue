@@ -75,8 +75,11 @@ const onRemoveSuccess = async () => {
   refreshEvents({ force: true });
 };
 
+const eventStore = useEventStore();
+
 onMounted(() => {
-  refreshEvents();
+  eventStore.clearSelectedEvent();
+  refreshEvents({ force: true });
 });
 </script>
 <template>

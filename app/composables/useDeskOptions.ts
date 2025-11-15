@@ -5,9 +5,10 @@ export const useDeskOptions = async () => {
   const nuxtApp = useNuxtApp();
   const eventStore = useEventStore();
   const eventId = eventStore.ensureSelected();
+  const key = 'get-desk-options';
 
   const { data, refresh, status } = await useAsyncData(
-    'get-desk-options',
+    key,
     () => getDeskService(nuxtApp.$api).getDeskOptions(eventId),
     {
       transform(input) {
@@ -31,9 +32,16 @@ export const useDeskOptions = async () => {
     }
   });
 
+  const refreshDesks = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key);
+    }
+    await refresh();
+  };
+
   return {
     desks,
     isRefreshing: status.value === 'pending',
-    refreshDesk: refresh,
+    refreshDesks,
   };
 };

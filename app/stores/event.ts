@@ -90,11 +90,12 @@ export const useEventStore = defineStore('event', () => {
     slugCookie.value = ev.slug ?? null;
     iconCookie.value = ev.icon ?? null;
     initialsCookie.value = ev.initials ?? null;
-    qrCodeCookie.value = ev.qrCodeImage_Url ?? null;
+    qrCodeCookie.value = ev.qrCodeImage_Url ?? '';
   };
 
   // API pública
   const selectEvent = (ev: SelectedEvent) => {
+    selected.value = null;
     selected.value = {
       id: ev.id,
       name: ev.name,
@@ -120,7 +121,7 @@ export const useEventStore = defineStore('event', () => {
       slug: slug ?? undefined,
       icon: icon ?? undefined,
       initials: initials ?? undefined,
-      qrCodeImage_Url: qrCodeImage_Url ?? undefined,
+      qrCodeImage_Url: qrCodeImage_Url ?? '',
     };
     persist(selected.value);
   };
