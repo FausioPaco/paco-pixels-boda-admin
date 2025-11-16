@@ -41,6 +41,7 @@ export const useEvent = async (eventId: number | string) => {
   return {
     event,
     isRefreshing: status.value === 'pending',
+    isError: status.value === 'error',
     refreshEvent,
   };
 };

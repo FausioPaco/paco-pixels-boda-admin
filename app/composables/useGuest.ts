@@ -42,6 +42,7 @@ export const useGuest = async (guestId: number) => {
   return {
     guest,
     isRefreshing: status.value === 'pending',
+    isError: status.value === 'error',
     refreshGuest,
   };
 };
