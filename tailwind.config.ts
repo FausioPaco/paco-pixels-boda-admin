@@ -22,6 +22,8 @@ let theme = {
     sans: '',
     serif: '',
     script: '',
+    fresca: '',
+    alex: '',
   },
 };
 
@@ -57,6 +59,8 @@ export default <Partial<Config>>{
         sans: theme.fontFamily?.sans,
         serif: theme.fontFamily?.serif,
         script: theme.fontFamily?.script,
+        fresca: theme.fontFamily?.fresca,
+        alex: theme.fontFamily?.alex,
       },
       keyframes: {
         fadeIn: {

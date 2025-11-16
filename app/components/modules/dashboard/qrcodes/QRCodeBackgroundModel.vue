@@ -10,6 +10,9 @@ withDefaults(defineProps<IQRCodeProps>(), {
   indicatorColor: 'white',
 });
 
+const el = ref<HTMLElement | null>(null);
+defineExpose({ el });
+
 const eventStore = useEventStore();
 const { apiImageUrl } = useRuntimeConfig().public;
 const { siteConfig } = await useClientConfig();
@@ -21,14 +24,20 @@ const backgroundStyle = ref<Record<string, string>>({
   backgroundRepeat: 'no-repeat',
   color: 'white',
 });
+
+const tokens = eventStore.eventName.split(' ');
+
+const firstName = computed(() => tokens[0]);
+const secondName = computed(() => tokens[tokens.length - 1]);
 </script>
 <template>
   <div
+    ref="el"
     :style="backgroundStyle"
     class="flex h-[900px] w-[900px] flex-col justify-between p-4"
   >
     <div class="mx-2 flex justify-between">
-      <NuxtImg
+      <img
         :src="
           color === 'black'
             ? siteConfig.logoPrimarySmall
@@ -46,7 +55,10 @@ const backgroundStyle = ref<Record<string, string>>({
         :class="color === 'black' ? 'text-grey-800' : 'text-white'"
       >
         <p class="font-script text-lg">{{ eventStore.eventTypeName }} de</p>
-        <p class="font-script text-5xl">{{ eventStore.eventName }}</p>
+        <p class="font-script text-5xl">
+          {{ firstName }} <span class="font-fresca text-3xl">&</span>
+          {{ secondName }}
+        </p>
       </div>
     </div>
 
@@ -57,11 +69,11 @@ const backgroundStyle = ref<Record<string, string>>({
       <Qrcode
         :value="`${guest.name} - Mesa: ${guest.deskName}`"
         variant="pixelated"
-        width="180"
-        height="180"
+        width="200"
+        height="200"
       />
       <small
-        class="text-lg"
+        class="font-fresca text-xl tracking-wider"
         :class="indicatorColor === 'black' ? 'text-grey-800' : 'text-white'"
         >Indicador de mesa</small
       >

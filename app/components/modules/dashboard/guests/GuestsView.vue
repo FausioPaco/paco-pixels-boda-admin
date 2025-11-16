@@ -57,7 +57,12 @@ watch(
 
 const exportInvitationAsImage = async () => {
   try {
+    if (!import.meta.client) return;
+
     isExporting.value = true;
+    showForExport.value = true;
+
+    await nextTick();
 
     const el = qrCodeRef.value?.el;
 
@@ -281,7 +286,7 @@ onMounted(() => {
     </div>
 
     <!-- Example Invitation -->
-    <component :is="InvitationComponent" ref="qrCodeRef" :guest="guest" />
+    <!-- <component :is="InvitationComponent" ref="qrCodeRef" :guest="guest" /> -->
 
     <!-- Modals -->
     <LazyGuestsFormModal
@@ -305,10 +310,10 @@ onMounted(() => {
     />
 
     <!-- Invitation File -->
-    <!-- <div
+    <div
       class="pointer-events-none fixed left-[-9999px] top-[-9999px] opacity-0"
     >
       <component :is="InvitationComponent" ref="qrCodeRef" :guest="guest" />
-    </div> -->
+    </div>
   </BaseCard>
 </template>

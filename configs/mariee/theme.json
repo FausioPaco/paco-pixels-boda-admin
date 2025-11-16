@@ -82,6 +82,8 @@
   "fontFamily": {
     "sans": "'Plus Jakarta Sans', sans-serif",
     "serif": "'Bitter', serif",
-    "script": "'Dancing Script', cursive"
+    "script": "'Dancing Script', cursive",
+    "fresca": "'Fresca', sans-serif",
+    "alex": "'Alex Brush', cursive"
   }
 }
