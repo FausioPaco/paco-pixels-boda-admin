@@ -36,7 +36,7 @@ watch(
   (val) => {
     // se não houver preview local, usamos o valor vindo da store
     if (!previewUrl.value) {
-      imageUrl.value = val ?? null;
+      imageUrl.value = `${apiImageUrl}${val}`;
     }
   },
 );
@@ -123,7 +123,7 @@ const uploadImage = async () => {
     if (eventStore.selected) {
       eventStore.selectEvent({
         ...eventStore.selected,
-        qrCodeImage_Url: url,
+        qrCodeImage_Url: result.url,
       });
     }
 

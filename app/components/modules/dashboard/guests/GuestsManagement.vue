@@ -4,12 +4,28 @@ import GuestsQRCode from './GuestsQRCode.vue';
 type GuestTab = 'LIST' | 'QRCODE';
 
 const activeTab = ref<GuestTab>('LIST');
+const eventStore = useEventStore();
 </script>
 <template>
   <BaseCard
     title="Gestão de Convidados"
     description="Faça a gestão dos convidados deste evento aqui"
   >
+    <template #right-content>
+      <BaseButton
+        btn-type="outline-primary"
+        btn-size="sm"
+        :icon="eventStore.eventModeView ? 'hide' : 'view'"
+        @click="eventStore.toggleEventMode()"
+      >
+        {{
+          eventStore.eventModeView
+            ? 'Desactivar modo evento'
+            : 'Ver em modo evento'
+        }}
+      </BaseButton>
+    </template>
+
     <!-- Tabs -->
     <BaseTab>
       <BaseTabItem

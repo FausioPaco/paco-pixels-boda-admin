@@ -19,7 +19,8 @@ const checkActiveClass = (link: string) => {
 </script>
 <template>
   <aside
-    class="bg-primary-50/20 min-h-screen w-[80px] overflow-y-auto shadow-md drop-shadow-sm transition-all duration-300 ease-linear lg:min-w-60"
+    class="bg-primary-50/20 min-h-screen w-[80px] animate-fadeIn overflow-y-auto shadow-md drop-shadow-sm transition-all duration-300 ease-linear lg:min-w-60"
+    :class="eventStore.eventModeView ? 'hidden' : undefined"
   >
     <!-- Logo -->
     <div class="mb-4 flex items-center justify-center px-3 py-6">

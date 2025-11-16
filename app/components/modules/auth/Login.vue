@@ -77,6 +77,7 @@ const onSubmit = handleSubmit(async (values) => {
         id="weedingMessage"
         autocomplete="on"
         class="my-4"
+        novalidate
         @submit.prevent="onSubmit"
       >
         <BaseInput

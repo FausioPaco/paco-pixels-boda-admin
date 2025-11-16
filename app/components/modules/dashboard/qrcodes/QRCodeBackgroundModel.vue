@@ -14,8 +14,8 @@ const el = ref<HTMLElement | null>(null);
 defineExpose({ el });
 
 const eventStore = useEventStore();
-const { apiImageUrl } = useRuntimeConfig().public;
 const { siteConfig } = await useClientConfig();
+const { apiImageUrl } = useRuntimeConfig().public;
 
 const backgroundStyle = ref<Record<string, string>>({
   backgroundImage: `url('${apiImageUrl}${eventStore.eventQRCodeUrl}')`,
@@ -67,7 +67,7 @@ const secondName = computed(() => tokens[tokens.length - 1]);
       class="mx-auto my-6 flex w-full flex-col items-center justify-center gap-2"
     >
       <Qrcode
-        :value="`${guest.name} - Mesa: ${guest.deskName}`"
+        :value="`${eventStore.eventInitials}-${guest.localId} - ${guest.name} - Mesa: ${guest.deskName}`"
         variant="pixelated"
         width="200"
         height="200"

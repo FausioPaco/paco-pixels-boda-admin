@@ -35,7 +35,15 @@ definePageMeta({
   <div>
     <NuxtLayout name="entry">
       <section class="flex flex-col items-center justify-center">
-        <Login />
+        <ClientOnly>
+          <Login />
+          <template #fallback>
+            <BaseLoading
+              message="Por favor, espere um momento..."
+              orientation="vertical"
+            />
+          </template>
+        </ClientOnly>
       </section>
     </NuxtLayout>
   </div>

@@ -21,6 +21,7 @@ const COOKIE_TYPE = 'current_event_type';
 
 export const useEventStore = defineStore('event', () => {
   const selected = ref<SelectedEvent | null>(null);
+  const eventModeView = ref<boolean>(false);
 
   // getters
   const hasEvent = computed(() => !!selected.value?.id);
@@ -183,7 +184,12 @@ export const useEventStore = defineStore('event', () => {
     return selected.value.id;
   };
 
+  const toggleEventMode = () => {
+    eventModeView.value = !eventModeView.value;
+  };
+
   return {
+    eventModeView,
     selected,
     hasEvent,
     eventId,
@@ -197,5 +203,6 @@ export const useEventStore = defineStore('event', () => {
     clearSelectedEvent,
     loadFromCookies,
     ensureSelected,
+    toggleEventMode,
   };
 });

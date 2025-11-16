@@ -153,6 +153,8 @@ const exportInvitationAsPdf = async () => {
 // };
 
 const startExport = (exportOptions: ExportQROptions) => {
+  textColorExport.value = exportOptions.color;
+
   if (exportOptions.format === 'png') {
     exportInvitationAsImage();
   } else if (exportOptions.format === 'pdf') {
@@ -202,10 +204,12 @@ onMounted(() => {
               Copiar Link
             </BaseButton> -->
             <BaseButton
+              v-if="eventStore.eventQRCodeUrl"
               btn-type="primary"
               btn-size="sm"
               icon="download"
               :disabled="isExporting"
+              class="animate-fadeIn"
               @click="showExportFormatModal = true"
             >
               {{ isExporting ? 'A gerar QR Code...' : 'Gerar QR Code' }}
