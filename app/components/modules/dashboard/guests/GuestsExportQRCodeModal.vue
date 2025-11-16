@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { ExportTextColor } from '~~/shared/types/guest';
+
 interface IGuestInvitationModalProps {
   show?: boolean;
 }
@@ -9,19 +11,29 @@ withDefaults(defineProps<IGuestInvitationModalProps>(), {
 
 const emit = defineEmits<{
   (e: 'closeModal'): void;
-  (e: 'export', format: ExportInvitationFormat): void;
+  (e: 'export', format: ExportQROptions): void;
 }>();
 
-const formatInput = ref<ExportInvitationFormat>('png');
+const formatInput = ref<ExportFormat>('png');
+const colorInput = ref<ExportTextColor>('black');
+
 const isSubmiting = ref<boolean>(false);
 const formatList = ref<SelectOption[]>([
   { id: 'pdf', name: 'Formato PDF' },
   { id: 'png', name: 'Formato de Imagem (PNG)' },
 ]);
 
+const textColorList = ref<SelectOption[]>([
+  { id: 'black', name: 'Preto' },
+  { id: 'white', name: 'Branco' },
+]);
+
 const onSubmit = () => {
   isSubmiting.value = true;
-  emit('export', formatInput.value);
+  emit('export', {
+    color: colorInput.value,
+    format: formatInput.value,
+  });
 
   setTimeout(() => {
     isSubmiting.value = false;
@@ -41,10 +53,18 @@ const onSubmit = () => {
         </p>
 
         <BaseSelect
-          id="formatGuestExport"
+          id="formatQRCodeExport"
           v-model="formatInput"
           label="Formato: "
           :options="formatList"
+          disable-empty
+        />
+
+        <BaseSelect
+          id="formatQRCodeExport"
+          v-model="colorInput"
+          label="Cor do texto: "
+          :options="textColorList"
           disable-empty
         />
 

@@ -15,6 +15,7 @@ const toast = useToast();
 const showFormModal = ref<boolean>(false);
 const showRemoveModal = ref<boolean>(false);
 const showExportFormatModal = ref<boolean>(false);
+const eventStore = useEventStore();
 
 const { refreshGuest } = await useGuest(props.guest.id);
 const desk = ref<Desk | null | undefined>(undefined);
@@ -22,6 +23,7 @@ const isLoadingDesk = ref(false);
 const showForExport = ref(false);
 const qrCodeRef = ref();
 const isExporting = ref(false);
+const textColorExport = ref<ExportTextColor>('black');
 
 const deskService = getDeskService(useNuxtApp().$api);
 
@@ -128,7 +130,7 @@ const exportInvitationAsPdf = async () => {
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
     const guestId = props.guest?.localId ?? 'convidado';
-    pdf.save(`QRCode_${siteConfig.initials}-${guestId}.pdf`);
+    pdf.save(`QRCode_${eventStore.eventInitials}-${guestId}.pdf`);
   } catch (err) {
     console.error(err);
     toast.error('Ocorreu um erro ao exportar o QRCode em PDF.');
@@ -150,10 +152,10 @@ const exportInvitationAsPdf = async () => {
 //   }
 // };
 
-const startExport = (format: ExportInvitationFormat) => {
-  if (format === 'png') {
+const startExport = (exportOptions: ExportQROptions) => {
+  if (exportOptions.format === 'png') {
     exportInvitationAsImage();
-  } else if (format === 'pdf') {
+  } else if (exportOptions.format === 'pdf') {
     exportInvitationAsPdf();
   }
 
@@ -303,7 +305,7 @@ onMounted(() => {
       @success="$router.push('/admin/convidados')"
     />
 
-    <LazyGuestsExportInvitationModal
+    <LazyGuestsExportQRCodeModal
       :show="showExportFormatModal"
       @close-modal="showExportFormatModal = false"
       @export="startExport"
@@ -313,7 +315,12 @@ onMounted(() => {
     <div
       class="pointer-events-none fixed left-[-9999px] top-[-9999px] opacity-0"
     >
-      <component :is="InvitationComponent" ref="qrCodeRef" :guest="guest" />
+      <component
+        :is="InvitationComponent"
+        ref="qrCodeRef"
+        :guest="guest"
+        :color="textColorExport"
+      />
     </div>
   </BaseCard>
 </template>

@@ -49,4 +49,10 @@ export interface ConfirmPresenceInput {
   additional_Comments?: string;
 }
 
-export type ExportInvitationFormat = 'png' | 'pdf';
+export type ExportFormat = 'png' | 'pdf';
+export type ExportTextColor = 'black' | 'white';
+
+export type ExportQROptions = {
+  format: ExportFormat;
+  color: ExportTextColor;
+};
