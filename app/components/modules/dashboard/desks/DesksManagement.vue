@@ -4,12 +4,28 @@ import DesksMap from './DesksMap.vue';
 type DeskTab = 'LIST' | 'MAP';
 
 const activeTab = ref<DeskTab>('LIST');
+const eventStore = useEventStore();
 </script>
 <template>
   <BaseCard
     title="Gestão de Mesas"
     description="Faça a gestão das mesas deste evento aqui"
   >
+    <template #right-content>
+      <BaseButton
+        btn-type="outline-primary"
+        btn-size="sm"
+        :icon="eventStore.eventModeView ? 'hide' : 'view'"
+        @click="eventStore.toggleEventMode()"
+      >
+        {{
+          eventStore.eventModeView
+            ? 'Desactivar modo evento'
+            : 'Ver em modo evento'
+        }}
+      </BaseButton>
+    </template>
+
     <!-- Tabs -->
     <BaseTab>
       <BaseTabItem
