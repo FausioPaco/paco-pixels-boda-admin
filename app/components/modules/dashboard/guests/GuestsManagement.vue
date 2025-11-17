@@ -10,6 +10,7 @@ const eventStore = useEventStore();
 
 const nuxtApp = useNuxtApp();
 const eventService = getEventService(nuxtApp.$api);
+const { clientCode } = useRuntimeConfig().public;
 
 const textColorExport = ref<ExportTextColor>('black');
 
@@ -30,6 +31,7 @@ const exportQRCodes = async () => {
     const blob = await eventService.exportQRCards(
       eventStore.eventId!,
       textColorExport.value,
+      clientCode,
     );
 
     const url = window.URL.createObjectURL(blob);

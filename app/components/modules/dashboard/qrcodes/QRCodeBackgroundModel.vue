@@ -55,10 +55,14 @@ const secondName = computed(() => tokens[tokens.length - 1]);
         :class="color === 'black' ? 'text-grey-800' : 'text-white'"
       >
         <p class="font-script text-lg">{{ eventStore.eventTypeName }} de</p>
-        <p class="font-script text-5xl">
+        <p
+          v-if="eventStore.eventTypeName === 'Casamento'"
+          class="font-script text-5xl"
+        >
           {{ firstName }} <span class="font-fresca text-3xl">&</span>
           {{ secondName }}
         </p>
+        <p v-else class="font-script text-5xl">{{ eventStore.eventName }}</p>
       </div>
     </div>
 
