@@ -1,10 +1,57 @@
 <script setup lang="ts">
+import { getEventService } from '~/services/eventService';
 import GuestList from './GuestsList.vue';
 import GuestsQRCode from './GuestsQRCode.vue';
+import { useToast } from 'vue-toastification';
 type GuestTab = 'LIST' | 'QRCODE';
 
 const activeTab = ref<GuestTab>('LIST');
 const eventStore = useEventStore();
+
+const nuxtApp = useNuxtApp();
+const eventService = getEventService(nuxtApp.$api);
+
+const textColorExport = ref<ExportTextColor>('black');
+
+const showExportFormatModal = ref<boolean>(false);
+const isExporting = ref<boolean>(false);
+const toast = useToast();
+
+const startExport = (exportOptions: ExportQROptions) => {
+  textColorExport.value = exportOptions.color;
+
+  exportQRCodes();
+  showExportFormatModal.value = false;
+};
+
+const exportQRCodes = async () => {
+  try {
+    isExporting.value = true;
+    const blob = await eventService.exportQRCards(
+      eventStore.eventId!,
+      textColorExport.value,
+    );
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+
+    const fileName = `QRCODES_EVENTO_${eventStore.eventInitials}.zip`;
+    link.setAttribute('download', fileName);
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.URL.revokeObjectURL(url);
+
+    isExporting.value = false;
+  } catch (err) {
+    console.error('Erro ao exportar os QRCodes dos convidados:', err);
+    toast.error('Ocorreu um erro ao exportar os QR Codes');
+    isExporting.value = false;
+  }
+};
 </script>
 <template>
   <BaseCard
@@ -24,6 +71,16 @@ const eventStore = useEventStore();
             : 'Ver em modo evento'
         }}
       </BaseButton>
+      <BaseButton
+        v-if="eventStore.eventQRCodeUrl"
+        btn-type="outline-primary"
+        btn-size="md"
+        icon="download"
+        :disabled="isExporting"
+        class="animate-fadeIn"
+        @click="showExportFormatModal = true"
+        >{{ isExporting ? 'A exportar...' : 'Exportar' }}</BaseButton
+      >
     </template>
 
     <!-- Tabs -->
@@ -57,5 +114,11 @@ const eventStore = useEventStore();
         :is="activeTab === 'LIST' ? GuestList : GuestsQRCode"
       ></component>
     </transition>
+
+    <LazyGuestsExportAllQRCodesModal
+      :show="showExportFormatModal"
+      @close-modal="showExportFormatModal = false"
+      @export="startExport"
+    />
   </BaseCard>
 </template>

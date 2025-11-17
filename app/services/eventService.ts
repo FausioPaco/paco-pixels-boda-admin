@@ -58,4 +58,8 @@ export const getEventService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
       },
     );
   },
+
+  async exportQRCards(eventId: number, color: ExportTextColor): Promise<Blob> {
+    return $fetch<Blob>(`${RESOURCE}/ExportQrCards/${eventId}?color=${color}`);
+  },
 });
