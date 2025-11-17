@@ -59,28 +59,29 @@ const exportQRCodes = async () => {
     description="Faça a gestão dos convidados deste evento aqui"
   >
     <template #right-content>
-      <BaseButton
-        btn-type="outline-primary"
-        btn-size="sm"
-        :icon="eventStore.eventModeView ? 'hide' : 'view'"
-        @click="eventStore.toggleEventMode()"
-      >
-        {{
-          eventStore.eventModeView
-            ? 'Desactivar modo evento'
-            : 'Ver em modo evento'
-        }}
-      </BaseButton>
-      <BaseButton
-        v-if="eventStore.eventQRCodeUrl"
-        btn-type="outline-primary"
-        btn-size="md"
-        icon="download"
-        :disabled="isExporting"
-        class="animate-fadeIn"
-        @click="showExportFormatModal = true"
-        >{{ isExporting ? 'A exportar...' : 'Exportar' }}</BaseButton
-      >
+      <div class="flex gap-2">
+        <BaseButton
+          btn-type="outline-primary"
+          btn-size="sm"
+          :icon="eventStore.eventModeView ? 'hide' : 'view'"
+          @click="eventStore.toggleEventMode()"
+        >
+          {{
+            eventStore.eventModeView
+              ? 'Desactivar modo evento'
+              : 'Ver em modo evento'
+          }}
+        </BaseButton>
+        <BaseButton
+          v-if="eventStore.eventQRCodeUrl && !eventStore.eventModeView"
+          btn-size="md"
+          icon="download"
+          :disabled="isExporting"
+          class="animate-fadeIn"
+          @click="showExportFormatModal = true"
+          >{{ isExporting ? 'A exportar...' : 'Exportar QRCodes' }}</BaseButton
+        >
+      </div>
     </template>
 
     <!-- Tabs -->

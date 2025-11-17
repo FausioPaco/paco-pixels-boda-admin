@@ -42,14 +42,14 @@ const onSubmit = () => {
 </script>
 <template>
   <BaseModal
-    title="Baixar Convite"
+    title="Exportar QRCode"
     :show="show"
     @close-modal="$emit('closeModal')"
   >
     <div class="my-2 animate-fadeIn">
       <form @submit.prevent="onSubmit">
         <p class="text-grey-400 text-left text-base md:text-lg">
-          Selecione o formato que pretende baixar o convite
+          Selecione o formato que pretende baixar o QRCode
         </p>
 
         <BaseSelect
