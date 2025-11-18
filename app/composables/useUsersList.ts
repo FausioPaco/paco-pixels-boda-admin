@@ -7,8 +7,11 @@ export const useUsersList = async (params?: UserParameters) => {
     () => null,
   );
 
+  const eventStore = useEventStore();
+  const eventId = eventStore.ensureSelected();
+
   const queryParameters = params ?? {
-    eventId: Number(useRuntimeConfig().public.EVENT_ID),
+    eventId: eventId,
     searchQuery: '',
     startDate: '',
     endDate: '',

@@ -55,6 +55,10 @@ const onFormSuccess = async () => {
 
   refreshEvent({ force: true });
 };
+
+onMounted(() => {
+  refreshEvent({ force: true });
+});
 </script>
 
 <template>

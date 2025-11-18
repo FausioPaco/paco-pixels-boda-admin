@@ -40,6 +40,7 @@ const onSubmit = handleSubmit(async (values) => {
   const credentials: UserLoginInput = {
     email: values.email,
     password: values.password,
+    context: 'partner-admin',
   };
 
   authService

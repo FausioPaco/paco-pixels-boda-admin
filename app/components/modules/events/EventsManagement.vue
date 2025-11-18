@@ -175,8 +175,9 @@ onMounted(() => {
           icon="icon-event-wedding"
           title="Ainda não criou evento"
           description="Crie o seu primeiro evento para começar a organizar os lugares dos seus convidados de forma mais eficiente."
-          button-label="Criar evento"
+          button-label="Criar primero evento"
           button-icon="add"
+          show-button
           @action="onCreateEvent"
         />
 
