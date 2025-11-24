@@ -4,8 +4,6 @@ import { useForm } from 'vee-validate';
 import { useToast } from 'vue-toastification';
 import * as yup from 'yup';
 import { getUserService } from '~/services/userService';
-import type { ServerError } from '~/types/api/error';
-import type { User, UserInput } from '~/types/api/user';
 
 interface IUsersForm {
   show?: boolean;
@@ -15,7 +13,7 @@ interface IUsersForm {
 const emit = defineEmits(['closeModal', 'success']);
 
 const { EVENT_ID } = useRuntimeConfig().public;
-const { roles } = await useRolesList();
+const { roles, refreshRoles } = await useRolesList();
 
 const props = withDefaults(defineProps<IUsersForm>(), {
   show: false,
@@ -150,6 +148,10 @@ const closeModal = () => {
   resetForm();
   emit('closeModal');
 };
+
+onMounted(() => {
+  refreshRoles({ force: true });
+});
 </script>
 <template>
   <BaseModal

@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { useToast } from 'vue-toastification';
 import { getUserService } from '~/services/userService';
-import type { ServerError } from '~/types/api/error';
 import { toTypedSchema } from '@vee-validate/yup';
 import { useForm } from 'vee-validate';
 import { object, string } from 'yup';
-import type { PasswordInput, User } from '~/types/api/user';
 
 interface IUsersPasswordForm {
   show?: boolean;

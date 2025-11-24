@@ -5,9 +5,9 @@ export default defineNuxtRouteMiddleware(() => {
   const { user } = useAuthStore();
 
   if (
-    !isAdministrator(user?.roleName) ||
+    !isAdministrator(user?.roleName) &&
     !isSuperAdministrator(user?.roleName)
   ) {
-    return navigateTo('/');
+    return navigateTo('/admin');
   }
 });

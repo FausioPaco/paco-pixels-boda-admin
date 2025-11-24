@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { useToast } from 'vue-toastification';
 import { getUserService } from '~/services/userService';
-import type { ServerError } from '~/types/api/error';
-import type { User } from '~/types/api/user';
 
 interface IUserRemoveProps {
   show?: boolean;
