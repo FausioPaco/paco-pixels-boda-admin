@@ -25,7 +25,7 @@ export const ADMIN_CONFIGURATION_LINKS: AdminLink[] = [
   {
     label: 'Utilizadores',
     link: '/admin/utilizadores',
-    icon: 'user',
+    icon: 'user-settings',
     restricted: false,
   },
 ];

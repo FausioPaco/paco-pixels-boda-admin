@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { ADMIN_MAIN_LINKS } from '#shared/constants/links';
+import {
+  ADMIN_CONFIGURATION_LINKS,
+  ADMIN_MAIN_LINKS,
+} from '#shared/constants/links';
 
 const route = useRoute();
 const { siteConfig } = await useClientConfig();
 const eventStore = useEventStore();
+const { isAdministrator, isSuperAdministrator } = useAuthStore();
 
 const checkActiveClass = (link: string) => {
   if (link === '/admin') {
@@ -73,6 +77,22 @@ const checkActiveClass = (link: string) => {
       <div class="flex flex-col gap-y-1">
         <TheAdminSideNavItem
           v-for="item in ADMIN_MAIN_LINKS"
+          :key="item.label"
+          :item="item"
+          :active="checkActiveClass(item.link)"
+        />
+      </div>
+    </ul>
+
+    <!-- Configuração -->
+    <ul v-if="isAdministrator || isSuperAdministrator" class="pl-0 lg:mt-4">
+      <small
+        class="text-primary-700/70 mb-4 hidden text-xs font-bold lg:block lg:pl-2"
+        >Configuração</small
+      >
+      <div class="flex flex-col gap-y-1">
+        <TheAdminSideNavItem
+          v-for="item in ADMIN_CONFIGURATION_LINKS"
           :key="item.label"
           :item="item"
           :active="checkActiveClass(item.link)"

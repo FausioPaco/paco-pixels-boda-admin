@@ -20,8 +20,20 @@ export const useUsersList = async (params?: UserParameters) => {
   };
 
   const nuxtApp = useNuxtApp();
+  const key = computed(() =>
+    [
+      'users-list',
+      queryParameters.eventId,
+      queryParameters.searchQuery,
+      queryParameters.startDate,
+      queryParameters.endDate,
+      queryParameters.pageNumber,
+      queryParameters.pageSize,
+    ].join('|'),
+  );
 
   const { data, refresh, status } = await useLazyAsyncData(
+    key,
     () => getUserService(nuxtApp.$api).getAllUsers(queryParameters),
     {
       transform(input) {
@@ -48,6 +60,13 @@ export const useUsersList = async (params?: UserParameters) => {
     }
   });
 
+  const refreshUsers = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key.value);
+    }
+    await refresh();
+  };
+
   return {
     users,
     pagination,
@@ -55,6 +74,6 @@ export const useUsersList = async (params?: UserParameters) => {
     isRefreshing: status.value === 'pending',
     isError: status.value === 'error',
     isSuccess: status.value === 'success',
-    refreshUsers: refresh,
+    refreshUsers,
   };
 };
