@@ -61,7 +61,7 @@ const exportQRCodes = async () => {
     description="Faça a gestão dos convidados deste evento aqui"
   >
     <template #right-content>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         <BaseButton
           btn-type="outline-primary"
           btn-size="sm"
@@ -76,7 +76,7 @@ const exportQRCodes = async () => {
         </BaseButton>
         <BaseButton
           v-if="eventStore.eventQRCodeUrl && !eventStore.eventModeView"
-          btn-size="md"
+          btn-size="sm"
           icon="download"
           :disabled="isExporting"
           class="animate-fadeIn"

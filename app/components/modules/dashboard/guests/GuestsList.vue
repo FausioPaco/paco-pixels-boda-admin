@@ -285,7 +285,8 @@ onMounted(() => {
                 btn-type="primary"
                 @click.prevent="confirmArrival(guest)"
               >
-                Confirmar chegada
+                <span class="hidden md:block">Confirmar chegada</span>
+                <span class="block md:hidden">Chegou</span>
               </BaseButton>
 
               <BaseButton
@@ -294,7 +295,8 @@ onMounted(() => {
                 btn-size="sm"
                 @click.prevent="cancelArrival(guest)"
               >
-                Cancelar chegada
+                <span class="hidden md:block">Cancelar chegada</span>
+                <span class="block md:hidden">Não chegou</span>
               </BaseButton>
 
               <BaseButtonLink
@@ -302,7 +304,8 @@ onMounted(() => {
                 btn-type="outline-primary"
                 btn-size="sm"
               >
-                Ver detalhes
+                <span class="hidden md:block">Ver detalhes</span>
+                <span class="block md:hidden">Ver</span>
               </BaseButtonLink>
             </td>
           </tr>

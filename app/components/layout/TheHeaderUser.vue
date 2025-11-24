@@ -17,10 +17,10 @@ const logout = () => {
 };
 </script>
 <template>
-  <div class="relative z-50 mx-2 block">
+  <div class="relative z-50 block">
     <!-- User Name -->
     <div
-      class="text-grey-800 flex cursor-pointer items-center lg:space-x-3"
+      class="text-grey-800 flex cursor-pointer items-center gap-2 lg:gap-3"
       :class="mode === 'normal' ? 'text-grey-500' : 'text-white'"
       @click="showDropdown = !showDropdown"
     >
@@ -43,7 +43,7 @@ const logout = () => {
     <transition name="fade">
       <div
         v-if="showDropdown"
-        class="absolute left-[-5.5rem] top-[2rem] min-w-60 rounded border bg-white p-3 shadow-md"
+        class="absolute left-[20px] top-[2rem] min-w-40 rounded border bg-white p-3 shadow-md md:left-[-5.5rem] md:min-w-60"
         @click="showDropdown = false"
       >
         <ul class="flex flex-col justify-between">

@@ -21,8 +21,7 @@ defineProps<IAdminSideNavProps>();
         <component
           :is="`icon-${item.icon}`"
           :font-controlled="false"
-          width="24"
-          height="24"
+          class="size-[20px] md:size-[24px]"
         />
       </template>
 

@@ -80,7 +80,7 @@ function prevPage() {
 </script>
 
 <template>
-  <nav class="pagination mt-6 flex items-center gap-2">
+  <nav class="pagination mt-6 flex flex-wrap items-start gap-2">
     <button
       class="p-3"
       :disabled="paginationData.currentPage === 1"
@@ -91,11 +91,11 @@ function prevPage() {
         class="size-[16px] fill-inherit"
       />
     </button>
-    <ul class="flex gap-2">
+    <ul class="flex flex-wrap items-center gap-2">
       <li v-for="(page, index) in visiblePages" :key="index">
         <button
           v-if="page !== '...'"
-          class="rounded-md p-3 text-sm text-grey-600 hover:bg-grey-50"
+          class="text-grey-600 hover:bg-grey-50 rounded-md p-3 text-sm"
           :class="{ active: page === paginationData.currentPage }"
           @click="changePage(page as number)"
         >
@@ -123,7 +123,7 @@ function prevPage() {
 }
 
 .pagination button.active {
-  @apply bg-primary-50 font-bold text-primary-700;
+  @apply bg-primary-50 text-primary-700 font-bold;
 }
 
 .pagination button:hover:not(:disabled) {
