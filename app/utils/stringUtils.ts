@@ -100,3 +100,15 @@ export function formatDecimal(originalValue: string): number {
   // Caso contrário, tenta converter normalmente
   return parseFloat(trimmed);
 }
+
+export function generateSlug(str: string): string {
+  if (!str) return '';
+
+  return str
+    .normalize('NFD') // remove acentos
+    .replace(/[\u0300-\u036f]/g, '') // remove marcas de acentuação
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-') // substitui tudo que não é alfanumérico por "-"
+    .replace(/^-+|-+$/g, ''); // remove traços no início/fim
+}

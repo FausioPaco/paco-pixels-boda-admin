@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useToast } from 'vue-toastification';
 import { getDeskService } from '~/services/deskService';
+import { generateSlug } from '~/utils/stringUtils';
 
 interface GuestViewProps {
   guest: Guest;
@@ -82,7 +83,7 @@ const exportInvitationAsImage = async () => {
     // Criar download direto da imagem
     const link = document.createElement('a');
     link.href = image;
-    link.download = `QRCode_${props.guest.localId}.png`;
+    link.download = `${eventStore.eventInitials}-${props.guest.localId}-${generateSlug(props.guest.name)}.png`; // slug  do guest.name aqui
     link.click();
   } catch (err) {
     console.error(err);
@@ -129,8 +130,8 @@ const exportInvitationAsPdf = async () => {
 
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
-    const guestId = props.guest?.localId ?? 'convidado';
-    pdf.save(`QRCode_${eventStore.eventInitials}-${guestId}.pdf`);
+    const fileName = `${eventStore.eventInitials}-${props.guest.localId}-${generateSlug(props.guest.name)}.png`; // slug do guest.name aqui
+    pdf.save(fileName);
   } catch (err) {
     console.error(err);
     toast.error('Ocorreu um erro ao exportar o QRCode em PDF.');
