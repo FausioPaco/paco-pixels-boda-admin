@@ -21,6 +21,15 @@ export const ADMIN_MAIN_LINKS: AdminLink[] = [
   },
 ];
 
+export const ADMIN_CONFIGURATION_LINKS: AdminLink[] = [
+  {
+    label: 'Utilizadores',
+    link: '/admin/utilizadores',
+    icon: 'user',
+    restricted: false,
+  },
+];
+
 // export const ADMIN_EXPERIENCE_LINKS: AdminLink[] = [
 //   {
 //     label: 'Menu',
