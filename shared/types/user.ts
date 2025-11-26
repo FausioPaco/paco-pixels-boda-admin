@@ -5,6 +5,10 @@ export type User = {
   roleId: number;
   roleName: string;
   partnerId?: number;
+  profileImageUrl?: string | null;
+  lastLoginAt?: string | Date | null;
+  lastActivityAt?: string | Date | null;
+  isOnline?: boolean;
   created_At: Date;
 };
 

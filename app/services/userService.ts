@@ -47,4 +47,26 @@ export const getUserService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
       body: newPassword,
     });
   },
+
+  async uploadProfilePhoto(userId: number, file: File): Promise<User> {
+    const formData = new FormData();
+    formData.append('fileUpload', file);
+
+    return $fetch<User>(`${RESOURCE}/UploadProfilePhoto/${userId}`, {
+      method: 'post',
+      body: formData,
+    });
+  },
+
+  async removeProfilePhoto(userId: number): Promise<unknown> {
+    return await $fetch<unknown>(`${RESOURCE}/ProfilePhoto/${userId}`, {
+      method: 'delete',
+    });
+  },
+
+  async heartbeat(): Promise<unknown> {
+    return await $fetch<unknown>(`${RESOURCE}/Heartbeat`, {
+      method: 'post',
+    });
+  },
 });
