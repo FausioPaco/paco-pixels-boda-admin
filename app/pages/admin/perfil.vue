@@ -12,7 +12,7 @@ useHead({
 definePageMeta({
   name: 'Perfil',
   pageName: 'Meu Perfil',
-  middleware: ['auth', 'administrator'],
+  middleware: ['auth'],
 });
 
 const authStore = useAuthStore();

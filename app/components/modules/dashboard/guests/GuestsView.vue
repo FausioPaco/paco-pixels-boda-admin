@@ -259,7 +259,7 @@ onMounted(() => {
         </BaseDescriptionList>
 
         <!-- Main Actions -->
-        <div class="my-4 flex items-center space-x-2">
+        <div class="my-4 flex flex-wrap items-center space-x-2">
           <BaseButton
             type="button"
             size="sm"
