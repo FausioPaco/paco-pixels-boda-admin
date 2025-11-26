@@ -68,7 +68,7 @@ const updatePassword = (user: User) => {
   showPasswordModal.value = true;
 };
 
-const reloadData = () => {
+const reloadUsers = () => {
   userSelected.value = undefined;
   refreshUsers({ force: true });
 };
@@ -87,7 +87,7 @@ onMounted(() => {
       class="relative flex min-h-[450px] w-full flex-col items-center px-4 py-5"
     >
       <div
-        class="flex min-w-full max-w-full flex-col items-stretch justify-stretch md:min-w-[45vw] lg:min-w-[60vw] xl:min-w-[75vw]"
+        class="flex min-w-full max-w-full flex-col items-stretch justify-stretch"
       >
         <!-- Filters & Counter -->
         <div
@@ -235,21 +235,21 @@ onMounted(() => {
         :show="showFormModal"
         :user="userSelected"
         @close-modal="showFormModal = false"
-        @success="reloadData"
+        @success="reloadUsers"
       />
 
       <LazyUsersRemoveModal
         :show="showRemoveModal"
         :user="userSelected"
         @close-modal="showRemoveModal = false"
-        @success="reloadData"
+        @success="reloadUsers"
       />
 
       <LazyUsersResetPasswordModal
         :show="showPasswordModal"
         :user="userSelected"
         @close-modal="showPasswordModal = false"
-        @reload="reloadData()"
+        @reload="reloadUsers"
       />
     </section>
   </BaseCard>
