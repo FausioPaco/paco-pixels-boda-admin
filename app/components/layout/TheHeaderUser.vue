@@ -9,6 +9,7 @@ withDefaults(defineProps<HeaderUserProps>(), {
 
 const showDropdown = ref<boolean>(false);
 const store = useAuthStore();
+const { path } = useRoute();
 
 const router = useRouter();
 const logout = () => {
@@ -46,12 +47,29 @@ const logout = () => {
         class="absolute left-[20px] top-[2rem] min-w-40 rounded border bg-white p-3 shadow-md md:left-[-5.5rem] md:min-w-60"
         @click="showDropdown = false"
       >
-        <ul class="flex flex-col justify-between">
+        <ul class="flex flex-col justify-between divide-y divide-gray-200">
+          <li
+            v-if="path.includes('/admin')"
+            class="hover:bg-primary-100 group cursor-pointer p-2 transition-colors duration-300"
+          >
+            <NuxtLink
+              to="/admin/perfil"
+              class="group-hover:text-primary-500 relative flex items-center space-x-2 text-sm no-underline transition-colors duration-300"
+            >
+              <icon-account
+                :font-controlled="false"
+                class="text-grey-600 group-hover:text-primary-500 h-4 w-4"
+              ></icon-account
+              ><span class="text-grey-600 group-hover:text-primary-500"
+                >Meu Perfil</span
+              >
+            </NuxtLink>
+          </li>
           <li
             class="hover:bg-primary-100 group cursor-pointer p-2 transition-colors duration-300"
             @click.prevent="logout()"
           >
-            <div
+            <button
               class="group-hover:text-primary-500 relative flex items-center space-x-2 text-sm no-underline transition-colors duration-300"
             >
               <icon-logout
@@ -61,7 +79,7 @@ const logout = () => {
               ><span class="text-grey-600 group-hover:text-primary-500"
                 >Sair</span
               >
-            </div>
+            </button>
           </li>
         </ul>
       </div>

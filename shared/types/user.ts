@@ -37,3 +37,9 @@ export type Role = {
   id: number;
   name: string;
 };
+
+export type UploadProfilePhotoResponse = {
+  url: string;
+  user: User;
+  message: string;
+};

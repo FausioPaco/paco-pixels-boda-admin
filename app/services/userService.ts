@@ -48,14 +48,20 @@ export const getUserService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
     });
   },
 
-  async uploadProfilePhoto(userId: number, file: File): Promise<User> {
+  async uploadProfilePhoto(
+    userId: number,
+    file: File,
+  ): Promise<UploadProfilePhotoResponse> {
     const formData = new FormData();
     formData.append('fileUpload', file);
 
-    return $fetch<User>(`${RESOURCE}/UploadProfilePhoto/${userId}`, {
-      method: 'post',
-      body: formData,
-    });
+    return $fetch<UploadProfilePhotoResponse>(
+      `${RESOURCE}/UploadProfilePhoto/${userId}`,
+      {
+        method: 'post',
+        body: formData,
+      },
+    );
   },
 
   async removeProfilePhoto(userId: number): Promise<unknown> {
