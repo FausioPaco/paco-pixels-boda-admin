@@ -4,6 +4,7 @@ export type User = {
   email: string;
   roleId: number;
   roleName: string;
+  eventId?: number;
   partnerId?: number;
   profileImageUrl?: string | null;
   lastLoginAt?: string | Date | null;

@@ -4,6 +4,7 @@ import { object, string } from 'yup';
 import { toTypedSchema } from '@vee-validate/yup';
 import { useAuthStore } from '@/stores/auth';
 import { getAuthService } from '~/services/authService';
+import { getEventService } from '~/services/eventService';
 
 const isSubmiting = ref<boolean>(false);
 const serverErrors = ref<ServerError>({
@@ -12,7 +13,9 @@ const serverErrors = ref<ServerError>({
 });
 
 const router = useRouter();
-const store = useAuthStore();
+const authStore = useAuthStore();
+const eventStore = useEventStore();
+
 const { siteConfig } = await useClientConfig();
 
 const { errors, handleSubmit, defineField } = useForm({
@@ -31,11 +34,11 @@ const [password, passwordAttrs] = defineField('password');
 
 const nuxtApp = useNuxtApp();
 const authService = getAuthService(nuxtApp.$api);
+const eventService = getEventService(nuxtApp.$api);
 
 const onSubmit = handleSubmit(async (values) => {
   isSubmiting.value = true;
   serverErrors.value.hasErrors = false;
-  let isSuccess = false;
 
   const credentials: UserLoginInput = {
     email: values.email,
@@ -46,17 +49,53 @@ const onSubmit = handleSubmit(async (values) => {
   authService
     .authenticate(credentials)
     .then((userData) => {
-      isSuccess = true;
-      store.setUserData(userData);
-      router.push('/eventos');
+      authStore.setUserData(userData);
+      const loggedUser = authStore.user;
+
+      if (authStore.isAdministrator || authStore.isSuperAdministrator) {
+        eventStore.clearSelectedEvent();
+        router.push('/eventos');
+        return;
+      }
+
+      if (loggedUser?.eventId) {
+        eventService
+          .getEvent(loggedUser.eventId)
+          .then((bodaEvent) => {
+            const iconName = bodaEvent.eventTypeIcon || 'event-wedding';
+
+            eventStore.selectEvent({
+              id: bodaEvent.id,
+              name: bodaEvent.name,
+              slug: bodaEvent.slug,
+              icon: iconName,
+              eventTypeId: bodaEvent.eventTypeId ?? undefined,
+              initials: bodaEvent.initials,
+              qrCodeImage_Url: bodaEvent.qrCodeImage_Url,
+              eventTypeName: bodaEvent.eventTypeName,
+            });
+
+            router.push('/admin');
+            return;
+          })
+          .catch((err) => {
+            serverErrors.value.hasErrors = true;
+            serverErrors.value.message =
+              'Occoreu um erro ao buscar dados da sua conta. Por favor, contacte a equipa de suporte.';
+            isSubmiting.value = false;
+            console.log(err);
+          });
+      } else {
+        serverErrors.value.hasErrors = true;
+        serverErrors.value.message =
+          'A sua conta não está associada a nenhum evento. Por favor, contacte a equipa de suporte.';
+        isSubmiting.value = false;
+      }
     })
     .catch((err) => {
       console.log(err.data);
       serverErrors.value.message = getServerErrors(err.data);
       serverErrors.value.hasErrors = true;
-    })
-    .finally(() => {
-      if (!isSuccess) isSubmiting.value = false;
     });
 });
 </script>
