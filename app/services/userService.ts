@@ -75,4 +75,24 @@ export const getUserService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
       method: 'post',
     });
   },
+
+  async changeMyPassword(payload: {
+    oldPassword: string;
+    newPassword: string;
+  }): Promise<unknown> {
+    return await $fetch<unknown>(`${RESOURCE}/ChangeMyPassword`, {
+      method: 'put',
+      body: {
+        oldPassword: payload.oldPassword,
+        newPassword: payload.newPassword,
+      },
+    });
+  },
+
+  async updateMyProfile(payload: { name: string }): Promise<User> {
+    return await $fetch<User>(`${RESOURCE}/UpdateMyProfile`, {
+      method: 'put',
+      body: payload,
+    });
+  },
 });

@@ -10,12 +10,19 @@ withDefaults(defineProps<HeaderUserProps>(), {
 const showDropdown = ref<boolean>(false);
 const store = useAuthStore();
 const { path } = useRoute();
+const { apiImageUrl } = useRuntimeConfig().public;
 
 const router = useRouter();
 const logout = () => {
   store.logout();
   router.push('/');
 };
+
+const hasProfileImage = computed(() => {
+  if (!store.user) return false;
+
+  return !!store.user.profileImageUrl && store.user.profileImageUrl !== '';
+});
 </script>
 <template>
   <div class="relative z-50 block">
@@ -25,11 +32,25 @@ const logout = () => {
       :class="mode === 'normal' ? 'text-grey-500' : 'text-white'"
       @click="showDropdown = !showDropdown"
     >
+      <div v-if="hasProfileImage" class="relative">
+        <div
+          class="bg-primary-50 size-[40px] overflow-hidden rounded-full border border-gray-200"
+        >
+          <img
+            :src="`${apiImageUrl}${store.user?.profileImageUrl}` || ''"
+            alt="Foto de perfil"
+            class="h-full w-full object-cover"
+          />
+        </div>
+      </div>
+
       <icon-account
+        v-else
         :font-controlled="false"
         class="h-5 w-5"
         :class="mode === 'normal' ? 'text-primary-500' : 'text-white'"
       ></icon-account>
+
       <span class="hover:text-primary-500 transition-colors">{{
         store.user ? store.user.name : ''
       }}</span>
