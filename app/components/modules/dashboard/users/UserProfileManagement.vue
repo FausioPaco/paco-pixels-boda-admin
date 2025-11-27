@@ -17,6 +17,9 @@ const userService = getUserService(nuxtApp.$api);
 
 const isUploading = ref(false);
 const isRemoving = ref(false);
+const showChangePasswordModal = ref(false);
+const showUpdateProfileName = ref(false);
+
 const localUser = ref<User>({ ...props.user });
 const toast = useToast();
 const { apiImageUrl } = useRuntimeConfig().public;
@@ -114,6 +117,12 @@ const handleRemovePhoto = async () => {
     isRemoving.value = false;
   }
 };
+
+const refreshCurrentUser = (userUpdated: User) => {
+  localUser.value = userUpdated;
+  showUpdateProfileName.value = false;
+  emit('updated', userUpdated);
+};
 </script>
 
 <template>
@@ -125,7 +134,7 @@ const handleRemovePhoto = async () => {
       class="grid items-start gap-8 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
     >
       <!-- Coluna esquerda: dados gerais -->
-      <div class="space-y-4">
+      <div class="flex flex-col gap-4">
         <h2 class="text-grey-200 text-sm font-semibold uppercase tracking-wide">
           Dados gerais
         </h2>
@@ -161,6 +170,19 @@ const handleRemovePhoto = async () => {
             </dd>
           </div>
         </dl>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          <BaseButton
+            btn-type="outline-primary"
+            btn-size="sm"
+            @click="showChangePasswordModal = true"
+          >
+            Alterar password
+          </BaseButton>
+          <BaseButton btn-size="sm" @click="showUpdateProfileName = true">
+            Alterar nome
+          </BaseButton>
+        </div>
       </div>
 
       <!-- Coluna direita: foto de perfil -->
@@ -227,5 +249,18 @@ const handleRemovePhoto = async () => {
         </div>
       </div>
     </div>
+
+    <LazyUserChangePasswordModal
+      :show="showChangePasswordModal"
+      @close="showChangePasswordModal = false"
+      @updated="showChangePasswordModal = false"
+    />
+
+    <LazyUserEditModal
+      :user="user"
+      :show="showUpdateProfileName"
+      @close="showUpdateProfileName = false"
+      @updated="refreshCurrentUser"
+    />
   </BaseCard>
 </template>
