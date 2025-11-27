@@ -32,7 +32,7 @@ export const useUsersList = async (params?: UserParameters) => {
     ].join('|'),
   );
 
-  const { data, refresh, status } = await useLazyAsyncData(
+  const { data, refresh, status } = await useAsyncData(
     key,
     () => getUserService(nuxtApp.$api).getAllUsers(queryParameters),
     {
