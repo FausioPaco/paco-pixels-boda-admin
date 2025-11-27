@@ -11,8 +11,6 @@ interface IUsersForm {
 }
 
 const emit = defineEmits(['closeModal', 'success']);
-
-const { EVENT_ID } = useRuntimeConfig().public;
 const { roles, refreshRoles } = await useRolesList();
 
 const props = withDefaults(defineProps<IUsersForm>(), {
@@ -22,6 +20,8 @@ const props = withDefaults(defineProps<IUsersForm>(), {
 
 const nuxtApp = useNuxtApp();
 const userService = getUserService(nuxtApp.$api);
+const eventStore = useEventStore();
+const authStore = useAuthStore();
 
 const toast = useToast();
 const isSubmiting = ref<boolean>(false);
@@ -85,7 +85,8 @@ const onSubmit = handleSubmit((values, _) => {
     email: values.email,
     password: values.password,
     roleId: values.role,
-    eventId: Number(EVENT_ID),
+    eventId: eventStore.eventId!,
+    partnerId: authStore.user?.partnerId,
   };
 
   if (!props.user) {

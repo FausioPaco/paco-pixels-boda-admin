@@ -19,6 +19,7 @@ export interface UserInput {
   password?: string;
   roleId: number;
   eventId?: number;
+  partnerId?: number;
 }
 
 export interface PasswordInput {

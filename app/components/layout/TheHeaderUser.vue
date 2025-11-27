@@ -28,7 +28,7 @@ const hasProfileImage = computed(() => {
   <div class="relative z-50 block">
     <!-- User Name -->
     <div
-      class="text-grey-800 flex cursor-pointer items-center gap-2 lg:gap-3"
+      class="text-grey-800 flex cursor-pointer items-center gap-3 lg:gap-3"
       :class="mode === 'normal' ? 'text-grey-500' : 'text-white'"
       @click="showDropdown = !showDropdown"
     >
@@ -51,9 +51,13 @@ const hasProfileImage = computed(() => {
         :class="mode === 'normal' ? 'text-primary-500' : 'text-white'"
       ></icon-account>
 
-      <span class="hover:text-primary-500 transition-colors">{{
-        store.user ? store.user.name : ''
-      }}</span>
+      <div class="flex flex-col gap-1">
+        <span class="hover:text-primary-500 font-medium transition-colors">{{
+          store.user?.name
+        }}</span>
+
+        <span class="text-grey-400 text-sm">{{ store.user?.roleName }}</span>
+      </div>
       <icon-arrow-down
         :font-controlled="false"
         class="h-5 w-5 transition-transform duration-500"

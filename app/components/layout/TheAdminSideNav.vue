@@ -3,6 +3,7 @@ import {
   ADMIN_CONFIGURATION_LINKS,
   ADMIN_MAIN_LINKS,
 } from '#shared/constants/links';
+import { isMultiEventStaffUser } from '~~/shared/constants/roles';
 
 const route = useRoute();
 const { siteConfig } = await useClientConfig();
@@ -45,6 +46,7 @@ const checkActiveClass = (link: string) => {
       class="text-grey-500/50 my-6 hidden justify-center gap-6 lg:flex lg:flex-col lg:items-center"
     >
       <NuxtLink
+        v-if="isMultiEventStaffUser(authStore.user?.roleName)"
         to="/eventos"
         class="text-grey-400 hover:text-primary-700 group mr-2 flex cursor-pointer gap-1 text-sm no-underline transition-colors duration-300 ease-in"
       >

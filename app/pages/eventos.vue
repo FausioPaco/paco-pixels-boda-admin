@@ -13,7 +13,7 @@ useHead({
 
 definePageMeta({
   name: 'Eventos',
-  middleware: ['auth'],
+  middleware: ['auth', 'administrator'],
 });
 </script>
 <template>

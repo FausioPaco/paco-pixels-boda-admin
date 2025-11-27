@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/stores/auth';
-import { isStaffUser } from '#shared/constants/roles';
+import { isMultiEventStaffUser } from '#shared/constants/roles';
 
 export default defineNuxtRouteMiddleware((to) => {
   const store = useAuthStore();
@@ -9,10 +9,17 @@ export default defineNuxtRouteMiddleware((to) => {
   const { user } = storeToRefs(store);
   const token = useCookie<string>('token');
 
-  if (token.value && isStaffUser(user.value?.roleName) && to?.path === '/') {
-    return navigateTo('/eventos');
+  if (token.value && to?.path === '/') {
+    // Só Super Admin / Admin vão para "/eventos"
+    if (isMultiEventStaffUser(user.value?.roleName)) {
+      return navigateTo('/eventos');
+    }
+
+    // Todos os outros (Gestor, Protocolo, Fotógrafo, Noivo, Noiva) → "/admin"
+    return navigateTo('/admin');
   }
 
+  // User não autenticado a tentar aceder a qualquer rota que não "/"
   if (!token.value && to?.path !== '/') {
     abortNavigation();
     return navigateTo('/');

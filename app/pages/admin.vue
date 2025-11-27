@@ -12,7 +12,7 @@ useHead({
 definePageMeta({
   name: 'Visão Geral',
   pageName: 'Visão Geral',
-  middleware: ['auth'],
+  middleware: ['require-event'],
 });
 </script>
 <template>

@@ -5,6 +5,7 @@ import { toTypedSchema } from '@vee-validate/yup';
 import { useAuthStore } from '@/stores/auth';
 import { getAuthService } from '~/services/authService';
 import { getEventService } from '~/services/eventService';
+import { isMultiEventStaffUser } from '~~/shared/constants/roles';
 
 const isSubmiting = ref<boolean>(false);
 const serverErrors = ref<ServerError>({
@@ -36,67 +37,80 @@ const nuxtApp = useNuxtApp();
 const authService = getAuthService(nuxtApp.$api);
 const eventService = getEventService(nuxtApp.$api);
 
+const handlePostLoginRedirect = async () => {
+  const loggedUser = authStore.user;
+
+  if (!loggedUser) {
+    await router.push('/');
+    return;
+  }
+
+  // 1) Admin / Super Admin → escolhem evento em /eventos
+  if (isMultiEventStaffUser(loggedUser.roleName)) {
+    eventStore.clearSelectedEvent?.();
+    await router.push('/eventos');
+    return;
+  }
+
+  // 2) Users por evento → têm de vir com eventId
+  if (loggedUser.eventId) {
+    const bodaEvent = await eventService.getEvent(loggedUser.eventId);
+
+    const iconName = bodaEvent.eventTypeIcon || 'event-wedding';
+
+    eventStore.selectEvent({
+      id: bodaEvent.id,
+      name: bodaEvent.name,
+      slug: bodaEvent.slug,
+      icon: iconName,
+      eventTypeId: bodaEvent.eventTypeId ?? undefined,
+      initials: bodaEvent.initials,
+      qrCodeImage_Url: bodaEvent.qrCodeImage_Url,
+      eventTypeName: bodaEvent.eventTypeName,
+    });
+
+    await router.push('/admin');
+    return;
+  }
+
+  // 3) fallback: user sem evento associado
+  serverErrors.value = {
+    hasErrors: true,
+    message:
+      'A sua conta não está associada a nenhum evento. Por favor, contacte a equipa de suporte.',
+  };
+};
+
 const onSubmit = handleSubmit(async (values) => {
   isSubmiting.value = true;
-  serverErrors.value.hasErrors = false;
-
-  const credentials: UserLoginInput = {
-    email: values.email,
-    password: values.password,
-    context: 'partner-admin',
+  serverErrors.value = {
+    hasErrors: false,
+    message: '',
   };
 
-  authService
-    .authenticate(credentials)
-    .then((userData) => {
-      authStore.setUserData(userData);
-      const loggedUser = authStore.user;
+  try {
+    const credentials: UserLoginInput = {
+      email: values.email.trim(),
+      password: values.password,
+      context: 'partner-admin',
+    };
 
-      if (authStore.isAdministrator || authStore.isSuperAdministrator) {
-        eventStore.clearSelectedEvent();
-        router.push('/eventos');
-        return;
-      }
+    const userData = await authService.authenticate(credentials);
+    authStore.setUserData(userData);
 
-      if (loggedUser?.eventId) {
-        eventService
-          .getEvent(loggedUser.eventId)
-          .then((bodaEvent) => {
-            const iconName = bodaEvent.eventTypeIcon || 'event-wedding';
+    setTimeout(async () => {
+      await handlePostLoginRedirect();
+    }, 100);
+  } catch (err: ApiServerError) {
+    console.error(err?.data);
 
-            eventStore.selectEvent({
-              id: bodaEvent.id,
-              name: bodaEvent.name,
-              slug: bodaEvent.slug,
-              icon: iconName,
-              eventTypeId: bodaEvent.eventTypeId ?? undefined,
-              initials: bodaEvent.initials,
-              qrCodeImage_Url: bodaEvent.qrCodeImage_Url,
-              eventTypeName: bodaEvent.eventTypeName,
-            });
+    serverErrors.value = {
+      hasErrors: true,
+      message: getServerErrors(err?.data ?? err),
+    };
 
-            router.push('/admin');
-            return;
-          })
-          .catch((err) => {
-            serverErrors.value.hasErrors = true;
-            serverErrors.value.message =
-              'Occoreu um erro ao buscar dados da sua conta. Por favor, contacte a equipa de suporte.';
-            isSubmiting.value = false;
-            console.log(err);
-          });
-      } else {
-        serverErrors.value.hasErrors = true;
-        serverErrors.value.message =
-          'A sua conta não está associada a nenhum evento. Por favor, contacte a equipa de suporte.';
-        isSubmiting.value = false;
-      }
-    })
-    .catch((err) => {
-      console.log(err.data);
-      serverErrors.value.message = getServerErrors(err.data);
-      serverErrors.value.hasErrors = true;
-    });
+    isSubmiting.value = false;
+  }
 });
 </script>
 <template>

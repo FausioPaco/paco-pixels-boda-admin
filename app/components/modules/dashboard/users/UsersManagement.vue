@@ -150,7 +150,7 @@ onMounted(() => {
         <!-- SearchNotFound -->
         <BaseSearchNotFound
           v-if="!isFirstTime && users.length === 0"
-          @fallback="refreshUsers"
+          @fallback="refreshUsers({ force: true })"
         >
           Infelizmente, não encontramos fornecedores para o filtro aplicado
         </BaseSearchNotFound>

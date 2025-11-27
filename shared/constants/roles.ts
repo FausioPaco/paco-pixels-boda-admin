@@ -16,3 +16,6 @@ export const isAdministrator = (roleName?: string): boolean =>
 
 export const isSuperAdministrator = (roleName?: string): boolean =>
   roleName === SUPER_ADMINISTRATOR_ROLE;
+
+export const isMultiEventStaffUser = (roleName?: string): boolean =>
+  roleName === SUPER_ADMINISTRATOR_ROLE || roleName === ADMINISTRATOR_ROLE;
