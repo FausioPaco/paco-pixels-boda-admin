@@ -44,14 +44,18 @@ const hasProfileImage = computed(() => {
         </div>
       </div>
 
-      <icon-account
+      <div
         v-else
-        :font-controlled="false"
-        class="h-5 w-5"
-        :class="mode === 'normal' ? 'text-primary-500' : 'text-white'"
-      ></icon-account>
+        class="border-primary-100 bg-grey-50 relative rounded-full border-2 p-3"
+      >
+        <icon-account
+          :font-controlled="false"
+          class="size-[24px]"
+          :class="mode === 'normal' ? 'text-primary-500' : 'text-white'"
+        ></icon-account>
+      </div>
 
-      <div class="flex flex-col gap-1">
+      <div class="flex flex-col">
         <span class="hover:text-primary-500 font-medium transition-colors">{{
           store.user?.name
         }}</span>
@@ -69,7 +73,7 @@ const hasProfileImage = computed(() => {
     <transition name="fade">
       <div
         v-if="showDropdown"
-        class="absolute left-[20px] top-[2rem] min-w-40 rounded border bg-white p-3 shadow-md md:left-[-5.5rem] md:min-w-60"
+        class="absolute left-[20px] top-[2rem] min-w-40 rounded-lg border bg-white p-3 shadow-md md:left-[-5.5rem] md:min-w-60"
         @click="showDropdown = false"
       >
         <ul class="flex flex-col justify-between divide-y divide-gray-200">

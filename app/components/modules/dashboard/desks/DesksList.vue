@@ -141,7 +141,6 @@ onMounted(() => {
           class="flex w-full flex-col justify-start gap-4 lg:w-1/2 lg:flex-row lg:items-end lg:justify-end lg:gap-2 lg:pt-5"
         >
           <BaseButton
-            v-if="isAdministrator || isSuperAdministrator"
             icon="add"
             size="md"
             btn-type="primary"
