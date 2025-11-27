@@ -7,7 +7,7 @@ import {
 const route = useRoute();
 const { siteConfig } = await useClientConfig();
 const eventStore = useEventStore();
-const { isAdministrator, isSuperAdministrator } = useAuthStore();
+const authStore = useAuthStore();
 
 const checkActiveClass = (link: string) => {
   if (link === '/admin') {
@@ -85,7 +85,10 @@ const checkActiveClass = (link: string) => {
     </ul>
 
     <!-- Configuração -->
-    <ul v-if="isAdministrator || isSuperAdministrator" class="pl-0 lg:mt-4">
+    <ul
+      v-if="authStore.isAdministrator || authStore.isSuperAdministrator"
+      class="pl-0 lg:mt-4"
+    >
       <small
         class="text-primary-700/70 mb-4 hidden text-xs font-bold lg:block lg:pl-2"
         >Configuração</small

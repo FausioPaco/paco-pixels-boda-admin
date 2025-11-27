@@ -1,11 +1,11 @@
 export default defineNuxtRouteMiddleware((to) => {
-  // ex.: só exigir evento em rotas do admin
   if (!to.path.startsWith('/admin')) return;
 
-  const store = useEventStore();
-  store.loadFromCookies();
+  const eventStore = useEventStore();
+  eventStore.loadFromCookies();
 
-  if (!store.eventId) {
+  if (!eventStore.eventId) {
+    console.log('Sem evento: ' + eventStore.eventId);
     return navigateTo('/eventos');
   }
 });

@@ -54,7 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
       logout();
     }
 
-    if (userData) {
+    if (userData.value) {
       authenticated.value = true;
       user.value = userData.value;
     }

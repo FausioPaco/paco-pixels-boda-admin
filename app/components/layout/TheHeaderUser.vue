@@ -51,6 +51,7 @@ const logout = () => {
           <li
             v-if="path.includes('/admin')"
             class="hover:bg-primary-100 group cursor-pointer p-2 transition-colors duration-300"
+            @click.prevent="$router.push('/admin/perfil')"
           >
             <NuxtLink
               to="/admin/perfil"
