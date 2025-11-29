@@ -35,7 +35,7 @@ export const getUserService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
   },
 
   async getRoles(): Promise<Role[]> {
-    return $fetch<Role[]>(`${RESOURCE}/GetRoles`);
+    return $fetch<Role[]>(`${RESOURCE}/GetEventRoles`);
   },
 
   async resetPassword(
