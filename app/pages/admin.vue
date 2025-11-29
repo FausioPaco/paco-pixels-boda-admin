@@ -14,6 +14,16 @@ definePageMeta({
   pageName: 'Visão Geral',
   middleware: ['require-event'],
 });
+
+const { startHeartbeat, stopHeartbeat } = useUserHeartbeat();
+
+onMounted(() => {
+  startHeartbeat(60_000);
+});
+
+onBeforeUnmount(() => {
+  stopHeartbeat();
+});
 </script>
 <template>
   <div>

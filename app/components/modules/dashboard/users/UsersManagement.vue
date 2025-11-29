@@ -177,6 +177,7 @@ onMounted(() => {
               <th scope="col">Nome</th>
               <th scope="col">Email</th>
               <th scope="col">Papel</th>
+              <th scope="col">Estado</th>
               <th scope="col">Palavra-passe</th>
               <th scope="col">Acções</th>
             </tr>
@@ -186,6 +187,12 @@ onMounted(() => {
               <td>{{ user.name }}</td>
               <td>{{ user.email }}</td>
               <td>{{ user.roleName }}</td>
+              <td>
+                <UserStatusBadge
+                  :is-online="user.isOnline"
+                  :last-activity-at="user.lastActivityAt"
+                />
+              </td>
               <td>
                 <BaseButton
                   v-if="isAdministrator || isSuperAdministrator"

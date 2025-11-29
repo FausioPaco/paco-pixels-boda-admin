@@ -38,12 +38,12 @@ const label = computed(() => {
 
 const dotClass = computed(() => {
   if (props.isOnline) return 'bg-success-500';
-  return 'bg-gray-400';
+  return 'bg-grey-300';
 });
 </script>
 
 <template>
-  <div class="inline-flex items-center gap-1 text-xs text-gray-600">
+  <div class="text-grey-300 inline-flex items-center gap-1 text-xs">
     <span
       class="inline-block h-2 w-2 rounded-full"
       :class="dotClass"

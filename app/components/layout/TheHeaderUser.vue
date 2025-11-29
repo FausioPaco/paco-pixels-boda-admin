@@ -11,10 +11,12 @@ const showDropdown = ref<boolean>(false);
 const store = useAuthStore();
 const { path } = useRoute();
 const { apiImageUrl } = useRuntimeConfig().public;
+const { stopHeartbeat } = useUserHeartbeat();
 
 const router = useRouter();
 const logout = () => {
   store.logout();
+  stopHeartbeat();
   router.push('/');
 };
 
