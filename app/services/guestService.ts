@@ -16,6 +16,10 @@ export const getGuestService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
     });
   },
 
+  async exportGuestsAsPdf(parameters: GuestParameters): Promise<Blob> {
+    return $fetch<Blob>(`${RESOURCE}/ExportPdf`, { params: parameters });
+  },
+
   async getGuestCategories(): Promise<GuestCategory[]> {
     return $fetch<GuestCategory[]>(`${RESOURCE}/Categories`);
   },
