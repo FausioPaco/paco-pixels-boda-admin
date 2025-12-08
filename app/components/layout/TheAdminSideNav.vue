@@ -86,6 +86,22 @@ const checkActiveClass = (link: string) => {
       </div>
     </ul>
 
+    <!-- Conteúdo e Experiência -->
+    <ul class="pl-0 lg:mt-4">
+      <small
+        class="text-primary-700/70 mb-4 hidden text-xs font-bold lg:block lg:pl-2"
+        >Conteúdo e Experiência</small
+      >
+      <div class="flex flex-col gap-y-1">
+        <TheAdminSideNavItem
+          v-for="item in ADMIN_CONFIGURATION_LINKS"
+          :key="item.label"
+          :item="item"
+          :active="checkActiveClass(item.link)"
+        />
+      </div>
+    </ul>
+
     <!-- Configuração -->
     <ul
       v-if="authStore.isAdministrator || authStore.isSuperAdministrator"

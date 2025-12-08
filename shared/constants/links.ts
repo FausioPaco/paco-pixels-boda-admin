@@ -30,17 +30,17 @@ export const ADMIN_CONFIGURATION_LINKS: AdminLink[] = [
   },
 ];
 
-// export const ADMIN_EXPERIENCE_LINKS: AdminLink[] = [
-//   {
-//     label: 'Menu',
-//     link: '/admin/menu',
-//     icon: 'online-support',
-//     restricted: false,
-//   },
-//   // {
-//   //   label: 'Checklist',
-//   //   link: '/admin/checklist',
-//   //   icon: 'checklist-box',
-//   //   restricted: true,
-//   // },
-// ];
+export const ADMIN_EXPERIENCE_LINKS: AdminLink[] = [
+  {
+    label: 'Checklist',
+    link: '/admin/checklist',
+    icon: 'checklist-box',
+    restricted: false,
+  },
+  // {
+  //   label: 'Menu',
+  //   link: '/admin/menu',
+  //   icon: 'online-support',
+  //   restricted: false,
+  // },
+];
