@@ -72,3 +72,83 @@ export interface ChecklistSectionOption {
   id: number;
   name: string;
 }
+
+export interface ChecklistTemplate {
+  id: number;
+  name: string;
+  description: string;
+  eventTypeId: number;
+  partnerId?: number | null;
+  isDefault: boolean;
+  isActive: boolean;
+  created_At: string;
+  modified_At: string;
+}
+
+export interface ChecklistTemplateDetail extends ChecklistTemplate {
+  sections: ChecklistTemplateSection[];
+}
+
+export interface ChecklistTemplateSection {
+  id: number;
+  title: string;
+  description: string;
+  order: number;
+  default_Offset_Days?: number | null;
+  tasks: ChecklistTemplateTask[];
+}
+
+export interface ChecklistTemplateTask {
+  id: number;
+  title: string;
+  notes: string;
+  order: number;
+  default_Offset_Days?: number | null;
+  has_Indefinite_Date: boolean;
+}
+
+export interface ChecklistTemplateUpdateInput {
+  name: string;
+  description: string;
+  isActive: boolean;
+}
+
+export interface ChecklistTemplateSectionInput {
+  title: string;
+  description?: string;
+  order?: number;
+  default_Offset_Days?: number | null;
+}
+
+export interface ChecklistTemplateSectionUpdateInput {
+  title: string;
+  description?: string;
+  order: number;
+  default_Offset_Days?: number | null;
+}
+
+export interface TemplateSectionOrderUpdateInput {
+  id: number;
+  order: number;
+}
+
+export interface ChecklistTemplateTaskInput {
+  title: string;
+  notes?: string;
+  order?: number;
+  default_Offset_Days?: number | null;
+  has_Indefinite_Date: boolean;
+}
+
+export interface ChecklistTemplateTaskUpdateInput {
+  title: string;
+  notes?: string;
+  order: number;
+  default_Offset_Days?: number | null;
+  has_Indefinite_Date: boolean;
+}
+
+export interface TemplateTaskOrderUpdateInput {
+  id: number;
+  order: number;
+}
