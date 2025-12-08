@@ -53,6 +53,16 @@ export const getChecklistService = <T>(
     });
   },
 
+  async reorderSections(
+    eventId: number,
+    items: SectionOrderUpdateInput[],
+  ): Promise<unknown> {
+    return $fetch<unknown>(`${RESOURCE}/Sections/Reorder/${eventId}`, {
+      method: 'PUT',
+      body: items,
+    });
+  },
+
   // ===== Tasks =====
   async getAllTasks(
     parameters: ChecklistTaskParameters,

@@ -152,3 +152,8 @@ export interface TemplateTaskOrderUpdateInput {
   id: number;
   order: number;
 }
+
+export interface SectionOrderUpdateInput {
+  id: number;
+  order: number;
+}
