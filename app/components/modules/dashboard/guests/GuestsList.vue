@@ -42,6 +42,7 @@ const availabilityOptions: SelectOption[] = [
   },
   { id: 'Confirmed', value: 'Confirmed', name: 'Confirmados' },
   { id: 'NotConfirmed', value: 'NotConfirmed', name: 'Não confirmados' },
+  { id: 'Arrived', value: 'Arrived', name: 'Já chegaram' },
 ];
 
 const debouncedSearch = useDebounceFn(() => {
