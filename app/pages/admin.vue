@@ -12,7 +12,17 @@ useHead({
 definePageMeta({
   name: 'Visão Geral',
   pageName: 'Visão Geral',
-  middleware: ['auth'],
+  middleware: ['require-event'],
+});
+
+const { startHeartbeat, stopHeartbeat } = useUserHeartbeat();
+
+onMounted(() => {
+  startHeartbeat(60_000);
+});
+
+onBeforeUnmount(() => {
+  stopHeartbeat();
 });
 </script>
 <template>

@@ -1,10 +1,12 @@
-type ServerError =
+export type ApiServerError =
   | string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  | any
   | { error?: string }
   | { message: string }
   | { errors?: Record<string, string> };
 
-export const getServerErrors = (error: ServerError) => {
+export const getServerErrors = (error: ApiServerError) => {
   let errorMessage =
     'Ocorreu um erro ao enviar o seu pedido. Tente novamente. \n';
 

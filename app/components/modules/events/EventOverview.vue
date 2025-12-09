@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { isMultiEventStaffUser } from '~~/shared/constants/roles';
+
 defineOptions({
   name: 'EventOverview',
 });
@@ -42,6 +44,7 @@ const suppliersCount = computed(() => event.value?.suppliersCount ?? 0);
 // placeholder por enquanto (ajustas quando tiveres no modelo)
 const budgetDisplay = computed(() => '--');
 const eventStore = useEventStore();
+const authStore = useAuthStore();
 
 const onFormSuccess = async () => {
   showFormModal.value = false;
@@ -65,7 +68,7 @@ onMounted(() => {
   <BaseCard title="Informações do evento">
     <template #right-content>
       <button
-        v-if="event"
+        v-if="event && isMultiEventStaffUser(authStore.user?.roleName)"
         type="button"
         class="text-primary-700 flex items-center gap-1 text-xs font-medium hover:underline"
         @click.prevent="showFormModal = true"

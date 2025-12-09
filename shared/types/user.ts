@@ -4,7 +4,12 @@ export type User = {
   email: string;
   roleId: number;
   roleName: string;
+  eventId?: number;
   partnerId?: number;
+  profileImageUrl?: string | null;
+  lastLoginAt?: string | Date | null;
+  lastActivityAt?: string | Date | null;
+  isOnline?: boolean;
   created_At: Date;
 };
 
@@ -14,6 +19,7 @@ export interface UserInput {
   password?: string;
   roleId: number;
   eventId?: number;
+  partnerId?: number;
 }
 
 export interface PasswordInput {
@@ -32,4 +38,10 @@ export interface UserParameters {
 export type Role = {
   id: number;
   name: string;
+};
+
+export type UploadProfilePhotoResponse = {
+  url: string;
+  user: User;
+  message: string;
 };

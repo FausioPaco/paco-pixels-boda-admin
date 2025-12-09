@@ -1,39 +1,30 @@
 <script setup lang="ts">
-import type { ExportTextColor } from '~~/shared/types/guest';
+import type { ExportListFormat } from '~~/shared/types/guest';
 
-interface IGuestExportQRCodeModalProps {
+interface IGuestExportListModalProps {
   show?: boolean;
 }
 
-withDefaults(defineProps<IGuestExportQRCodeModalProps>(), {
+withDefaults(defineProps<IGuestExportListModalProps>(), {
   show: false,
 });
 
 const emit = defineEmits<{
   (e: 'closeModal'): void;
-  (e: 'export', format: ExportQROptions): void;
+  (e: 'export', format: ExportListFormat): void;
 }>();
 
-const formatInput = ref<ExportFormat>('png');
-const colorInput = ref<ExportTextColor>('black');
-
+const formatInput = ref<ExportListFormat>('excel');
 const isSubmiting = ref<boolean>(false);
-const formatList = ref<SelectOption[]>([
-  //{ id: 'pdf', name: 'Formato PDF' },
-  { id: 'png', name: 'Formato de Imagem (PNG)' },
-]);
 
-const textColorList = ref<SelectOption[]>([
-  { id: 'black', name: 'Preto' },
-  { id: 'white', name: 'Branco' },
+const formatList = ref<SelectOption[]>([
+  { id: 'excel', name: 'Excel' },
+  { id: 'pdf', name: 'PDF' },
 ]);
 
 const onSubmit = () => {
   isSubmiting.value = true;
-  emit('export', {
-    color: colorInput.value,
-    format: formatInput.value,
-  });
+  emit('export', formatInput.value);
 
   setTimeout(() => {
     isSubmiting.value = false;
@@ -42,29 +33,21 @@ const onSubmit = () => {
 </script>
 <template>
   <BaseModal
-    title="Exportar QRCode"
+    title="Exportar lista de convidados"
     :show="show"
     @close-modal="$emit('closeModal')"
   >
     <div class="my-2 animate-fadeIn">
       <form @submit.prevent="onSubmit">
         <p class="text-grey-400 text-left text-base md:text-lg">
-          Selecione o formato que pretende baixar o QRCode
+          Selecione o formato que pretende baixar a lista de convidados
         </p>
 
         <BaseSelect
-          id="formatQRCode"
+          id="formatExportGuest"
           v-model="formatInput"
           label="Formato: "
           :options="formatList"
-          disable-empty
-        />
-
-        <BaseSelect
-          id="colorQRCode"
-          v-model="colorInput"
-          label="Cor do texto: "
-          :options="textColorList"
           disable-empty
         />
 

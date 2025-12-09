@@ -35,7 +35,7 @@ export const getUserService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
   },
 
   async getRoles(): Promise<Role[]> {
-    return $fetch<Role[]>(`${RESOURCE}/GetRoles`);
+    return $fetch<Role[]>(`${RESOURCE}/GetEventRoles`);
   },
 
   async resetPassword(
@@ -45,6 +45,54 @@ export const getUserService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
     return $fetch<unknown>(`${RESOURCE}/ResetPassword/${userId}`, {
       method: 'put',
       body: newPassword,
+    });
+  },
+
+  async uploadProfilePhoto(
+    userId: number,
+    file: File,
+  ): Promise<UploadProfilePhotoResponse> {
+    const formData = new FormData();
+    formData.append('fileUpload', file);
+
+    return $fetch<UploadProfilePhotoResponse>(
+      `${RESOURCE}/UploadProfilePhoto/${userId}`,
+      {
+        method: 'post',
+        body: formData,
+      },
+    );
+  },
+
+  async removeProfilePhoto(userId: number): Promise<unknown> {
+    return await $fetch<unknown>(`${RESOURCE}/ProfilePhoto/${userId}`, {
+      method: 'delete',
+    });
+  },
+
+  async heartbeat(): Promise<unknown> {
+    return await $fetch<unknown>(`${RESOURCE}/Heartbeat`, {
+      method: 'post',
+    });
+  },
+
+  async changeMyPassword(payload: {
+    oldPassword: string;
+    newPassword: string;
+  }): Promise<unknown> {
+    return await $fetch<unknown>(`${RESOURCE}/ChangeMyPassword`, {
+      method: 'put',
+      body: {
+        oldPassword: payload.oldPassword,
+        newPassword: payload.newPassword,
+      },
+    });
+  },
+
+  async updateMyProfile(payload: { name: string }): Promise<User> {
+    return await $fetch<User>(`${RESOURCE}/UpdateMyProfile`, {
+      method: 'put',
+      body: payload,
     });
   },
 });

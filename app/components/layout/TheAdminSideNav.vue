@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { ADMIN_MAIN_LINKS } from '#shared/constants/links';
+import {
+  ADMIN_CONFIGURATION_LINKS,
+  // ADMIN_EXPERIENCE_LINKS,
+  ADMIN_MAIN_LINKS,
+} from '#shared/constants/links';
+import { isMultiEventStaffUser } from '~~/shared/constants/roles';
 
 const route = useRoute();
 const { siteConfig } = await useClientConfig();
 const eventStore = useEventStore();
+const authStore = useAuthStore();
 
 const checkActiveClass = (link: string) => {
   if (link === '/admin') {
@@ -41,6 +47,7 @@ const checkActiveClass = (link: string) => {
       class="text-grey-500/50 my-6 hidden justify-center gap-6 lg:flex lg:flex-col lg:items-center"
     >
       <NuxtLink
+        v-if="isMultiEventStaffUser(authStore.user?.roleName)"
         to="/eventos"
         class="text-grey-400 hover:text-primary-700 group mr-2 flex cursor-pointer gap-1 text-sm no-underline transition-colors duration-300 ease-in"
       >
@@ -73,6 +80,41 @@ const checkActiveClass = (link: string) => {
       <div class="flex flex-col gap-y-1">
         <TheAdminSideNavItem
           v-for="item in ADMIN_MAIN_LINKS"
+          :key="item.label"
+          :item="item"
+          :active="checkActiveClass(item.link)"
+        />
+      </div>
+    </ul>
+
+    <!-- Conteúdo e Experiência -->
+    <!-- <ul class="pl-0 lg:mt-4">
+      <small
+        class="text-primary-700/70 mb-4 hidden text-xs font-bold lg:block lg:pl-2"
+        >Conteúdo e Experiência</small
+      >
+      <div class="flex flex-col gap-y-1">
+        <TheAdminSideNavItem
+          v-for="item in ADMIN_EXPERIENCE_LINKS"
+          :key="item.label"
+          :item="item"
+          :active="checkActiveClass(item.link)"
+        />
+      </div>
+    </ul> -->
+
+    <!-- Configuração -->
+    <ul
+      v-if="authStore.isAdministrator || authStore.isSuperAdministrator"
+      class="pl-0 lg:mt-4"
+    >
+      <small
+        class="text-primary-700/70 mb-4 hidden text-xs font-bold lg:block lg:pl-2"
+        >Configuração</small
+      >
+      <div class="flex flex-col gap-y-1">
+        <TheAdminSideNavItem
+          v-for="item in ADMIN_CONFIGURATION_LINKS"
           :key="item.label"
           :item="item"
           :active="checkActiveClass(item.link)"

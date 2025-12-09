@@ -14,7 +14,6 @@ const queryParameters = reactive<GuestParameters>({
   pageNumber: 1,
   pageSize: 10,
 });
-
 const { isAdministrator, isSuperAdministrator } = useAuthStore();
 const { guests, pagination, isRefreshing, isError, refreshGuests } =
   await useGuestsList(queryParameters);
@@ -31,6 +30,7 @@ const showFormModal = ref<boolean>(false);
 const showArrivedModal = ref<boolean>(false);
 const showCancelArrivedModal = ref<boolean>(false);
 const guestSelected = ref<Guest | undefined>(undefined);
+const showExportFormatModal = ref<boolean>(false);
 const isExporting = ref<boolean>(false);
 const toast = useToast();
 
@@ -42,6 +42,7 @@ const availabilityOptions: SelectOption[] = [
   },
   { id: 'Confirmed', value: 'Confirmed', name: 'Confirmados' },
   { id: 'NotConfirmed', value: 'NotConfirmed', name: 'Não confirmados' },
+  { id: 'Arrived', value: 'Arrived', name: 'Já chegaram' },
 ];
 
 const debouncedSearch = useDebounceFn(() => {
@@ -89,7 +90,15 @@ const isFirstTime = computed(
     queryParameters.availability_Type === '',
 );
 
-const exportGuests = async () => {
+const startExport = (format: ExportListFormat) => {
+  showExportFormatModal.value = false;
+
+  if (format === 'excel') exportGuestsToExcel();
+  else if (format === 'pdf') exportGuestsToPdf();
+  return;
+};
+
+const exportGuestsToExcel = async () => {
   try {
     isExporting.value = true;
     const blob = await guestService.exportGuests(queryParameters);
@@ -98,7 +107,31 @@ const exportGuests = async () => {
     const link = document.createElement('a');
     link.href = url;
 
-    const fileName = `Convidados_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')}.xlsx`;
+    const fileName = `Convidados_${eventInitials}_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')}.xlsx`;
+    link.setAttribute('download', fileName);
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    isExporting.value = false;
+  } catch (err) {
+    console.error('Erro ao exportar os convidados:', err);
+    toast.error('Ocorreu um erro ao exportar os convidados');
+    isExporting.value = false;
+  }
+};
+
+const exportGuestsToPdf = async () => {
+  try {
+    isExporting.value = true;
+    const blob = await guestService.exportGuestsAsPdf(queryParameters);
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+
+    const fileName = `Convidados_${eventInitials}_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')}.pdf`;
     link.setAttribute('download', fileName);
 
     document.body.appendChild(link);
@@ -198,7 +231,6 @@ onMounted(() => {
           class="flex w-full flex-col justify-start gap-4 md:w-1/2 md:flex-row md:items-end md:justify-end md:gap-2 md:pt-5"
         >
           <BaseButton
-            v-if="isAdministrator || isSuperAdministrator"
             icon="add"
             size="md"
             btn-type="primary"
@@ -212,7 +244,7 @@ onMounted(() => {
             btn-size="md"
             icon="download"
             :disabled="isExporting"
-            @click="exportGuests"
+            @click="showExportFormatModal = true"
             >{{ isExporting ? 'A exportar...' : 'Exportar' }}</BaseButton
           >
         </div>
@@ -342,6 +374,12 @@ onMounted(() => {
       :guest="guestSelected"
       @close-modal="showCancelArrivedModal = false"
       @success="refreshGuests({ force: true })"
+    />
+
+    <LazyGuestsExportListModal
+      :show="showExportFormatModal"
+      @close-modal="showExportFormatModal = false"
+      @export="startExport"
     />
   </section>
 </template>

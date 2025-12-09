@@ -51,6 +51,7 @@ export interface ConfirmPresenceInput {
 
 export type ExportFormat = 'png' | 'pdf';
 export type ExportTextColor = 'black' | 'white';
+export type ExportListFormat = 'excel' | 'pdf';
 
 export type ExportQROptions = {
   format: ExportFormat;
