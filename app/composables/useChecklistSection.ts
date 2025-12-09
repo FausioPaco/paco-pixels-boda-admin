@@ -6,9 +6,10 @@ export const useChecklistSection = async (sectionId: number) => {
     () => null,
   );
   const nuxtApp = useNuxtApp();
+  const key = 'get-checklist-section-' + sectionId;
 
   const { data, refresh, status } = await useAsyncData(
-    'get-checklist-section-' + sectionId,
+    key,
     () => getChecklistService(nuxtApp.$api).getSection(sectionId),
     {
       default: () => null,
@@ -33,9 +34,16 @@ export const useChecklistSection = async (sectionId: number) => {
     }
   });
 
+  const refreshSection = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key);
+    }
+    await refresh();
+  };
+
   return {
     section,
     isRefreshing: status.value === 'pending',
-    refreshSection: refresh,
+    refreshSection,
   };
 };

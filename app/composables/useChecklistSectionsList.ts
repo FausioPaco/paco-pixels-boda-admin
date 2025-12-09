@@ -11,10 +11,13 @@ export const useChecklistSectionsList = async (
     'checklist-sections-pagination',
     () => null,
   );
+  const eventStore = useEventStore();
+  const eventId = eventStore.ensureSelected();
+
   const queryParameters =
     params ??
     ({
-      eventId: Number(useRuntimeConfig().public.EVENT_ID),
+      eventId,
       searchQuery: '',
       startDate: '',
       endDate: '',
@@ -23,9 +26,20 @@ export const useChecklistSectionsList = async (
     } as ChecklistSectionParameters);
 
   const nuxtApp = useNuxtApp();
+  const key = computed(() =>
+    [
+      `checklist-sections-list`,
+      queryParameters.eventId,
+      queryParameters.searchQuery,
+      queryParameters.startDate,
+      queryParameters.endDate,
+      queryParameters.pageNumber,
+      queryParameters.pageSize,
+    ].join('|'),
+  );
 
   const { data, refresh, status } = await useAsyncData(
-    `checklist-sections-list`,
+    key,
     () => getChecklistService(nuxtApp.$api).getAllSections(queryParameters),
     {
       transform(input) {
@@ -52,6 +66,13 @@ export const useChecklistSectionsList = async (
     }
   });
 
+  const refreshSections = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key.value);
+    }
+    await refresh();
+  };
+
   return {
     sections,
     pagination,
@@ -59,6 +80,6 @@ export const useChecklistSectionsList = async (
     isRefreshing: status.value === 'pending',
     isError: status.value === 'error',
     isSuccess: status.value === 'success',
-    refreshSections: refresh,
+    refreshSections,
   };
 };

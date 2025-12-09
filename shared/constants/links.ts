@@ -32,9 +32,9 @@ export const ADMIN_CONFIGURATION_LINKS: AdminLink[] = [
 
 export const ADMIN_EXPERIENCE_LINKS: AdminLink[] = [
   {
-    label: 'Checklist',
+    label: 'Cronograma',
     link: '/admin/cronograma',
-    icon: 'checklist-box',
+    icon: 'calendar',
     restricted: false,
   },
   // {

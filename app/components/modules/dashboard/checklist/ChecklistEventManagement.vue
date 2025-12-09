@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getChecklistService } from '~/services/checklistService';
+import Draggable from 'vuedraggable';
 
 type SortableEvent = {
   item: HTMLElement;
@@ -89,7 +90,7 @@ function closeSectionModal() {
 
 async function onSectionSaved() {
   showSectionModal.value = false;
-  await refreshSections();
+  await refreshSections({ force: true });
 }
 
 function confirmRemoveSection(section: ChecklistSection) {
@@ -192,7 +193,7 @@ function onDragEnd(newOrder: ChecklistSection[]) {
     id="checklistManagement"
     class="relative flex min-h-[450px] w-full flex-col items-center px-4 py-5"
   >
-    <div class="flex flex-wrap items-center justify-between gap-2">
+    <div class="w-full">
       <div class="flex flex-wrap items-center gap-2">
         <BaseButton
           btn-type="outline-primary"
