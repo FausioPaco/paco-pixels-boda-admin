@@ -145,7 +145,7 @@ async function applySectionsReorder(newOrder: ChecklistSection[]) {
     );
 
     await checklistService.reorderSections(EVENT_ID, payload);
-    await refreshSections();
+    await refreshSections({ force: true });
   } catch (error) {
     console.error('Erro ao reordenar secções', error);
     // opcional: mostrar toast
@@ -280,7 +280,7 @@ function onDragEnd(newOrder: ChecklistSection[]) {
       />
 
       <!-- Secções com lista de tarefas embutida -->
-      <div v-if="sections.length > 0" class="space-y-6">
+      <div v-if="sections.length > 0" class="space-y-2">
         <Draggable
           v-model="sections"
           item-key="id"
@@ -290,11 +290,8 @@ function onDragEnd(newOrder: ChecklistSection[]) {
           @end="onDragEnd(sections)"
         >
           <template #item="{ element }">
-            <div
-              class="flex items-start gap-3 py-2 md:items-center"
-              :data-id="element.id"
-            >
-              <button class="drag-handle cursor-grab pt-6 md:pb-4 md:pt-0">
+            <div class="flex items-start gap-3 py-2" :data-id="element.id">
+              <button class="drag-handle cursor-grab pt-7">
                 <IconGripvertical
                   :font-controlled="false"
                   class="size-5 transition-colors duration-200"

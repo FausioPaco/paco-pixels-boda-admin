@@ -14,7 +14,7 @@ function remove() {
 <template>
   <div class="relative">
     <button
-      class="hover:bg-primary-600 mr-2 rounded-full p-1.5 transition-colors duration-300 ease-in hover:text-white"
+      class="hover:bg-primary-600 text-primary-600 mr-2 rounded-full p-1.5 transition-colors duration-300 ease-in hover:text-white"
       aria-label="Mais opções"
       @click="open = !open"
     >
