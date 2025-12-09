@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
   ADMIN_CONFIGURATION_LINKS,
-  // ADMIN_EXPERIENCE_LINKS,
+  ADMIN_EXPERIENCE_LINKS,
   ADMIN_MAIN_LINKS,
 } from '#shared/constants/links';
 import { isMultiEventStaffUser } from '~~/shared/constants/roles';
@@ -88,7 +88,7 @@ const checkActiveClass = (link: string) => {
     </ul>
 
     <!-- Conteúdo e Experiência -->
-    <!-- <ul class="pl-0 lg:mt-4">
+    <ul class="pl-0 lg:mt-4">
       <small
         class="text-primary-700/70 mb-4 hidden text-xs font-bold lg:block lg:pl-2"
         >Conteúdo e Experiência</small
@@ -101,7 +101,7 @@ const checkActiveClass = (link: string) => {
           :active="checkActiveClass(item.link)"
         />
       </div>
-    </ul> -->
+    </ul>
 
     <!-- Configuração -->
     <ul

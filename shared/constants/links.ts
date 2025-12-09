@@ -33,7 +33,7 @@ export const ADMIN_CONFIGURATION_LINKS: AdminLink[] = [
 export const ADMIN_EXPERIENCE_LINKS: AdminLink[] = [
   {
     label: 'Checklist',
-    link: '/admin/checklist',
+    link: '/admin/cronograma',
     icon: 'checklist-box',
     restricted: false,
   },
