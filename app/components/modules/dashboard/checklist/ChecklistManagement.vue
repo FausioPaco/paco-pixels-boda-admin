@@ -8,8 +8,8 @@ const activeTab = ref<ChecklistTab>('EVENT');
 </script>
 <template>
   <BaseCard
-    title="Cronograma"
-    description="Faça a gestão do cronograma do evento aqui"
+    title="Cronograma do Evento"
+    description="Organize e actualize facilmente todas as actividades e horários importantes deste evento."
   >
     <!-- Tabs -->
     <BaseTab>
