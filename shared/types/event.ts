@@ -43,6 +43,7 @@ export interface EventInput {
   eventTypeId?: number | undefined;
   slug?: string | undefined;
   event_Date?: Date | undefined;
+  autoCreateChecklist: boolean;
 }
 
 export interface QRCodeFileUploadResult {

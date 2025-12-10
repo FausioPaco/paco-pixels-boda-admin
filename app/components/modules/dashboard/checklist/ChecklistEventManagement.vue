@@ -12,10 +12,10 @@ const eventStore = useEventStore();
 const EVENT_ID = eventStore.eventId!;
 
 const statusOptions = [
-  { id: '', name: 'Todos' },
-  { id: 'PENDING', name: 'Pendentes' },
-  { id: 'COMPLETED', name: 'Concluídas' },
-  { id: 'OVERDUE', name: 'Em atraso' },
+  { id: '', name: 'Todas tarefas' },
+  { id: 'PENDING', name: 'Mostrar tarefas pendentes' },
+  { id: 'COMPLETED', name: 'Mostrar tarefas completadas' },
+  { id: 'OVERDUE', name: 'Mostrar tarefas atrasadas' },
 ];
 
 // Filtros globais
@@ -224,6 +224,7 @@ function onDragEnd(newOrder: ChecklistSection[]) {
           :options="statusOptions"
           label="Estado:"
           disable-margins
+          disable-empty
         />
         <BaseInput
           id="filter-checklist-searchQuery"
@@ -232,6 +233,7 @@ function onDragEnd(newOrder: ChecklistSection[]) {
           placeholder="Pesquisar por título/nota…"
           label="Pesquisa:"
           disable-margins
+          disable-empty
         />
         <div>
           <label class="mb-1 block text-sm font-medium">Datas:</label>

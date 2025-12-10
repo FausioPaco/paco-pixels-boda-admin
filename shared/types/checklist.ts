@@ -37,7 +37,7 @@ export const CHECKLIST_TASK_STATUS_DESCRIPTIONS = {
   '': 'Todos estados',
   PENDING: 'Pendente',
   COMPLETED: 'Completado',
-  OVERDUE: 'Atrasado',
+  OVERDUE: 'Em atraso',
 };
 
 export interface ChecklistTaskParameters {

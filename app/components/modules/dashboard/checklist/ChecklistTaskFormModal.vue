@@ -20,7 +20,8 @@ const serverErrors = ref<ServerError>({
   message: '',
 });
 
-const { EVENT_ID } = useRuntimeConfig().public;
+const { eventId } = useEventStore();
+const EVENT_ID = eventId;
 const toast = useToast();
 
 const schema = toTypedSchema(
@@ -190,7 +191,7 @@ function close() {
         v-bind="hasIndefiniteDateAttrs"
         :error="errors.has_Indefinite_Date"
         :readonly="isSubmitting"
-        label="Sem data"
+        label="A tarefa não possui data"
       />
 
       <div class="flex w-full justify-center gap-3">
@@ -198,7 +199,7 @@ function close() {
           type="button"
           btn-type="outline-primary"
           :disabled="isSubmitting"
-          @click="close"
+          @click.prevent="close"
           >Cancelar</BaseButton
         >
         <BaseButton type="submit" :disabled="isSubmitting">Guardar</BaseButton>

@@ -2,7 +2,7 @@
 import { toTypedSchema } from '@vee-validate/yup';
 import { useForm } from 'vee-validate';
 import { useToast } from 'vue-toastification';
-import { date, number, object, string } from 'yup';
+import { boolean, date, number, object, string } from 'yup';
 import { getEventService } from '~/services/eventService';
 
 interface IEventForm {
@@ -57,6 +57,7 @@ const { errors, handleSubmit, defineField, resetForm } = useForm<EventInput>({
         .required('O tipo de evento é obrigatório'),
 
       event_Date: date().nullable(),
+      autoCreateChecklist: boolean().default(false),
     }),
   ),
 });
@@ -67,6 +68,9 @@ const [description, descriptionAttrs] = defineField('description');
 const [initials, initialsAttrs] = defineField('initials');
 const [eventTypeId, eventTypeIdAttrs] = defineField('eventTypeId');
 const [event_Date, eventDateAttrs] = defineField('event_Date');
+const [autoCreateChecklist, autoCreateChecklistAttrs] = defineField(
+  'autoCreateChecklist',
+);
 
 // Submit
 const onSubmit = handleSubmit((values) => {
@@ -79,6 +83,7 @@ const onSubmit = handleSubmit((values) => {
     initials: values.initials,
     eventTypeId: values.eventTypeId,
     event_Date: values.event_Date ?? undefined,
+    autoCreateChecklist: values.autoCreateChecklist,
   };
 
   if (!props.event) {
@@ -237,6 +242,16 @@ watch(
         label="Descrição (opcional)"
         placeholder="Notas sobre o evento (local, horário, etc.)"
         rows="4"
+      />
+
+      <BaseCheckbox
+        v-if="!props.event"
+        id="autoCreateChecklist"
+        v-model="autoCreateChecklist"
+        v-bind="autoCreateChecklistAttrs"
+        :error="errors.autoCreateChecklist"
+        :readonly="isSubmiting"
+        label="Criar cronograma automático"
       />
 
       <BaseError v-if="serverErrors.hasErrors" class="mt-4">
