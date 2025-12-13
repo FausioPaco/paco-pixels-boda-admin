@@ -1,41 +1,35 @@
 import { getChecklistService } from '~/services/checklistService';
 
-export const useChecklistTemplatesList = async (opts?: {
-  includeGlobalFallback?: boolean;
-}) => {
-  const templates = useState<ChecklistTemplate[]>(
-    'checklist-templates-list',
-    () => [],
+export const useChecklistCurrentTemplate = async () => {
+  const template = useState<ChecklistTemplateDetail | null>(
+    'checklist-current-template',
+    () => null,
   );
 
   const eventStore = useEventStore();
   const eventTypeId = computed(() => eventStore.eventTypeId);
 
-  const includeGlobalFallback = computed(
-    () => opts?.includeGlobalFallback ?? true,
-  );
-
   const nuxtApp = useNuxtApp();
 
   const key = computed(() =>
-    [
-      'checklist-templates-list',
-      `type:${eventTypeId ?? 'none'}`,
-      `fallback:${includeGlobalFallback.value ? '1' : '0'}`,
-    ].join('|'),
+    ['checklist-current-template', `type:${eventTypeId.value ?? 'none'}`].join(
+      '|',
+    ),
   );
 
   const { data, refresh, status } = await useAsyncData(
     key,
     () =>
-      getChecklistService(nuxtApp.$api).getTemplates(
+      getChecklistService(nuxtApp.$api).getCurrentTemplateForEventType(
         eventTypeId.value!,
-        includeGlobalFallback.value,
       ),
     {
+      default: () => null,
       transform(input) {
+        if (!input) return null;
+
         return {
-          list: input,
+          ...input,
           fetchedAt: new Date(),
         };
       },
@@ -49,17 +43,17 @@ export const useChecklistTemplatesList = async (opts?: {
   );
 
   watchEffect(() => {
-    if (data.value) templates.value = data.value.list ?? [];
+    if (data.value) template.value = data.value;
   });
 
-  const refreshTemplates = async (p?: { force?: boolean }) => {
-    if (p?.force) clearNuxtData(key.value);
+  const refreshCurrentTemplate = async (opts?: { force?: boolean }) => {
+    if (opts?.force) clearNuxtData(key.value);
     await refresh();
   };
 
   return {
-    templates,
+    template,
     isRefreshing: status.value === 'pending',
-    refreshTemplates,
+    refreshCurrentTemplate,
   };
 };
