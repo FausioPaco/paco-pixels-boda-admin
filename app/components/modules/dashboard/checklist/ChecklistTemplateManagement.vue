@@ -22,10 +22,6 @@ const isEditTemplateModalOpen = ref(false);
 
 const isCreateSectionModalOpen = ref(false);
 
-const refresh = async (opts?: { force?: boolean }) => {
-  await refreshCurrentTemplate({ force: opts?.force ?? true });
-};
-
 const localSections = ref<ChecklistTemplateSection[]>([]);
 
 watch(
@@ -56,7 +52,7 @@ const onSectionsDragEnd = async () => {
   }));
 
   await checklistService.reorderTemplateSections(template.value.id, payload);
-  await refresh({ force: true });
+  await refreshCurrentTemplate({ force: true });
 };
 
 const openCreateSection = () => {
@@ -97,10 +93,10 @@ const openCreateSection = () => {
 
     <BaseLoading v-if="isRefreshing && !template" />
 
-    <BaseSearchNotFound
-      v-else-if="!template"
-      message=" Não foi possível carregar o modelo para este tipo de evento."
-    />
+    <BaseSearchNotFound v-else-if="!template"
+      >Não foi possível carregar o modelo para este tipo de
+      evento.</BaseSearchNotFound
+    >
 
     <div v-else class="flex flex-col gap-4">
       <div class="flex flex-wrap items-center justify-between gap-4">
@@ -137,7 +133,7 @@ const openCreateSection = () => {
             <ChecklistTemplateSection
               :template-id="template.id"
               :section="section"
-              @changed="refresh({ force: true })"
+              @changed="refreshCurrentTemplate({ force: true })"
             />
           </div>
         </template>
@@ -149,7 +145,7 @@ const openCreateSection = () => {
       :show="isEditTemplateModalOpen"
       :template="template"
       @close="isCreateSectionModalOpen = false"
-      @saved="refresh({ force: true })"
+      @saved="refreshCurrentTemplate({ force: true })"
     />
 
     <!-- criar secção -->
@@ -158,7 +154,7 @@ const openCreateSection = () => {
       :template-id="template?.id ?? 0"
       :section="null"
       @close="isCreateSectionModalOpen = false"
-      @saved="refresh({ force: true })"
+      @saved="refreshCurrentTemplate({ force: true })"
     />
   </div>
 </template>

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import BaseButton from '~/components/ui/BaseButton.vue';
-
 defineProps<{ task: ChecklistTemplateTaskUpdateInput }>();
 defineEmits(['edit', 'remove', 'moveUp', 'moveDown']);
 </script>
@@ -23,8 +21,12 @@ defineEmits(['edit', 'remove', 'moveUp', 'moveDown']);
                 undefined
             "
           >
-            Offset:
-            {{ task.default_Offset_Days ?? task.default_Offset_Days }} dia(s)
+            Dias antes do evento:
+            {{
+              task.default_Offset_Days === 1
+                ? '1 dia'
+                : `${task.default_Offset_Days} dias`
+            }}
           </span>
         </div>
       </div>

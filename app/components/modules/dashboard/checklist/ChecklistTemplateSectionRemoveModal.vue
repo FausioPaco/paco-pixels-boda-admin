@@ -14,7 +14,7 @@ const props = withDefaults(
 );
 
 const toast = useToast();
-const emit = defineEmits(['closeModal', 'success']);
+const emit = defineEmits(['closeModal', 'removed']);
 
 const isSubmiting = ref<boolean>(false);
 const serverErrors = ref<ServerError>({
@@ -32,7 +32,7 @@ const onSubmit = () => {
     .deleteTemplateSection(Number(props.section?.id))
     .then(() => {
       emit('closeModal');
-      emit('success');
+      emit('removed');
       toast.success('A secção foi removida com sucesso');
     })
     .catch((err) => {

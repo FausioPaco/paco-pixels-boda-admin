@@ -116,74 +116,90 @@ function onDragStart(evt: SortableEvent) {
     <p class="text-grey-400 text-sm font-semibold">Tarefas</p>
 
     <!-- DRAGGABLE TASKS -->
-    <draggable
-      v-model="localTasks"
-      item-key="id"
-      handle=".drag-handle"
-      class="mt-2 flex flex-col gap-2"
-      ghost-class="opacity-50"
-      @start="onDragStart"
-      @end="onTasksDragEnd"
-    >
-      <template #item="{ element: task }">
-        <div
-          class="flex items-start gap-3 py-2 md:items-center"
-          :data-id="task.id"
-        >
-          <button class="drag-handle cursor-grab pt-6 md:pb-4 md:pt-0">
-            <IconGripvertical
-              :font-controlled="false"
-              class="size-5 transition-colors duration-200"
-              :class="[
-                draggingId === task.id
-                  ? 'text-primary-500 opacity-100'
-                  : 'text-grey-500 hover:text-primary-500 opacity-60',
-              ]"
-            />
-          </button>
-
-          <ChecklistTemplateTaskRow
-            :task="task"
-            @edit="openEditTask(task)"
-            @remove="openRemoveTask(task)"
-          />
-        </div>
-      </template>
-    </draggable>
-
-    <div class="my-4">
-      <BaseButton
-        btn-type="primary"
-        icon="add"
-        btn-size="sm"
-        @click="openAddTask"
-        >Adicionar tarefa</BaseButton
+    <div v-if="localTasks.length > 0" class="animate-fadeIn">
+      <draggable
+        v-model="localTasks"
+        item-key="id"
+        handle=".drag-handle"
+        class="mt-2 flex flex-col gap-2"
+        ghost-class="opacity-50"
+        @start="onDragStart"
+        @end="onTasksDragEnd"
       >
+        <template #item="{ element: task }">
+          <div
+            class="flex items-start gap-3 py-2 md:items-center"
+            :data-id="task.id"
+          >
+            <button class="drag-handle cursor-grab pt-6 md:pb-4 md:pt-0">
+              <IconGripvertical
+                :font-controlled="false"
+                class="size-5 transition-colors duration-200"
+                :class="[
+                  draggingId === task.id
+                    ? 'text-primary-500 opacity-100'
+                    : 'text-grey-500 hover:text-primary-500 opacity-60',
+                ]"
+              />
+            </button>
+
+            <ChecklistTemplateTaskRow
+              :task="task"
+              @edit="openEditTask(task)"
+              @remove="openRemoveTask(task)"
+            />
+          </div>
+        </template>
+      </draggable>
+      <div class="my-4">
+        <BaseButton
+          btn-type="primary"
+          icon="add"
+          btn-size="sm"
+          @click="openAddTask"
+          >Adicionar tarefa</BaseButton
+        >
+      </div>
     </div>
 
+    <LazyBaseFirstEmptyState
+      v-else
+      icon="icon-menu-checklist"
+      :title="`Sem tarefas para '${section.title}'`"
+      description="Adiciona a primeira tarefa desta secção para este modelo"
+      button-label="Criar primeira tarefa"
+      button-icon="add"
+      show-button
+      @action="openAddTask"
+    />
+
     <LazyChecklistTemplateSectionFormModal
-      v-model:open="isSectionFormOpen"
+      :show="isSectionFormOpen"
       :template-id="templateId"
       :section="section"
+      @close="isSectionFormOpen = false"
       @saved="$emit('changed')"
     />
 
     <LazyChecklistTemplateSectionRemoveModal
-      v-model:open="isSectionRemoveOpen"
+      :show="isSectionRemoveOpen"
       :section="section"
+      @close-modal="isSectionRemoveOpen = false"
       @removed="$emit('changed')"
     />
 
     <LazyChecklistTemplateTaskFormModal
-      v-model:open="isTaskFormOpen"
+      :show="isTaskFormOpen"
       :section-id="section.id"
       :task="editingTask"
+      @close="isTaskFormOpen = false"
       @saved="$emit('changed')"
     />
 
     <LazyChecklistTemplateTaskRemoveModal
-      v-model:open="isTaskRemoveOpen"
+      :show="isTaskRemoveOpen"
       :task="removingTask"
+      @close="isTaskRemoveOpen = false"
       @removed="$emit('changed')"
     />
   </div>

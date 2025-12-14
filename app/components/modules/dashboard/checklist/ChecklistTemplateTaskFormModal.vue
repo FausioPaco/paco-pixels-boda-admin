@@ -37,10 +37,12 @@ const schema = toTypedSchema(
         is: false,
         then: (s) =>
           s
-            .typeError('O offset deve ser um número')
-            .integer('O offset deve ser um número inteiro')
-            .min(0, 'O offset não pode ser negativo')
-            .required('O offset é obrigatório (ou marque “Data indefinida”)'),
+            .typeError('Os dias antes do evento devem ser um número')
+            .integer('Os dias antes do evento devem ser um número inteiro')
+            .min(0, 'Os dias antes do evento não podem ser negativos')
+            .required(
+              'Os dias antes do evento são obrigatórios (ou marque “Data indefinida”)',
+            ),
         otherwise: (s) => s.nullable(),
       }),
   }),

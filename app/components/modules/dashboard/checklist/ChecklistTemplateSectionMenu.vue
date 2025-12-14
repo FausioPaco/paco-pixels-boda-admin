@@ -9,6 +9,11 @@ defineEmits(['edit', 'remove', 'changed']);
       >Editar</BaseButton
     >
 
-    <BaseButton btn-type="outline-primary" btn-size="sm">Remover</BaseButton>
+    <BaseButton
+      btn-type="outline-primary"
+      btn-size="sm"
+      @click="$emit('remove')"
+      >Remover</BaseButton
+    >
   </div>
 </template>
