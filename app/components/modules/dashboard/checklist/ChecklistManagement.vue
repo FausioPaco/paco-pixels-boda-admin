@@ -32,7 +32,7 @@ const activeTab = ref<ChecklistTab>('EVENT');
         :is-active="activeTab === 'TEMPLATE'"
         class="w-full md:w-1/2"
         @click="activeTab = 'TEMPLATE'"
-        >Modelos de Cronograma</BaseTabItem
+        >Modelo de Cronograma</BaseTabItem
       >
     </BaseTab>
 

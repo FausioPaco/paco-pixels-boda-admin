@@ -10,6 +10,7 @@ type SortableEvent = {
 
 const eventStore = useEventStore();
 const eventTypeName = computed(() => eventStore.eventTypeName);
+const iconName = computed(() => eventStore.eventTypeIcon || 'event-wedding');
 
 const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
@@ -64,28 +65,33 @@ const openCreateSection = () => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
-    <div class="flex items-start justify-between gap-3">
-      <div class="flex flex-col">
-        <div class="text-lg">Template de checklist</div>
-        <div class="text-sm opacity-70">
-          {{ eventTypeName || 'Tipo de evento' }}
-        </div>
+  <div class="my-8 flex animate-fadeIn flex-col gap-4">
+    <div class="flex flex-col gap-2">
+      <!-- Event badge -->
+      <span class="text-primary-700/40 font-semibold"
+        >Modelo de cronograma</span
+      >
+      <div
+        class="bg-primary-50 flex w-fit items-end gap-2 rounded-full px-4 py-2"
+      >
+        <component
+          :is="`icon-${iconName}`"
+          :font-controlled="false"
+          class="text-primary-700 size-[20px]"
+        />
+        <span class="text-primary-700 font-bold">{{ eventTypeName }}</span>
       </div>
 
-      <div class="flex items-center gap-2">
-        <BaseButton
-          label="Editar template"
-          variant="secondary"
-          :disabled="!template"
-          @click="isEditTemplateModalOpen = true"
-        />
-        <BaseButton
-          label="Actualizar"
-          variant="secondary"
-          :disabled="isRefreshing"
-          @click="refresh({ force: true })"
-        />
+      <div class="my-4">
+        <p class="text-grey-500 mb-3 text-sm">
+          Aqui podes actualizar o modelo de cronograma para eventos do tipo
+          <span class="text-primary-700 font-bold"> {{ eventTypeName }}</span>
+        </p>
+        <p class="text-grey-500 text-sm">
+          As alterações feitas neste modelo serão
+          <b>usadas como base nos próximos eventos</b> deste tipo, ajudando a
+          manter o cronograma consistente e rápido de preparar.
+        </p>
       </div>
     </div>
 
@@ -93,15 +99,15 @@ const openCreateSection = () => {
 
     <BaseSearchNotFound
       v-else-if="!template"
-      message=" Não foi possível carregar o template para este tipo de evento."
+      message=" Não foi possível carregar o modelo para este tipo de evento."
     />
 
     <div v-else class="flex flex-col gap-4">
-      <ChecklistTemplateHeaderCard :template="template" />
-
-      <div class="flex items-center justify-between">
-        <div class="text-base">Secções</div>
-        <BaseButton label="Adicionar secção" @click="openCreateSection" />
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="text-primary-700/50 text-base font-semibold">
+          Secções deste modelo
+        </div>
+        <BaseButton @click="openCreateSection">Adicionar secção</BaseButton>
       </div>
 
       <!-- DRAGGABLE SECTIONS -->
@@ -109,13 +115,13 @@ const openCreateSection = () => {
         v-model="localSections"
         item-key="id"
         handle=".drag-handle"
-        class="flex flex-col gap-3"
+        class="flex w-full flex-col gap-3"
         ghost-class="opacity-50"
         @start="onSectionDragStart"
         @end="onSectionsDragEnd"
       >
         <template #item="{ element: section }">
-          <div :data-id="section.id" class="flex items-start gap-3 py-2">
+          <div :data-id="section.id" class="flex w-full items-start gap-3 py-2">
             <button class="drag-handle cursor-grab pt-7">
               <IconGripvertical
                 :font-controlled="false"
@@ -140,16 +146,18 @@ const openCreateSection = () => {
 
     <!-- Modificar nome do template -->
     <LazyChecklistTemplateFormModal
-      v-model:open="isEditTemplateModalOpen"
+      :show="isEditTemplateModalOpen"
       :template="template"
+      @close="isCreateSectionModalOpen = false"
       @saved="refresh({ force: true })"
     />
 
     <!-- criar secção -->
     <LazyChecklistTemplateSectionFormModal
-      v-model:open="isCreateSectionModalOpen"
+      :show="isCreateSectionModalOpen"
       :template-id="template?.id ?? 0"
       :section="null"
+      @close="isCreateSectionModalOpen = false"
       @saved="refresh({ force: true })"
     />
   </div>

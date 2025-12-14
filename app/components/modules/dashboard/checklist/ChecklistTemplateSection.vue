@@ -50,8 +50,8 @@ const isSectionRemoveOpen = ref(false);
 const isTaskFormOpen = ref(false);
 const isTaskRemoveOpen = ref(false);
 
-const editingTask = ref<ChecklistTemplateTask | null>(null);
-const removingTask = ref<ChecklistTemplateTask | null>(null);
+const editingTask = ref<ChecklistTemplateTask | undefined>(undefined);
+const removingTask = ref<ChecklistTemplateTask | undefined>(undefined);
 
 const openEditSection = () => {
   isSectionFormOpen.value = true;
@@ -62,7 +62,7 @@ const openRemoveSection = () => {
 };
 
 const openAddTask = () => {
-  editingTask.value = null;
+  editingTask.value = undefined;
   isTaskFormOpen.value = true;
 };
 
@@ -89,10 +89,12 @@ function onDragStart(evt: SortableEvent) {
 </script>
 
 <template>
-  <div class="rounded-xl border p-3">
-    <div class="flex items-start justify-between gap-3">
+  <div class="w-full rounded-xl border p-3">
+    <div class="mb-8 flex flex-wrap items-start justify-between gap-3">
       <div class="flex flex-col gap-1">
-        <div class="text-base">{{ section.title }}</div>
+        <div class="text-base font-semibold md:text-lg">
+          {{ section.title }}
+        </div>
 
         <div v-if="section.description" class="text-sm opacity-70">
           {{ section.description }}
@@ -111,14 +113,7 @@ function onDragStart(evt: SortableEvent) {
       />
     </div>
 
-    <div class="mt-3 flex items-center justify-between">
-      <div class="text-sm">Tarefas</div>
-      <BaseButton
-        label="Adicionar tarefa"
-        variant="secondary"
-        @click="openAddTask"
-      />
-    </div>
+    <p class="text-grey-400 text-sm font-semibold">Tarefas</p>
 
     <!-- DRAGGABLE TASKS -->
     <draggable
@@ -153,47 +148,40 @@ function onDragStart(evt: SortableEvent) {
             @remove="openRemoveTask(task)"
           />
         </div>
-
-        <!-- <div class="flex items-start gap-2">
-          <div
-            class="drag-handle mt-2 cursor-grab select-none opacity-60 hover:opacity-100"
-            title="Arrastar"
-          >
-            ⠿
-          </div>
-
-          <div class="flex-1">
-            <ChecklistTemplateTaskRow
-              :task="task"
-              @edit="openEditTask(task)"
-              @remove="openRemoveTask(task)"
-            />
-          </div>
-        </div> -->
       </template>
     </draggable>
 
-    <ChecklistTemplateSectionFormModal
+    <div class="my-4">
+      <BaseButton
+        btn-type="primary"
+        icon="add"
+        btn-size="sm"
+        @click="openAddTask"
+        >Adicionar tarefa</BaseButton
+      >
+    </div>
+
+    <LazyChecklistTemplateSectionFormModal
       v-model:open="isSectionFormOpen"
       :template-id="templateId"
       :section="section"
       @saved="$emit('changed')"
     />
 
-    <ChecklistTemplateSectionRemoveModal
+    <LazyChecklistTemplateSectionRemoveModal
       v-model:open="isSectionRemoveOpen"
       :section="section"
       @removed="$emit('changed')"
     />
 
-    <ChecklistTemplateTaskFormModal
+    <LazyChecklistTemplateTaskFormModal
       v-model:open="isTaskFormOpen"
       :section-id="section.id"
       :task="editingTask"
       @saved="$emit('changed')"
     />
 
-    <ChecklistTemplateTaskRemoveModal
+    <LazyChecklistTemplateTaskRemoveModal
       v-model:open="isTaskRemoveOpen"
       :task="removingTask"
       @removed="$emit('changed')"

@@ -6,8 +6,8 @@ defineEmits(['edit', 'remove', 'moveUp', 'moveDown']);
 </script>
 
 <template>
-  <div class="rounded-lg border p-2">
-    <div class="flex items-start justify-between gap-3">
+  <div class="group w-full rounded-lg border p-2">
+    <div class="flex flex-wrap items-start justify-between gap-3">
       <div class="flex flex-col gap-1">
         <div class="text-sm">{{ task.title }}</div>
         <div v-if="task.notes" class="text-xs opacity-70">{{ task.notes }}</div>
@@ -29,11 +29,25 @@ defineEmits(['edit', 'remove', 'moveUp', 'moveDown']);
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
-        <BaseButton label="↑" variant="secondary" @click="$emit('moveUp')" />
-        <BaseButton label="↓" variant="secondary" @click="$emit('moveDown')" />
-        <BaseButton label="Editar" variant="secondary" @click="$emit('edit')" />
-        <BaseButton label="Remover" variant="danger" @click="$emit('remove')" />
+      <div class="duration-400 flex animate-fadeIn items-center gap-2">
+        <BaseButton
+          btn-type="outline-primary"
+          btn-size="sm"
+          icon="pencil"
+          :icon-size="14"
+          only-icon
+          @click="$emit('edit')"
+          ><span class="hidden md:inline">Editar</span></BaseButton
+        >
+        <BaseButton
+          btn-type="outline-primary"
+          btn-size="sm"
+          icon="cancel"
+          :icon-size="14"
+          only-icon
+          @click="$emit('remove')"
+          ><span class="hidden md:inline">Remover</span></BaseButton
+        >
       </div>
     </div>
   </div>

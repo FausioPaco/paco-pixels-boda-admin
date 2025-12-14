@@ -5,7 +5,10 @@ defineEmits(['edit', 'remove', 'changed']);
 
 <template>
   <div class="flex items-center gap-2">
-    <BaseButton label="Editar" variant="secondary" @click="$emit('edit')" />
-    <BaseButton label="Remover" variant="danger" @click="$emit('remove')" />
+    <BaseButton btn-type="outline-primary" btn-size="sm" @click="$emit('edit')"
+      >Editar</BaseButton
+    >
+
+    <BaseButton btn-type="outline-primary" btn-size="sm">Remover</BaseButton>
   </div>
 </template>

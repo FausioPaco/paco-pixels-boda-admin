@@ -45,6 +45,10 @@ export const useEventStore = defineStore('event', () => {
     () => selected.value?.eventTypeName,
   );
 
+  const eventTypeIcon = computed<string | undefined | null>(
+    () => selected.value?.icon,
+  );
+
   const eventTypeSlug = computed<string | undefined | null>(
     () => selected.value?.eventTypeSlug,
   );
@@ -237,6 +241,7 @@ export const useEventStore = defineStore('event', () => {
     eventTypeName,
     eventTypeSlug,
     eventTypeId,
+    eventTypeIcon,
     selectEvent,
     selectEventById,
     clearSelectedEvent,
