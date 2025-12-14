@@ -93,8 +93,8 @@ const submit = handleSubmit(async (values) => {
       toast.success('Secção criada com sucesso');
     }
 
-    emit('saved');
     close();
+    emit('saved');
   } catch (e) {
     console.log(e);
     serverErrors.value.message = getServerErrors(e as ServerError);
@@ -167,6 +167,7 @@ function close() {
           type="submit"
           :disabled="isSubmitting"
           :loading="isSubmitting"
+          @click.prevent="submit"
         >
           {{ section ? 'Modificar agora' : 'Criar secção' }}
         </BaseButton>
