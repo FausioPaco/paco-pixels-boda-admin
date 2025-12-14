@@ -1,5 +1,12 @@
 <script setup lang="ts">
+import draggable from 'vuedraggable';
 import { getChecklistService } from '~/services/checklistService';
+
+type SortableEvent = {
+  item: HTMLElement;
+  oldIndex?: number;
+  newIndex?: number;
+};
 
 const props = defineProps<{
   templateId: number;
@@ -13,12 +20,30 @@ const emit = defineEmits<{
 const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
 
-const tasks = computed(() => {
-  const list = props.section?.tasks ?? [];
-  return [...list].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-});
+const localTasks = ref<ChecklistTemplateTask[]>([]);
 
-// modais
+watch(
+  () => props.section?.tasks,
+  (list) => {
+    const safe = list ?? [];
+    localTasks.value = [...safe].sort(
+      (a, b) => (a.order ?? 0) - (b.order ?? 0),
+    );
+  },
+  { immediate: true },
+);
+
+const onTasksDragEnd = async () => {
+  const payload = localTasks.value.map((t, idx) => ({
+    id: t.id,
+    order: idx + 1,
+  }));
+
+  await checklistService.reorderTemplateTasks(props.section.id, payload);
+  emit('changed');
+};
+
+const draggingId = ref<number | null>(null);
 const isSectionFormOpen = ref(false);
 const isSectionRemoveOpen = ref(false);
 
@@ -51,25 +76,16 @@ const openRemoveTask = (task: ChecklistTemplateTask) => {
   isTaskRemoveOpen.value = true;
 };
 
-// reorder (up/down) – mantém simples igual ao teu
-const moveTask = async (taskId: number, direction: 'up' | 'down') => {
-  const current = tasks.value.map((t: ChecklistTemplateTask) => ({ ...t }));
-  const index = current.findIndex((t) => t.id === taskId);
-  if (index === -1) return;
+const sectionPrazo = computed(() => {
+  const v = props.section?.default_Offset_Days;
+  return v === null || v === undefined ? null : Number(v);
+});
 
-  if (direction === 'up' && index === 0) return;
-  if (direction === 'down' && index === current.length - 1) return;
-
-  const newIndex = direction === 'up' ? index - 1 : index + 1;
-  const [removed] = current.splice(index, 1);
-  if (!removed) return;
-  current.splice(newIndex, 0, removed);
-
-  const payload = current.map((t, idx) => ({ id: t.id, order: idx + 1 }));
-  await checklistService.reorderTemplateTasks(props.section.id, payload);
-
-  emit('changed');
-};
+function onDragStart(evt: SortableEvent) {
+  const el = evt.item as HTMLElement;
+  const id = Number(el?.dataset?.id);
+  draggingId.value = Number.isFinite(id) ? id : null;
+}
 </script>
 
 <template>
@@ -77,19 +93,13 @@ const moveTask = async (taskId: number, direction: 'up' | 'down') => {
     <div class="flex items-start justify-between gap-3">
       <div class="flex flex-col gap-1">
         <div class="text-base">{{ section.title }}</div>
+
         <div v-if="section.description" class="text-sm opacity-70">
           {{ section.description }}
         </div>
 
-        <div
-          v-if="section.default_Offset_Days ?? section.default_Offset_Days"
-          class="text-xs opacity-70"
-        >
-          Offset por defeito:
-          {{
-            section.default_Offset_Days ?? section.default_Offset_Days
-          }}
-          dia(s)
+        <div v-if="sectionPrazo !== null" class="text-xs opacity-70">
+          Prazo por defeito: {{ sectionPrazo }} dia(s) antes do evento
         </div>
       </div>
 
@@ -110,17 +120,58 @@ const moveTask = async (taskId: number, direction: 'up' | 'down') => {
       />
     </div>
 
-    <div class="mt-2 flex flex-col gap-2">
-      <ChecklistTemplateTaskRow
-        v-for="task in tasks"
-        :key="task.id"
-        :task="task"
-        @edit="openEditTask(task)"
-        @remove="openRemoveTask(task)"
-        @move-up="moveTask(task.id, 'up')"
-        @move-down="moveTask(task.id, 'down')"
-      />
-    </div>
+    <!-- DRAGGABLE TASKS -->
+    <draggable
+      v-model="localTasks"
+      item-key="id"
+      handle=".drag-handle"
+      class="mt-2 flex flex-col gap-2"
+      ghost-class="opacity-50"
+      @start="onDragStart"
+      @end="onTasksDragEnd"
+    >
+      <template #item="{ element: task }">
+        <div
+          class="flex items-start gap-3 py-2 md:items-center"
+          :data-id="task.id"
+        >
+          <button class="drag-handle cursor-grab pt-6 md:pb-4 md:pt-0">
+            <IconGripvertical
+              :font-controlled="false"
+              class="size-5 transition-colors duration-200"
+              :class="[
+                draggingId === task.id
+                  ? 'text-primary-500 opacity-100'
+                  : 'text-grey-500 hover:text-primary-500 opacity-60',
+              ]"
+            />
+          </button>
+
+          <ChecklistTemplateTaskRow
+            :task="task"
+            @edit="openEditTask(task)"
+            @remove="openRemoveTask(task)"
+          />
+        </div>
+
+        <!-- <div class="flex items-start gap-2">
+          <div
+            class="drag-handle mt-2 cursor-grab select-none opacity-60 hover:opacity-100"
+            title="Arrastar"
+          >
+            ⠿
+          </div>
+
+          <div class="flex-1">
+            <ChecklistTemplateTaskRow
+              :task="task"
+              @edit="openEditTask(task)"
+              @remove="openRemoveTask(task)"
+            />
+          </div>
+        </div> -->
+      </template>
+    </draggable>
 
     <ChecklistTemplateSectionFormModal
       v-model:open="isSectionFormOpen"

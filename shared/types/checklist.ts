@@ -116,14 +116,12 @@ export interface ChecklistTemplateUpdateInput {
 export interface ChecklistTemplateSectionInput {
   title: string;
   description?: string;
-  order?: number;
   default_Offset_Days?: number | null;
 }
 
 export interface ChecklistTemplateSectionUpdateInput {
   title: string;
   description?: string;
-  order: number;
   default_Offset_Days?: number | null;
 }
 
@@ -143,7 +141,6 @@ export interface ChecklistTemplateTaskInput {
 export interface ChecklistTemplateTaskUpdateInput {
   title: string;
   notes?: string;
-  order: number;
   default_Offset_Days?: number | null;
   has_Indefinite_Date: boolean;
 }
