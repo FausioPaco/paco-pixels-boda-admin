@@ -14,7 +14,7 @@ const props = withDefaults(
 );
 
 const toast = useToast();
-const emit = defineEmits(['closeModal', 'success']);
+const emit = defineEmits(['closeModal', 'removed']);
 
 const isSubmiting = ref<boolean>(false);
 const serverErrors = ref<ServerError>({
@@ -31,8 +31,9 @@ const onSubmit = () => {
   checklistService
     .deleteTemplateTask(Number(props.task?.id))
     .then(() => {
+      emit('removed');
       emit('closeModal');
-      emit('success');
+
       toast.success('A tarefa foi removida com sucesso');
     })
     .catch((err) => {

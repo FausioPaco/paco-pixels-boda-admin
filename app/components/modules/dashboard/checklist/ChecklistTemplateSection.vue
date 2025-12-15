@@ -199,7 +199,7 @@ function onDragStart(evt: SortableEvent) {
     <LazyChecklistTemplateTaskRemoveModal
       :show="isTaskRemoveOpen"
       :task="removingTask"
-      @close="isTaskRemoveOpen = false"
+      @close-modal="isTaskRemoveOpen = false"
       @removed="$emit('changed')"
     />
   </div>
