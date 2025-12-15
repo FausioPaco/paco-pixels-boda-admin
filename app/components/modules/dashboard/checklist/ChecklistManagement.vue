@@ -5,6 +5,7 @@ import ChecklistTemplateManagement from './ChecklistTemplateManagement.vue';
 type ChecklistTab = 'EVENT' | 'TEMPLATE';
 
 const activeTab = ref<ChecklistTab>('EVENT');
+const { isMultiEventStaffUser } = useAuthStore();
 </script>
 <template>
   <BaseCard
@@ -12,7 +13,7 @@ const activeTab = ref<ChecklistTab>('EVENT');
     description="Organize e actualize facilmente todas as actividades e horários importantes deste evento."
   >
     <!-- Tabs -->
-    <BaseTab>
+    <BaseTab v-if="isMultiEventStaffUser">
       <BaseTabItem
         id="checklist"
         icon="calendar"

@@ -68,6 +68,12 @@ export const useAuthStore = defineStore('auth', () => {
     () => user.value?.roleName === 'Super Administrador',
   );
 
+  const isMultiEventStaffUser = computed(
+    () =>
+      user.value?.roleName === 'Super Administrador' ||
+      user.value?.roleName === 'Administrador',
+  );
+
   const hasEventAssigned = computed(() => !!user.value?.eventId);
 
   return {
@@ -78,6 +84,7 @@ export const useAuthStore = defineStore('auth', () => {
     checkAuth,
     isAdministrator,
     isSuperAdministrator,
+    isMultiEventStaffUser,
     hasEventAssigned,
   };
 });

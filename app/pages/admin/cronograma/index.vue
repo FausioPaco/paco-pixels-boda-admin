@@ -12,7 +12,7 @@ useHead({
 definePageMeta({
   name: 'Cronograma',
   pageName: 'Cronograma',
-  middleware: ['auth', 'administrator'],
+  middleware: ['auth'],
 });
 </script>
 
