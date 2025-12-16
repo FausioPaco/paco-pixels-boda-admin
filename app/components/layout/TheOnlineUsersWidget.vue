@@ -6,23 +6,28 @@ const eventStore = useEventStore();
 
 const selectedEventId = computed(() => eventStore.eventId ?? null);
 
-// regra: no AdminHeader, normalmente queres ver partner staff
-const includePartnerStaff = computed(() => true);
-
-// regra: decide se queres mostrar admins aqui
-// se quiseres, deixa true; se não, mete false
-const includeAdmins = computed(() => true);
-
 const isOpen = ref(false);
 const dropdownRef = ref<HTMLElement | null>(null);
+const { siteConfig } = await useClientConfig();
 
 const { onlineUsers, refreshOnlineUsers, isRefreshing } =
   await useOnlineUsersWidget({
     eventId: selectedEventId,
-    includePartnerStaff: includePartnerStaff.value,
-    includeAdmins: includeAdmins.value,
-    intervalMs: 30_000,
+    includePartnerStaff: true,
+    includeAdmins: true,
   });
+
+let timer: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  timer = setInterval(() => {
+    refreshOnlineUsers();
+  }, 30_000);
+});
+
+onBeforeUnmount(() => {
+  if (timer) clearInterval(timer);
+});
 
 const users = computed(() => onlineUsers.value ?? []);
 const onlineCount = computed(() => users.value.length);
@@ -34,14 +39,7 @@ const eventUsers = computed(() => {
 });
 
 const partnerStaffUsers = computed(() => {
-  return users.value.filter((u) => u.partnerId != null);
-});
-
-const adminUsers = computed(() => {
-  return users.value.filter(
-    (u) =>
-      u.roleName === 'Administrador' || u.roleName === 'Super Administrador',
-  );
+  return users.value.filter((u) => u.partnerId != null && u.eventId === null);
 });
 
 function toggle() {
@@ -61,47 +59,54 @@ const refreshUsers = () => {
   refreshOnlineUsers();
 };
 </script>
-
 <template>
   <div class="relative hidden md:block">
     <button
       type="button"
-      class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm hover:bg-slate-50"
-      @click="toggle"
+      class="hover:bg-primary-100 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-transparent px-3 py-1.5 text-sm text-gray-700 shadow-sm transition-colors ease-in"
+      @click.prevent="toggle"
     >
+      <span
+        class="block size-[8px] rounded-full"
+        :class="onlineCount === 0 ? 'bg-gray-400' : 'bg-success-600'"
+      ></span>
       <span class="opacity-80">Online:</span>
-      <span class="font-semibold">{{ onlineCount }}</span>
+      <span class="font-semibold">
+        {{ onlineCount }}
+      </span>
       <span v-if="isRefreshing" class="ml-1 text-xs opacity-60">...</span>
     </button>
 
     <Transition
       enter-active-class="transition duration-150 ease-out"
-      enter-from-class="opacity-0 translate-y-1 scale-[0.99]"
-      enter-to-class="opacity-100 translate-y-0 scale-100"
+      enter-from-class="opacity-0 trangray-y-1 scale-[0.99]"
+      enter-to-class="opacity-100 trangray-y-0 scale-100"
       leave-active-class="transition duration-120 ease-in"
-      leave-from-class="opacity-100 translate-y-0 scale-100"
-      leave-to-class="opacity-0 translate-y-1 scale-[0.99]"
+      leave-from-class="opacity-100 trangray-y-0 scale-100"
+      leave-to-class="opacity-0 trangray-y-1 scale-[0.99]"
     >
       <div
         v-if="isOpen"
         ref="dropdownRef"
-        class="absolute right-0 top-10 z-50 max-h-[420px] w-[360px] overflow-auto rounded-xl border border-slate-200 bg-white p-3 shadow-xl"
+        class="absolute right-0 top-10 z-50 max-h-[420px] w-[360px] overflow-auto rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
       >
         <div class="mb-2 flex items-center justify-between gap-3">
-          <div class="text-sm font-semibold text-slate-800">
-            Utilizadores online
+          <div
+            class="flex items-center gap-2 text-sm font-semibold text-gray-800"
+          >
+            <span>Utilizadores online</span>
           </div>
 
           <div class="flex items-center gap-2">
             <button
-              class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50"
+              class="rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50"
               @click="refreshUsers"
             >
               Actualizar
             </button>
 
             <button
-              class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50"
+              class="rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50"
               @click="close"
             >
               Fechar
@@ -110,15 +115,15 @@ const refreshUsers = () => {
         </div>
 
         <div v-if="selectedEventId" class="mt-3">
-          <div class="mb-1 text-xs font-medium text-slate-500">
-            Evento (noivos e equipa do evento)
+          <div class="mb-1 text-xs font-medium text-gray-400">
+            Equipa do evento
           </div>
 
           <div
             v-if="eventUsers.length === 0"
-            class="py-1 text-sm text-slate-500"
+            class="py-1 text-sm text-gray-500"
           >
-            Ninguém online no evento.
+            Ninguém online do evento.
           </div>
 
           <ul v-else class="space-y-2">
@@ -127,19 +132,21 @@ const refreshUsers = () => {
               :key="u.id"
               class="flex items-center gap-2"
             >
-              <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-              <span class="text-sm text-slate-800">{{ u.name }}</span>
-              <span class="text-xs text-slate-500">({{ u.roleName }})</span>
+              <span class="bg-success-600 h-2 w-2 rounded-full"></span>
+              <span class="text-sm text-gray-800">{{ u.name }}</span>
+              <span class="text-xs text-gray-400">({{ u.roleName }})</span>
             </li>
           </ul>
         </div>
 
         <div class="mt-4">
-          <p class="mb-1 text-xs font-medium text-slate-500">Equipa</p>
+          <p class="mb-1 text-xs font-medium text-gray-400">
+            Equipa da {{ siteConfig.entity }}
+          </p>
 
           <div
             v-if="partnerStaffUsers.length === 0"
-            class="py-1 text-sm text-slate-500"
+            class="py-1 text-sm text-gray-500"
           >
             Ninguém online na equipa.
           </div>
@@ -150,32 +157,8 @@ const refreshUsers = () => {
               :key="`p-${u.id}`"
               class="flex items-center gap-2"
             >
-              <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-              <span class="text-sm text-slate-800">{{ u.name }}</span>
-              <span class="text-xs text-slate-500">({{ u.roleName }})</span>
-            </li>
-          </ul>
-        </div>
-
-        <div v-if="includeAdmins" class="mt-4">
-          <div class="mb-1 text-xs font-medium text-slate-500">Admins</div>
-
-          <div
-            v-if="adminUsers.length === 0"
-            class="py-1 text-sm text-slate-500"
-          >
-            Nenhum admin online.
-          </div>
-
-          <ul v-else class="space-y-2">
-            <li
-              v-for="u in adminUsers"
-              :key="`a-${u.id}`"
-              class="flex items-center gap-2"
-            >
-              <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-              <span class="text-sm text-slate-800">{{ u.name }}</span>
-              <span class="text-xs text-slate-500">({{ u.roleName }})</span>
+              <span class="bg-success-600 h-2 w-2 rounded-full"></span>
+              <span class="text-sm text-gray-800">{{ u.name }}</span>
             </li>
           </ul>
         </div>

@@ -28,14 +28,20 @@ export const useOnlineUsers = async (options: {
       getCachedData(k) {
         const cached = nuxtApp.payload.data[k] || nuxtApp.static.data[k];
         if (!cached) return;
+        if (!cached.fetchedAt || cacheExpired(cached.fetchedAt, 20)) return;
         return cached;
       },
     },
   );
 
+  const refreshOnlineUsers = async () => {
+    clearNuxtData(key);
+    await refresh();
+  };
+
   return {
     onlineUsers: computed(() => data.value ?? []),
     isRefreshing: computed(() => status.value === 'pending'),
-    refreshOnlineUsers: refresh,
+    refreshOnlineUsers,
   };
 };
