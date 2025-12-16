@@ -8,6 +8,9 @@ const route = useRoute();
     <h1 class="text-grey-800 text-2xl font-bold md:text-3xl">
       {{ route.meta['pageName'] }}
     </h1>
-    <TheHeaderUser />
+    <div class="flex items-center gap-6">
+      <LazyTheOnlineUsersWidget />
+      <LazyTheHeaderUser />
+    </div>
   </header>
 </template>

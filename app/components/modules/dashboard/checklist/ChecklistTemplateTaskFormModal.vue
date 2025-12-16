@@ -1,28 +1,26 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/yup';
 import { useForm } from 'vee-validate';
-import { boolean, date, object, string } from 'yup';
+import { boolean, number, object, string } from 'yup';
 import { useToast } from 'vue-toastification';
 import { getChecklistService } from '~/services/checklistService';
 
 const props = defineProps<{
   show?: boolean;
-  task: ChecklistTask | undefined;
-  tasksCount?: number;
+  task: ChecklistTemplateTask | undefined;
   sectionId: number;
 }>();
 
 const emit = defineEmits<{ (e: 'close' | 'saved'): void }>();
+
 const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
+
+const toast = useToast();
 const serverErrors = ref<ServerError>({
   hasErrors: false,
   message: '',
 });
-
-const { eventId } = useEventStore();
-const EVENT_ID = eventId;
-const toast = useToast();
 
 const schema = toTypedSchema(
   object({
@@ -33,12 +31,18 @@ const schema = toTypedSchema(
       .required('O título é obrigatório'),
     notes: string().max(2000, 'As notas são demasiado longas').optional(),
     has_Indefinite_Date: boolean().default(false),
-    due_Date: date()
+    default_Offset_Days: number()
       .nullable()
       .when('has_Indefinite_Date', {
         is: false,
         then: (s) =>
-          s.required('A data limite é obrigatória (ou marque “Sem data”)'),
+          s
+            .typeError('Os dias antes do evento devem ser um número')
+            .integer('Os dias antes do evento devem ser um número inteiro')
+            .min(0, 'Os dias antes do evento não podem ser negativos')
+            .required(
+              'Os dias antes do evento são obrigatórios (ou marque “Data indefinida”)',
+            ),
         otherwise: (s) => s.nullable(),
       }),
   }),
@@ -51,25 +55,22 @@ const {
   setValues,
   isSubmitting,
   resetForm,
-} = useForm<ChecklistTaskInput>({
+} = useForm<ChecklistTemplateTaskInput>({
   validationSchema: schema,
   initialValues: {
     title: props.task?.title ?? '',
     notes: props.task?.notes ?? '',
-    due_Date: props.task?.due_Date ? new Date(props.task.due_Date) : null,
     has_Indefinite_Date: props.task?.has_Indefinite_Date ?? false,
-    sectionId: props.sectionId,
-    eventId: Number(EVENT_ID),
+    default_Offset_Days: props.task?.default_Offset_Days ?? null,
   },
 });
 
-// mirror DeskFormModal style: field + attrs pairs
 const [title, titleAttrs] = defineField('title');
 const [notes, notesAttrs] = defineField('notes');
-const [due_Date, dueDateAttrs] = defineField('due_Date');
 const [has_Indefinite_Date, hasIndefiniteDateAttrs] = defineField(
   'has_Indefinite_Date',
 );
+const [default_Offset_Days, offsetAttrs] = defineField('default_Offset_Days');
 
 watch(
   () => props.task,
@@ -77,10 +78,8 @@ watch(
     setValues({
       title: t?.title ?? '',
       notes: t?.notes ?? '',
-      due_Date: t?.due_Date ? new Date(t.due_Date) : null,
       has_Indefinite_Date: t?.has_Indefinite_Date ?? false,
-      sectionId: props.sectionId,
-      eventId: Number(EVENT_ID),
+      default_Offset_Days: t?.default_Offset_Days ?? null,
     });
   },
   { immediate: true },
@@ -88,16 +87,23 @@ watch(
 
 const submit = handleSubmit(async (values) => {
   try {
-    const currentCount = props.tasksCount || 0;
-    const payload = { ...values, sectionId: props.sectionId };
+    const payload = {
+      title: values.title,
+      notes: values.notes ?? '',
+      has_Indefinite_Date: values.has_Indefinite_Date ?? false,
+      default_Offset_Days: values.has_Indefinite_Date
+        ? null
+        : (values.default_Offset_Days ?? null),
+    };
 
     if (props.task?.id) {
-      await checklistService.updateTask(props.task.id, payload);
+      await checklistService.updateTemplateTask(props.task.id, payload);
       toast.success('Tarefa actualizada com sucesso');
     } else {
-      await checklistService.createTask(payload, currentCount);
+      await checklistService.addTemplateTask(props.sectionId, payload);
       toast.success('Tarefa criada com sucesso');
     }
+
     emit('saved');
     close();
   } catch (e) {
@@ -121,9 +127,8 @@ function close() {
     @close-modal="close"
   >
     <form class="space-y-4" @submit.prevent="submit">
-      <!-- Título -->
       <BaseInput
-        :id="`task-form-${sectionId}-title`"
+        :id="`template-task-form-${sectionId}-title`"
         v-model="title"
         v-bind="titleAttrs"
         :error-message="errors.title"
@@ -136,9 +141,8 @@ function close() {
         required
       />
 
-      <!-- Notas -->
       <BaseTextArea
-        :id="`task-form-${sectionId}-notes`"
+        :id="`template-task-form-${sectionId}-notes`"
         v-model="notes"
         v-bind="notesAttrs"
         :error-message="errors.notes"
@@ -149,50 +153,31 @@ function close() {
         rows="4"
       />
 
-      <!-- Data limite -->
-      <div>
-        <label class="mb-1 block text-sm font-medium">Data de vencimento</label>
-        <DatePicker
-          v-model="due_Date"
-          v-bind="dueDateAttrs"
-          locale="pt-PT"
-          :enable-time-picker="false"
-          :clearable="true"
-          :disabled="has_Indefinite_Date"
-          :teleport="true"
-          :format="'dd/MM/yyyy'"
-          :auto-apply="true"
-          placeholder="Selecione a data"
-          select-text="Selecionar"
-          cancel-text="Cancelar"
-        />
-        <p
-          v-if="errors.due_Date"
-          class="text-danger-800 mt-1 animate-fadeIn text-sm"
-        >
-          {{ errors.due_Date }}
-        </p>
-      </div>
-
-      <!-- <BaseInput
-        :id="`task-form-${sectionId}-due-date`"
-        v-model="due_Date"
-        label="Data limite"
-        v-bind="dueDateAttrs"
-        :error-message="errors.due_Date"
-        :readonly="isSubmitting || has_Indefinite_Date"
-        type="date"
-        class="flex-1"
-      /> -->
-
       <BaseCheckbox
-        :id="`task-form-${sectionId}-indef`"
+        :id="`template-task-form-${sectionId}-indef`"
         v-model="has_Indefinite_Date"
         v-bind="hasIndefiniteDateAttrs"
         :error="errors.has_Indefinite_Date"
         :readonly="isSubmitting"
-        label="A tarefa não possui data"
+        label="Data indefinida"
       />
+
+      <BaseInput
+        :id="`template-task-form-${sectionId}-offset`"
+        v-model.number="default_Offset_Days"
+        v-bind="offsetAttrs"
+        :error-message="errors.default_Offset_Days"
+        :readonly="isSubmitting || has_Indefinite_Date"
+        type="number"
+        name="default_Offset_Days"
+        label="Dias antes do evento (dias)"
+        placeholder="Ex.: 14"
+        helper-text="Este valor define quantos dias antes do evento esta secção deve aparecer no cronograma."
+      />
+
+      <BaseError v-if="serverErrors.hasErrors">{{
+        serverErrors.message
+      }}</BaseError>
 
       <div class="flex w-full justify-center gap-3">
         <BaseButton
@@ -200,9 +185,13 @@ function close() {
           btn-type="outline-primary"
           :disabled="isSubmitting"
           @click.prevent="close"
-          >Cancelar</BaseButton
         >
-        <BaseButton type="submit" :disabled="isSubmitting">Guardar</BaseButton>
+          Cancelar
+        </BaseButton>
+
+        <BaseButton type="submit" :disabled="isSubmitting">
+          Guardar
+        </BaseButton>
       </div>
     </form>
   </BaseModal>

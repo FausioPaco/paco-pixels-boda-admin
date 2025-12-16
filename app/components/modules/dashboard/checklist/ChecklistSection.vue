@@ -150,9 +150,11 @@ onMounted(() => {
 });
 </script>
 <template>
-  <div class="my-4 animate-fadeIn rounded-2xl border bg-white shadow-md">
+  <div class="my-2 w-full animate-fadeIn">
     <!-- Cabeçalho da secção -->
-    <div class="flex items-center justify-between p-4">
+    <div
+      class="bg-primary-25 flex items-center justify-between rounded-2xl p-4"
+    >
       <div class="flex flex-wrap items-center gap-2">
         <button
           class="text-muted-foreground hover:text-foreground pt-1.5 text-sm"
@@ -165,12 +167,14 @@ onMounted(() => {
             <IconChevronDown :font-controlled="false" class="size-[16px]" />
           </span>
         </button>
-        <h2 class="text-base font-semibold">{{ section.title }}</h2>
+        <h2 class="text-primary-700 text-base font-semibold">
+          {{ section.title }}
+        </h2>
         <BaseBadge
           v-if="tasksCount"
           :text="getTaskCount"
           :label="`Quantidade ${tasksCount}`"
-          type="default"
+          type="primary"
         />
       </div>
       <ChecklistSectionMenu

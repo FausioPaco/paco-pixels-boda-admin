@@ -61,16 +61,18 @@ const isOverdue = computed(() => {
         btn-size="sm"
         icon="pencil"
         :icon-size="14"
+        only-icon
         @click="$emit('edit')"
-        >Editar</BaseButton
+        ><span class="hidden md:inline">Editar</span></BaseButton
       >
       <BaseButton
         btn-type="outline-primary"
         btn-size="sm"
         icon="cancel"
         :icon-size="14"
+        only-icon
         @click="$emit('remove')"
-        >Remover</BaseButton
+        ><span class="hidden md:inline">Remover</span></BaseButton
       >
     </div>
   </div>

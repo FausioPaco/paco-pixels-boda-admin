@@ -12,6 +12,7 @@ const props = withDefaults(defineProps<IButtonProps>(), {
   icon: '',
   iconSize: 28,
   loading: false,
+  onlyIcon: false, 
 });
 
 const getButtonStyleClass = () => {
@@ -42,7 +43,7 @@ const getButtonClass = computed(() => {
   btnClasses.push(getButtonStyleClass());
   btnClasses.push(getButtonSizeClass());
 
-  if (props.icon) btnClasses.push('flex items-center justify-center gap-2');
+  if (props.icon && !props.onlyIcon) btnClasses.push('flex items-center justify-center gap-2');
 
   return btnClasses.join(' ');
 });
@@ -57,7 +58,7 @@ const getButtonClass = computed(() => {
         :height="props.iconSize"
       />
     </template>
-    <span v-if="!loading"><slot></slot></span>
+    <span v-if="!loading && !onlyIcon"><slot></slot></span>
     <BaseLoading
       v-if="loading"
       size="sm"

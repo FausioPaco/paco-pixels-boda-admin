@@ -1,16 +1,17 @@
 import { getChecklistService } from '~/services/checklistService';
 
-export const useChecklistSection = async (sectionId: number) => {
-  const section = useState<ChecklistSection | null>(
-    'get-checklist-section',
+export const useChecklistTemplate = async (templateId: number) => {
+  const template = useState<ChecklistTemplateDetail | null>(
+    'get-checklist-template',
     () => null,
   );
+
   const nuxtApp = useNuxtApp();
-  const key = 'get-checklist-section-' + sectionId;
+  const key = 'get-checklist-template-' + templateId;
 
   const { data, refresh, status } = await useAsyncData(
     key,
-    () => getChecklistService(nuxtApp.$api).getSection(sectionId),
+    () => getChecklistService(nuxtApp.$api).getTemplate(templateId),
     {
       default: () => null,
       transform(input) {
@@ -29,21 +30,17 @@ export const useChecklistSection = async (sectionId: number) => {
   );
 
   watchEffect(() => {
-    if (data.value) {
-      section.value = data.value;
-    }
+    if (data.value) template.value = data.value;
   });
 
-  const refreshSection = async (opts?: { force?: boolean }) => {
-    if (opts?.force) {
-      clearNuxtData(key);
-    }
+  const refreshTemplate = async (opts?: { force?: boolean }) => {
+    if (opts?.force) clearNuxtData(key);
     await refresh();
   };
 
   return {
-    section,
+    template,
     isRefreshing: status.value === 'pending',
-    refreshSection,
+    refreshTemplate,
   };
 };

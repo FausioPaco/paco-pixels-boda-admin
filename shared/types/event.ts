@@ -12,6 +12,7 @@ export interface BodaEvent {
   eventTypeId: number | undefined;
   eventTypeName?: string | undefined;
   eventTypeIcon?: string | undefined;
+  eventTypeSlug?: string | undefined;
   event_Date?: Date | undefined;
   has_QRCode_Image?: boolean;
   qrCodeImage_Url?: string;
@@ -42,6 +43,7 @@ export interface EventInput {
   eventTypeId?: number | undefined;
   slug?: string | undefined;
   event_Date?: Date | undefined;
+  autoCreateChecklist: boolean;
 }
 
 export interface QRCodeFileUploadResult {

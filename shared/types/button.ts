@@ -7,6 +7,7 @@ export interface IButtonProps {
   icon?: string;
   iconSize?: number;
   loading?: boolean;
+  onlyIcon?: boolean; 
 }
 
 export interface IButtonExternalLinkProps {
@@ -18,4 +19,5 @@ export interface IButtonExternalLinkProps {
   iconSize?: number;
   loading?: boolean;
   disabled?: boolean;
+    onlyIcon?: boolean; 
 }

@@ -2,7 +2,7 @@
 import { toTypedSchema } from '@vee-validate/yup';
 import { useForm } from 'vee-validate';
 import { useToast } from 'vue-toastification';
-import { date, number, object, string } from 'yup';
+import { boolean, date, number, object, string } from 'yup';
 import { getEventService } from '~/services/eventService';
 
 interface IEventForm {
@@ -19,6 +19,27 @@ const emit = defineEmits(['closeModal', 'success']);
 
 const nuxtApp = useNuxtApp();
 const eventService = getEventService(nuxtApp.$api);
+const isCreating = computed(() => !props.event);
+
+function getTodayInMaputo(): Date {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Maputo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+
+  const y = Number(parts.find((p) => p.type === 'year')?.value);
+  const m = Number(parts.find((p) => p.type === 'month')?.value);
+  const d = Number(parts.find((p) => p.type === 'day')?.value);
+
+  // Maputo é UTC+2 (sem DST). Midnight Maputo = 22:00 UTC do dia anterior.
+  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0) - 2 * 60 * 60 * 1000);
+}
+
+const minEventDate = computed(() =>
+  isCreating.value ? getTodayInMaputo() : undefined,
+);
 
 const { eventTypes, isRefreshing: isRefreshingTypes } = await useEventTypes();
 
@@ -56,7 +77,18 @@ const { errors, handleSubmit, defineField, resetForm } = useForm<EventInput>({
         .typeError('Deve escolher o tipo de evento')
         .required('O tipo de evento é obrigatório'),
 
-      event_Date: date().nullable(),
+      event_Date: date()
+        .nullable()
+        .test(
+          'not-past-on-create',
+          'A data do evento não pode ser no passado',
+          (value) => {
+            if (!isCreating.value) return true; // no update não bloqueia
+            if (!value) return true; // continua opcional
+            return value >= getTodayInMaputo();
+          },
+        ),
+      autoCreateChecklist: boolean().default(false),
     }),
   ),
 });
@@ -67,6 +99,9 @@ const [description, descriptionAttrs] = defineField('description');
 const [initials, initialsAttrs] = defineField('initials');
 const [eventTypeId, eventTypeIdAttrs] = defineField('eventTypeId');
 const [event_Date, eventDateAttrs] = defineField('event_Date');
+const [autoCreateChecklist, autoCreateChecklistAttrs] = defineField(
+  'autoCreateChecklist',
+);
 
 // Submit
 const onSubmit = handleSubmit((values) => {
@@ -79,6 +114,7 @@ const onSubmit = handleSubmit((values) => {
     initials: values.initials,
     eventTypeId: values.eventTypeId,
     event_Date: values.event_Date ?? undefined,
+    autoCreateChecklist: values.autoCreateChecklist,
   };
 
   if (!props.event) {
@@ -209,6 +245,7 @@ watch(
           v-model="event_Date"
           v-bind="eventDateAttrs"
           locale="pt-PT"
+          :min-date="minEventDate"
           :enable-time-picker="false"
           :clearable="true"
           :teleport="true"
@@ -237,6 +274,16 @@ watch(
         label="Descrição (opcional)"
         placeholder="Notas sobre o evento (local, horário, etc.)"
         rows="4"
+      />
+
+      <BaseCheckbox
+        v-if="!props.event"
+        id="autoCreateChecklist"
+        v-model="autoCreateChecklist"
+        v-bind="autoCreateChecklistAttrs"
+        :error="errors.autoCreateChecklist"
+        :readonly="isSubmiting"
+        label="Criar cronograma automático"
       />
 
       <BaseError v-if="serverErrors.hasErrors" class="mt-4">

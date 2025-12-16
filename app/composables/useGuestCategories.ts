@@ -8,10 +8,12 @@ export const useGuestCategories = async () => {
 
   const nuxtApp = useNuxtApp();
   const key = 'get-guest-categories';
+  const eventStore = useEventStore();
+  const eventTypeSlug = eventStore.eventTypeSlug;
 
   const { data, refresh, status } = await useAsyncData(
     key,
-    () => getGuestService(nuxtApp.$api).getGuestCategories(),
+    () => getGuestService(nuxtApp.$api).getGuestCategories(eventTypeSlug),
     {
       transform(input) {
         return {

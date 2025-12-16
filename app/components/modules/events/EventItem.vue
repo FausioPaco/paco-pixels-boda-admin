@@ -26,10 +26,11 @@ const goToEvent = () => {
     name: props.event.name,
     slug: props.event.slug,
     icon: iconName.value,
-    eventTypeId: props.event.eventTypeId ?? undefined,
     initials: props.event.initials,
     qrCodeImage_Url: props.event.qrCodeImage_Url,
+    eventTypeId: props.event.eventTypeId ?? undefined,
     eventTypeName: props.event.eventTypeName,
+    eventTypeSlug: props.event.eventTypeSlug,
   });
 
   navigateTo('/admin');

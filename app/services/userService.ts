@@ -95,4 +95,18 @@ export const getUserService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
       body: payload,
     });
   },
+
+  async getOnlineUsers(params: {
+    eventId?: number | null;
+    includePartnerStaff?: boolean;
+    includeAdmins?: boolean;
+  }): Promise<User[]> {
+    return $fetch<User[]>(`${RESOURCE}/Online`, {
+      params: {
+        eventId: params.eventId ?? undefined,
+        includePartnerStaff: params.includePartnerStaff ?? false,
+        includeAdmins: params.includeAdmins ?? false,
+      },
+    });
+  },
 });

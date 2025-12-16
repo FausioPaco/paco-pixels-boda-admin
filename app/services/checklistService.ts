@@ -120,6 +120,13 @@ export const getChecklistService = <T>(
   },
 
   // ===== Templates =====
+  async getCurrentTemplateForEventType(
+    eventTypeId: number,
+  ): Promise<ChecklistTemplateDetail> {
+    return $fetch<ChecklistTemplateDetail>(
+      `${RESOURCE}/Templates/Current/${eventTypeId}`,
+    );
+  },
   async getTemplates(
     eventTypeId: number,
     includeGlobalFallback = true,
