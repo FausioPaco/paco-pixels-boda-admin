@@ -23,19 +23,10 @@ export const getBudgetService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
     });
   },
 
-  // toggle “seguro”: usa o updateHeader (não depende de endpoint dedicado).
-  async setControlMode(
-    budgetId: number,
-    current: Pick<Budget, 'totalBudget' | 'currency'>,
-    controlMode: BudgetControlMode,
-  ): Promise<Budget> {
-    return $fetch<Budget>(`${RESOURCE}/${budgetId}`, {
+  async toggleControlMode(budgetId: number): Promise<Budget> {
+    return $fetch<Budget>(`${RESOURCE}/toggle-control-mode`, {
       method: 'PUT',
-      body: {
-        totalBudget: current.totalBudget,
-        currency: current.currency,
-        controlMode,
-      },
+      body: { budgetId },
     });
   },
 
