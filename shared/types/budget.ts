@@ -61,14 +61,12 @@ export interface BudgetCreateInput {
 
 export interface BudgetUpsertInput {
   totalBudget: number;
-  currency: string;
+  currency?: string;
   controlMode: BudgetControlMode;
 }
 
 export interface BudgetCategoryInput {
   title: string;
-  iconKey?: string | null;
-  sortOrder: number;
 }
 
 export interface BudgetItemInput {
@@ -132,14 +130,12 @@ export interface BudgetTemplateCreateInput {
 export interface BudgetTemplateUpdateInput {
   title: string;
   baseTotalBudget: number;
-  currency: string;
+  currency: string | undefined;
   defaultControlMode: BudgetControlMode;
 }
 
 export interface BudgetTemplateCategoryInput {
   title: string;
-  iconKey?: string | null;
-  sortOrder: number;
 }
 
 export interface BudgetTemplateItemInput {
@@ -150,3 +146,22 @@ export interface BudgetTemplateItemInput {
   notes?: string | null;
   sortOrder: number;
 }
+
+export type BudgetCurrency = 'MZN' | 'USD';
+
+export const BUDGET_CONTROL_MODES = [
+  {
+    id: 'NonControllable',
+    value: BudgetControlMode.NonControllable,
+    name: 'Não controlável',
+  },
+  {
+    id: 'Controllable',
+    value: BudgetControlMode.Controllable,
+    name: 'Controlável',
+  },
+];
+export const BUDGET_CURRENCIES = [
+  { id: 'MZN', value: 'MZN', name: 'Metical (MZN)' },
+  { id: 'USD', value: 'USD', name: 'Dólar (USD)' },
+];

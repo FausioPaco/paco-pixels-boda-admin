@@ -194,6 +194,10 @@ function close() {
         label="A tarefa não possui data"
       />
 
+      <BaseError v-if="serverErrors.hasErrors">{{
+        serverErrors.message
+      }}</BaseError>
+
       <div class="flex w-full justify-center gap-3">
         <BaseButton
           type="button"
