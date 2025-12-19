@@ -75,7 +75,6 @@ export interface BudgetItemInput {
   actualCost: number;
   paidAmount: number;
   notes?: string | null;
-  sortOrder: number;
 }
 
 export interface ReorderItem {
@@ -144,7 +143,6 @@ export interface BudgetTemplateItemInput {
   actualCost: number;
   paidAmount: number;
   notes?: string | null;
-  sortOrder: number;
 }
 
 export type BudgetCurrency = 'MZN' | 'USD';
