@@ -91,10 +91,10 @@ const onSubmit = handleSubmit(async (values) => {
     } else {
       if (!props.item) {
         await budgetService.addTemplateItem(props.categoryId, values);
-        toast.success('Item do template criado.');
+        toast.success('Item do modelo criado.');
       } else {
         await budgetService.updateTemplateItem(props.item.id, values);
-        toast.success('Item do template actualizado.');
+        toast.success('Item do modelo actualizado.');
       }
     }
 
