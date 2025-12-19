@@ -11,7 +11,7 @@ interface Props {
   show?: boolean;
   mode: Mode;
   categoryId: number;
-  item: BudgetItem | undefined;
+  item: BudgetItem | BudgetTemplateItem | undefined;
 }
 
 const props = withDefaults(defineProps<Props>(), { show: false });

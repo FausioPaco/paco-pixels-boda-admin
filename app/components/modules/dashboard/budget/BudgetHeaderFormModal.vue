@@ -15,17 +15,17 @@ interface Props {
   show?: boolean;
   mode?: Mode;
   eventId: number;
-  budget?: Budget | undefined;
-  eventTypeId?: number;
-  template?: BudgetTemplate | undefined;
+  budget?: Budget | null;
+  eventTypeId?: number | null;
+  template?: BudgetTemplate | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   show: false,
   mode: 'EVENT',
-  budget: undefined,
-  template: undefined,
-  eventTypeId: 0,
+  budget: null,
+  template: null,
+  eventTypeId: null,
 });
 
 const emit = defineEmits<{ (e: 'close' | 'saved'): void }>();

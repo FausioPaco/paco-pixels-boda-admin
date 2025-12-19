@@ -68,19 +68,6 @@ const onDragEnd = async () => {
   }
 };
 
-// const filteredCategories = computed(() => {
-//   const q = search.value.trim().toLowerCase();
-//   if (!q) return localCategories.value;
-
-//   return localCategories.value.filter((c: BudgetCategory) => {
-//     const inTitle = (c.title ?? '').toLowerCase().includes(q);
-//     const inItems = (c.items ?? []).some((i) =>
-//       (i.title ?? '').toLowerCase().includes(q),
-//     );
-//     return inTitle || inItems;
-//   });
-// });
-
 const toggleControlMode = async () => {
   if (!budget.value) return;
 
@@ -246,7 +233,7 @@ const openCreateCategory = () => (isCreateCategoryModalOpen.value = true);
     <LazyBudgetHeaderFormModal
       :show="isHeaderModalOpen"
       :budget="budget"
-      :event-id="eventId"
+      :event-id="eventId!"
       @close="isHeaderModalOpen = false"
       @saved="refreshBudget({ force: true })"
     />

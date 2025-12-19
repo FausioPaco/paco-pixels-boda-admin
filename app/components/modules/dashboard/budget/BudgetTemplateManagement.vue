@@ -14,6 +14,7 @@ const nuxtApp = useNuxtApp();
 const budgetService = getBudgetService(nuxtApp.$api);
 
 const eventStore = useEventStore();
+
 const eventTypeId = computed(() => eventStore.eventTypeId);
 const eventTypeName = computed(() => eventStore.eventTypeName);
 const iconName = computed(() => eventStore.eventTypeIcon || 'event-wedding');
@@ -208,6 +209,7 @@ onMounted(() => {
       :show="isHeaderModalOpen"
       :mode="'TEMPLATE'"
       :template="template"
+      :event-id="eventStore.eventId!"
       :event-type-id="eventTypeId"
       @close="isHeaderModalOpen = false"
       @saved="refreshTemplate({ force: true })"

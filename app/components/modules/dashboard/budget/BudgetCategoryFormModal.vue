@@ -11,7 +11,7 @@ interface Props {
   show?: boolean;
   mode: Mode;
   parentId: number; // budgetId ou templateId
-  category: BudgetCategory | null;
+  category: BudgetCategory | BudgetTemplateCategory | null;
 }
 
 const props = withDefaults(defineProps<Props>(), { show: false });
