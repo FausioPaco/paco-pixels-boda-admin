@@ -158,7 +158,7 @@ const subtotalDue = computed(() =>
           class="bg-primary-50 text-primary-700 flex size-9 items-center justify-center rounded-xl"
         >
           <!-- ícone genérico para categorias criadas pelo user -->
-          <IconFolder :font-controlled="false" class="size-4" />
+          <IconDocument :font-controlled="false" class="size-4" />
         </div>
 
         <div class="text-left">
