@@ -19,6 +19,12 @@ export const ADMIN_MAIN_LINKS: AdminLink[] = [
     icon: 'dashboard-desks',
     restricted: false,
   },
+  {
+    label: 'Orçamento',
+    link: '/admin/orcamento',
+    icon: 'dashboard-budget',
+    restricted: false,
+  },
 ];
 
 export const ADMIN_CONFIGURATION_LINKS: AdminLink[] = [
@@ -37,6 +43,7 @@ export const ADMIN_EXPERIENCE_LINKS: AdminLink[] = [
     icon: 'calendar',
     restricted: false,
   },
+
   // {
   //   label: 'Menu',
   //   link: '/admin/menu',

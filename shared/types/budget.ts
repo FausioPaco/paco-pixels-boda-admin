@@ -149,12 +149,12 @@ export type BudgetCurrency = 'MZN' | 'USD';
 
 export const BUDGET_CONTROL_MODES = [
   {
-    id: 'NonControllable',
+    id: BudgetControlMode.NonControllable,
     value: BudgetControlMode.NonControllable,
     name: 'Não controlável',
   },
   {
-    id: 'Controllable',
+    id: BudgetControlMode.Controllable,
     value: BudgetControlMode.Controllable,
     name: 'Controlável',
   },

@@ -96,43 +96,42 @@ const openCreateCategory = () => (isCreateCategoryModalOpen.value = true);
 <template>
   <div class="my-8 flex animate-fadeIn flex-col gap-4">
     <BaseLoading v-if="isRefreshing && !budget" />
-
-    <BaseSearchNotFound v-else-if="!budget">
-      Ainda não existe orçamento para este evento.
-      <div class="mt-3">
-        <BaseButton @click="openHeaderEdit">Criar orçamento</BaseButton>
-      </div>
-    </BaseSearchNotFound>
+    <div v-else-if="!budget" class="flex flex-col items-center">
+      <BaseSearchNotFound>
+        Ainda não existe orçamento para este evento.
+      </BaseSearchNotFound>
+      <BaseButton @click="openHeaderEdit">Criar orçamento</BaseButton>
+    </div>
 
     <div v-else class="flex flex-col gap-4">
       <!-- Header -->
-      <div class="flex flex-col gap-2">
+      <div class="flex flex-col gap-1">
         <div class="flex flex-wrap items-center justify-between gap-4">
-          <div class="flex items-center gap-2">
-            <span class="text-primary-700/60 text-sm font-semibold"
-              >Orçamento</span
-            >
-            <button
-              class="text-grey-500 hover:text-primary-700 transition-colors"
-              type="button"
-              title="Editar orçamento"
-              @click="openHeaderEdit"
-            >
-              <IconPencil :font-controlled="false" class="size-4" />
-            </button>
+          <div class="flex flex-col gap-1">
+            <p class="text-grey-300 mb-0 text-sm">Orçamento</p>
+            <div class="flex flex-wrap gap-3">
+              <p class="text-primary-700 text-2xl font-bold md:text-3xl">
+                {{ formatToMZN(budget.totalBudget) }}
+              </p>
+
+              <button
+                class="text-grey-400 hover:text-primary-700 transition-colors"
+                type="button"
+                title="Editar orçamento"
+                @click="openHeaderEdit"
+              >
+                <IconPencil :font-controlled="false" class="size-[20px]" />
+              </button>
+            </div>
           </div>
 
           <div class="flex items-center gap-3">
-            <span class="text-grey-500 text-sm">Modo controlável</span>
             <BaseToggle
               :model-value="isControlled"
+              :label="isControlled ? 'Desactivar controlo' : 'Activar controlo'"
               @update:model-value="toggleControlMode"
             />
           </div>
-        </div>
-
-        <div class="text-primary-700 text-xl font-bold">
-          {{ formatToMZN(budget.totalBudget) }}
         </div>
 
         <div
@@ -146,10 +145,11 @@ const openCreateCategory = () => (isCreateCategoryModalOpen.value = true);
 
       <!-- Search + Actions -->
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="w-full md:w-[360px]">
+        <div class="w-full md:w-[40%]">
           <BaseInput
             id="searchCategory"
             v-model="search"
+            label="Pesquisa:"
             type="search"
             placeholder="Filtrar categorias ou itens..."
           />
@@ -193,7 +193,7 @@ const openCreateCategory = () => (isCreateCategoryModalOpen.value = true);
       </draggable>
 
       <!-- Totals footer -->
-      <div class="border-grey-100 border-t pt-4">
+      <div class="border-grey-100/50 mt-8 border-t pt-5 md:mx-4">
         <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
           <div>
             <div class="text-grey-500 text-xs">Total estimado</div>

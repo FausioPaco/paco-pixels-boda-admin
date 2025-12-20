@@ -41,8 +41,13 @@ const schema = toTypedSchema(
       .min(0, 'O orçamento não pode ser negativo.')
       .required('O orçamento é obrigatório.'),
     currency: string().trim().min(2).max(10).required('A moeda é obrigatória.'),
-    controlMode: mixed<'Controllable' | 'NonControllable'>()
-      .oneOf(['Controllable', 'NonControllable'])
+    controlMode: mixed<
+      BudgetControlMode.Controllable | BudgetControlMode.NonControllable
+    >()
+      .oneOf([
+        BudgetControlMode.Controllable,
+        BudgetControlMode.NonControllable,
+      ])
       .required('O modo de controlo é obrigatório.'),
   }),
 );
@@ -53,7 +58,7 @@ const { handleSubmit, resetForm, defineField, errors, isSubmitting } =
     initialValues: {
       totalBudget: 0,
       currency: 'MZN',
-      controlMode: BudgetControlMode.NonControllable,
+      controlMode: 2,
     },
   });
 
@@ -73,24 +78,29 @@ watch(
 
     if (props.mode === 'EVENT') {
       const b = props.budget;
-      resetForm({
-        values: {
-          totalBudget: b?.totalBudget ?? 0,
-          currency: b?.currency ?? 'MZN',
-          controlMode: b?.controlMode,
-        },
-      });
-      return;
+      if (b) {
+        resetForm({
+          values: {
+            totalBudget: b?.totalBudget ?? 0,
+            currency: b?.currency ?? 'MZN',
+            controlMode: b?.controlMode,
+          },
+        });
+        return;
+      }
     }
 
     const t = props.template;
-    resetForm({
-      values: {
-        totalBudget: t?.baseTotalBudget ?? 0,
-        currency: t?.currency ?? 'MZN',
-        controlMode: t?.defaultControlMode ?? BudgetControlMode.NonControllable,
-      },
-    });
+    if (t) {
+      resetForm({
+        values: {
+          totalBudget: t?.baseTotalBudget ?? 0,
+          currency: t?.currency ?? 'MZN',
+          controlMode:
+            t?.defaultControlMode ?? BudgetControlMode.NonControllable,
+        },
+      });
+    }
   },
   { immediate: true },
 );

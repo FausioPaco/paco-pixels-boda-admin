@@ -75,8 +75,8 @@ const toggleClass = computed(() => {
     base.push('opacity-60 cursor-not-allowed');
   else base.push('cursor-pointer');
 
-  if (props.modelValue) base.push('bg-slate-900');
-  else base.push('bg-slate-200');
+  if (props.modelValue) base.push('bg-primary-900');
+  else base.push('bg-grey-100');
 
   // error ring (subtil)
   if (hasError) base.push('ring-2 ring-red-200');
@@ -113,16 +113,12 @@ const thumbClass = computed(() => {
     <div class="flex items-start justify-between gap-4" :class="containerClass">
       <!-- label + description -->
       <div v-if="hasText" class="min-w-0">
-        <label
-          v-if="label"
-          class="block text-sm font-medium text-slate-900"
-          :for="inputId"
-        >
+        <label v-if="label" class="text-grey-900 block text-sm" :for="inputId">
           <span v-if="required" class="text-red-600">*</span>
           <slot name="label">{{ label }}</slot>
         </label>
 
-        <p v-if="description" class="mt-1 text-xs text-slate-500">
+        <p v-if="description" class="text-grey-500 mt-1 text-xs">
           <slot name="description">{{ description }}</slot>
         </p>
       </div>
@@ -135,7 +131,7 @@ const thumbClass = computed(() => {
         :aria-checked="modelValue"
         :aria-disabled="disabled || loading"
         :disabled="disabled || loading"
-        class="relative inline-flex shrink-0 items-center rounded-full transition focus:outline-none focus:ring-2 focus:ring-slate-900/20"
+        class="focus:ring-primary-900/20 relative inline-flex shrink-0 items-center rounded-full transition focus:outline-none focus:ring-2"
         :class="toggleClass"
         @click="onToggle"
         @keydown.enter.prevent="onToggle"
@@ -153,7 +149,7 @@ const thumbClass = computed(() => {
         >
           <svg
             v-if="loading"
-            class="h-3.5 w-3.5 animate-spin text-slate-500"
+            class="text-primary-500 h-3.5 w-3.5 animate-spin"
             viewBox="0 0 24 24"
             fill="none"
           >
@@ -176,7 +172,7 @@ const thumbClass = computed(() => {
     </div>
 
     <!-- hint / error -->
-    <p v-if="hint && !error" class="mt-1 text-xs text-slate-500">
+    <p v-if="hint && !error" class="text-primary-500 mt-1 text-xs">
       <slot name="hint">{{ hint }}</slot>
     </p>
 
