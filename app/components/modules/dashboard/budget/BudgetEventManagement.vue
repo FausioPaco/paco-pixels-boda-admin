@@ -144,7 +144,7 @@ const openCreateCategory = () => (isCreateCategoryModalOpen.value = true);
       </div>
 
       <!-- Search + Actions -->
-      <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="my-4 flex flex-wrap items-end justify-between gap-3">
         <div class="w-full md:w-[40%]">
           <BaseInput
             id="searchCategory"
@@ -152,9 +152,16 @@ const openCreateCategory = () => (isCreateCategoryModalOpen.value = true);
             label="Pesquisa:"
             type="search"
             placeholder="Filtrar categorias ou itens..."
+            disable-margins
           />
         </div>
-        <BaseButton @click="openCreateCategory">Adicionar categoria</BaseButton>
+        <BaseButton
+          icon="add"
+          btn-size="sm"
+          btn-type="outline-primary"
+          @click="openCreateCategory"
+          >Adicionar categoria</BaseButton
+        >
       </div>
 
       <!-- Categories (draggable) -->
@@ -197,13 +204,13 @@ const openCreateCategory = () => (isCreateCategoryModalOpen.value = true);
         <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
           <div>
             <div class="text-grey-500 text-xs">Total estimado</div>
-            <div class="text-primary-700 font-semibold">
+            <div class="text-primary-800 font-semibold">
               {{ formatToMZN(budget.totals!.estimatedTotal) }}
             </div>
           </div>
           <div>
             <div class="text-grey-500 text-xs">Custo actual</div>
-            <div class="text-primary-700 font-semibold">
+            <div class="text-primary-800 font-semibold">
               {{ formatToMZN(budget.totals!.actualTotal) }}
             </div>
           </div>
@@ -215,13 +222,13 @@ const openCreateCategory = () => (isCreateCategoryModalOpen.value = true);
           </div>
           <div>
             <div class="text-grey-500 text-xs">Devido</div>
-            <div class="text-primary-700 font-semibold">
+            <div class="font-semibold text-red-700">
               {{ formatToMZN(budget.totals!.dueTotal) }}
             </div>
           </div>
           <div>
             <div class="text-grey-500 text-xs">Orçamento</div>
-            <div class="text-primary-700 font-semibold">
+            <div class="text-primary-800 font-semibold">
               {{ formatToMZN(budget.totalBudget) }}
             </div>
           </div>
