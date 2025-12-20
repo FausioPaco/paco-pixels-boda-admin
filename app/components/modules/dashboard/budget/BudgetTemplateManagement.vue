@@ -21,7 +21,7 @@ const iconName = computed(() => eventStore.eventTypeIcon || 'event-wedding');
 const isControlled = ref<boolean>(true);
 
 const { template, isRefreshing, refreshTemplate } =
-  await useBudgetTemplateByCurrentEventType(); // já tens este composable
+  await useBudgetTemplateByCurrentEventType();
 
 const isHeaderModalOpen = ref(false);
 const isCreateCategoryModalOpen = ref(false);
