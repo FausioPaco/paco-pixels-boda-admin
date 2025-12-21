@@ -82,28 +82,6 @@ const openEditItem = (item: BudgetItem) => {
   isEditItemModalOpen.value = true;
 };
 
-async function removeCategory() {
-  try {
-    await budgetService.deleteCategory(props.category.id);
-    toast.success('Categoria removida.');
-    emit('changed');
-  } catch (e) {
-    toast.error('Não foi possível remover a categoria.');
-    console.log(e);
-  }
-}
-
-async function removeItem(itemId: number) {
-  try {
-    await budgetService.deleteItem(itemId);
-    toast.success('Item removido.');
-    emit('changed');
-  } catch (e) {
-    toast.error('Não foi possível remover o item.');
-    console.log(e);
-  }
-}
-
 // helpers (event tem valores reais, mas mantemos compatível com o design)
 const getEstimated = (i: BudgetItem) => i.estimatedAmount ?? 0;
 const getActual = (i: BudgetItem) => i.actualCost ?? 0;
@@ -141,6 +119,17 @@ const subtotalDue = computed(() =>
     0,
   ),
 );
+
+const isRemoveCategoryModalOpen = ref(false);
+const isRemoveItemModalOpen = ref(false);
+const selectedItemToRemove = ref<BudgetItem | undefined>(undefined);
+
+const openRemoveCategory = () => (isRemoveCategoryModalOpen.value = true);
+
+const openRemoveItem = (item: BudgetItem) => {
+  selectedItemToRemove.value = item;
+  isRemoveItemModalOpen.value = true;
+};
 </script>
 
 <template>
@@ -191,7 +180,7 @@ const subtotalDue = computed(() =>
             type="button"
             class="bg-primary-100 text-grey-500 hover:bg-primary-600 rounded-full p-2 transition hover:text-white"
             title="Editar"
-            @click.stop="removeCategory"
+            @click.stop="openRemoveCategory"
           >
             <IconTrash :font-controlled="false" class="size-3" />
           </button>
@@ -299,7 +288,7 @@ const subtotalDue = computed(() =>
                     type="button"
                     class="text-grey-500 transition hover:text-red-600"
                     title="Remover"
-                    @click.stop="removeItem(item.id)"
+                    @click.stop="openRemoveItem(item.id)"
                   >
                     <IconTrash :font-controlled="false" class="size-4" />
                   </button>
@@ -373,6 +362,28 @@ const subtotalDue = computed(() =>
       :item="selectedItem"
       @close="isEditItemModalOpen = false"
       @saved="emit('changed')"
+    />
+
+    <!-- Remove Category -->
+    <LazyBudgetCategoryRemoveModal
+      :show="isRemoveCategoryModalOpen"
+      :category="category"
+      @close-modal="isRemoveCategoryModalOpen = false"
+      @success="emit('changed')"
+    />
+
+    <!-- Remove Budget Item -->
+    <LazyBudgetItemRemoveModal
+      :show="isRemoveItemModalOpen"
+      :item="selectedItemToRemove"
+      @close-modal="
+        isRemoveItemModalOpen = false;
+        selectedItemToRemove = undefined;
+      "
+      @success="
+        emit('changed');
+        selectedItemToRemove = undefined;
+      "
     />
   </div>
 </template>
