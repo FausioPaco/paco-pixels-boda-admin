@@ -112,3 +112,9 @@ export function generateSlug(str: string): string {
     .replace(/[^a-z0-9]+/g, '-') // substitui tudo que não é alfanumérico por "-"
     .replace(/^-+|-+$/g, ''); // remove traços no início/fim
 }
+
+export const listNormalize = (v?: string | null) =>
+  (v ?? '').toString().trim().toLowerCase();
+
+export const listContains = (value: string | undefined | null, term: string) =>
+  listNormalize(value).includes(term);

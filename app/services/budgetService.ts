@@ -24,9 +24,8 @@ export const getBudgetService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
   },
 
   async toggleControlMode(budgetId: number): Promise<Budget> {
-    return $fetch<Budget>(`${RESOURCE}/toggle-control-mode`, {
+    return $fetch<Budget>(`${RESOURCE}/${budgetId}/toggle-control-mode`, {
       method: 'PUT',
-      body: { budgetId },
     });
   },
 

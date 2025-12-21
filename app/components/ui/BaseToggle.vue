@@ -75,7 +75,7 @@ const toggleClass = computed(() => {
     base.push('opacity-60 cursor-not-allowed');
   else base.push('cursor-pointer');
 
-  if (props.modelValue) base.push('bg-primary-900');
+  if (props.modelValue) base.push('bg-primary-700');
   else base.push('bg-grey-100');
 
   // error ring (subtil)

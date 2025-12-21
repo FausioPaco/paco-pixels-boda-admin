@@ -175,37 +175,43 @@ const subtotalDue = computed(() =>
         </div>
       </div>
 
-      <IconChevronDown
-        :font-controlled="false"
-        class="text-grey-500 size-4 transition"
-        :class="isOpen ? 'rotate-180' : ''"
-      />
+      <div class="flex items-center gap-4">
+        <!-- Category Edit & Remove -->
+        <div class="hidden flex-wrap items-center justify-end gap-2 md:flex">
+          <button
+            type="button"
+            class="bg-primary-100 text-grey-500 hover:bg-primary-600 rounded-full p-2 transition hover:text-white"
+            title="Editar"
+            @click.stop="isEditCategoryModalOpen = true"
+          >
+            <IconPencil :font-controlled="false" class="size-3" />
+          </button>
+
+          <button
+            type="button"
+            class="bg-primary-100 text-grey-500 hover:bg-primary-600 rounded-full p-2 transition hover:text-white"
+            title="Editar"
+            @click.stop="removeCategory"
+          >
+            <IconTrash :font-controlled="false" class="size-3" />
+          </button>
+        </div>
+
+        <IconChevronDown
+          :font-controlled="false"
+          class="text-grey-500 size-4 transition"
+          :class="isOpen ? 'rotate-180' : ''"
+        />
+      </div>
     </button>
 
     <!-- Content -->
     <transition name="slide-down" mode="out-in">
       <div v-if="isOpen" class="border-grey-100 border-t px-4 pb-4 pt-3">
-        <div class="flex flex-wrap items-center justify-end gap-2">
-          <BaseButton
-            btn-size="sm"
-            btn-type="outline-primary"
-            @click="isEditCategoryModalOpen = true"
-          >
-            Editar categoria
-          </BaseButton>
-          <BaseButton
-            btn-size="sm"
-            btn-type="outline-primary"
-            @click="removeCategory"
-          >
-            Remover categoria
-          </BaseButton>
-        </div>
-
         <!-- No Items -->
         <div
           v-if="localItems.length === 0"
-          class="my-2 flex animate-fadeIn flex-wrap items-center gap-2"
+          class="my-4 flex animate-fadeIn flex-wrap items-center gap-2"
         >
           <icon-warning
             :font-controlled="false"
@@ -221,7 +227,7 @@ const subtotalDue = computed(() =>
         <!-- Table head -->
         <div
           v-if="localItems.length > 0"
-          class="text-grey-500 hidden animate-fadeIn grid-cols-5 gap-3 pb-2 text-xs md:grid"
+          class="text-grey-500 mt-5 hidden animate-fadeIn grid-cols-5 gap-3 pb-4 text-xs md:grid"
         >
           <div class="pl-6">Título</div>
           <div>Estimado</div>

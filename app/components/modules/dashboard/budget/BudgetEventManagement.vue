@@ -91,6 +91,31 @@ const toggleControlMode = async () => {
 
 const openHeaderEdit = () => (isHeaderModalOpen.value = true);
 const openCreateCategory = () => (isCreateCategoryModalOpen.value = true);
+
+function matchesBudgetItem(item: BudgetItem, term: string) {
+  return listContains(item.title, term);
+}
+
+function matchesBudgetCategory(category: BudgetCategory, term: string) {
+  const categoryMatch = listContains(category.title, term);
+
+  if (categoryMatch) return true;
+
+  const items = category.items as BudgetItem[] | undefined;
+  return items?.some((item) => matchesBudgetItem(item, term)) ?? false;
+}
+
+const normalizedSearch = computed(() => listNormalize(search.value));
+const isFiltering = computed(() => !!normalizedSearch.value);
+
+const displayedCategories = computed(() => {
+  if (!isFiltering.value) return localCategories.value;
+
+  const term = normalizedSearch.value;
+  return localCategories.value.filter((cat) =>
+    matchesBudgetCategory(cat, term),
+  );
+});
 </script>
 
 <template>
@@ -166,6 +191,7 @@ const openCreateCategory = () => (isCreateCategoryModalOpen.value = true);
 
       <!-- Categories (draggable) -->
       <draggable
+        v-if="!isFiltering"
         v-model="localCategories"
         item-key="id"
         handle=".drag-handle"
@@ -198,6 +224,36 @@ const openCreateCategory = () => (isCreateCategoryModalOpen.value = true);
           </div>
         </template>
       </draggable>
+
+      <!-- Categories (searching) -->
+      <div v-else class="flex w-full flex-col gap-4">
+        <div
+          v-for="category in displayedCategories"
+          :key="category.id"
+          class="flex w-full items-start gap-3"
+        >
+          <!-- Sem drag handle (ou desactivado) -->
+          <button class="pt-4 opacity-30" type="button" disabled>
+            <IconGripvertical :font-controlled="false" class="size-5" />
+          </button>
+
+          <BudgetEventCategoryCard
+            class="flex-1"
+            :budget="budget"
+            :category="category"
+            :search="search"
+            @changed="refreshBudget({ force: true })"
+          />
+        </div>
+      </div>
+
+      <!-- Categories (search not found) -->
+      <BaseSearchNotFound
+        v-if="isFiltering && displayedCategories.length === 0"
+        :show-fallback="false"
+      >
+        Infelizmente, não encontramos categorias para o filtro aplicado
+      </BaseSearchNotFound>
 
       <!-- Totals footer -->
       <div class="border-grey-100/50 mt-8 border-t pt-5 md:mx-4">
