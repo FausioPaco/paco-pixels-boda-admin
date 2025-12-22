@@ -33,6 +33,15 @@ const isEditCategoryModalOpen = ref(false);
 const isCreateItemModalOpen = ref(false);
 const isEditItemModalOpen = ref(false);
 const selectedItem = ref<BudgetTemplateItem | undefined>(undefined);
+const isRemoveCategoryModalOpen = ref(false);
+const isRemoveItemModalOpen = ref(false);
+
+const openRemoveCategory = () => (isRemoveCategoryModalOpen.value = true);
+
+const openRemoveItem = (item: BudgetTemplateItem) => {
+  selectedItem.value = item;
+  isRemoveItemModalOpen.value = true;
+};
 
 const localItems = ref<BudgetTemplateItem[]>([]);
 
@@ -86,28 +95,6 @@ const openEditItem = (item: BudgetTemplateItem) => {
   isEditItemModalOpen.value = true;
 };
 
-async function removeCategory() {
-  try {
-    await budgetService.deleteTemplateCategory(props.category.id);
-    toast.success('Categoria removida.');
-    emit('changed');
-  } catch (e) {
-    toast.error('Não foi possível remover a categoria.');
-    console.log(e);
-  }
-}
-
-async function removeItem(itemId: number) {
-  try {
-    await budgetService.deleteTemplateItem(itemId);
-    toast.success('Item removido.');
-    emit('changed');
-  } catch (e) {
-    toast.error('Não foi possível remover o item.');
-    console.log(e);
-  }
-}
-
 // helpers (template pode ter apenas estimatedAmount; mas mantive compatível com o teu design)
 const getEstimated = (i: BudgetTemplateItem) => i.estimatedAmount ?? 0;
 const getActual = (i: BudgetTemplateItem) =>
@@ -156,161 +143,200 @@ const subtotalDue = computed(() =>
     <!-- Header -->
     <button
       type="button"
-      class="flex w-full items-center justify-between gap-3 px-4 py-4"
+      class="bg-primary-100/20 flex w-full items-center justify-between gap-3 px-4 py-4"
       @click="isOpen = !isOpen"
     >
-      <div class="flex items-center gap-3">
-        <div
-          class="bg-primary-50 text-primary-700 flex size-9 items-center justify-center rounded-xl"
-        >
-          <!-- ícone genérico para categorias criadas pelo user -->
-          <IconDocument :font-controlled="false" class="size-4" />
-        </div>
+      <div class="flex items-center gap-4">
+        <!-- ícone genérico para categorias criadas pelo user -->
+        <component
+          :is="`icon-${category.iconKey}`"
+          :font-controlled="false"
+          class="text-primary-600 inline-block size-[24px]"
+        />
 
         <div class="text-left">
           <div class="text-grey-900 font-semibold">
             {{ category.title }}
           </div>
-          <div class="text-grey-500 text-xs">
-            {{ category.items?.length ?? 0 }} item(s)
+          <div class="text-primary-900 text-xs">
+            {{
+              category.items?.length === 1
+                ? '1 item'
+                : `${category.items?.length} itens`
+            }}
           </div>
         </div>
       </div>
 
-      <IconChevronDown
-        :font-controlled="false"
-        class="text-grey-500 size-4 transition"
-        :class="isOpen ? 'rotate-180' : ''"
-      />
+      <div class="flex items-center gap-4">
+        <!-- Category Edit & Remove -->
+        <div class="hidden flex-wrap items-center justify-end gap-2 md:flex">
+          <button
+            type="button"
+            class="bg-primary-100 text-grey-500 hover:bg-primary-600 rounded-full p-2 transition hover:text-white"
+            title="Editar"
+            @click.stop="isEditCategoryModalOpen = true"
+          >
+            <IconPencil :font-controlled="false" class="size-3" />
+          </button>
+
+          <button
+            type="button"
+            class="bg-primary-100 text-grey-500 hover:bg-primary-600 rounded-full p-2 transition hover:text-white"
+            title="Editar"
+            @click.stop="openRemoveCategory"
+          >
+            <IconTrash :font-controlled="false" class="size-3" />
+          </button>
+        </div>
+
+        <IconChevronDown
+          :font-controlled="false"
+          class="text-grey-500 size-4 transition"
+          :class="isOpen ? 'rotate-180' : ''"
+        />
+      </div>
     </button>
 
     <!-- Content -->
-    <div v-if="isOpen" class="border-grey-100 border-t px-4 pb-4 pt-3">
-      <!-- Table head -->
-      <div class="text-grey-500 hidden grid-cols-5 gap-3 pb-2 text-xs md:grid">
-        <div class="pl-6">Título</div>
-        <div>Estimado</div>
-        <div>Custo actual</div>
-        <div>Montante pago</div>
-        <div>Montante devido</div>
-      </div>
+    <transition name="slide-down" mode="out-in">
+      <div v-if="isOpen" class="border-grey-100 border-t px-4 pb-4 pt-3">
+        <!-- No Items -->
+        <div
+          v-if="localItems.length === 0"
+          class="my-4 flex animate-fadeIn flex-wrap items-center gap-2"
+        >
+          <icon-warning
+            :font-controlled="false"
+            class="text-grey-400 block size-[20px]"
+            aria-hidden="true"
+            focusable="false"
+          ></icon-warning>
+          <p class="text-grey-400 animate-fadeIn text-sm font-medium">
+            Até agora, não existem itens para esta categoria
+          </p>
+        </div>
 
-      <!-- Items (draggable) -->
-      <draggable
-        v-model="localItems"
-        item-key="id"
-        handle=".drag-handle"
-        class="flex flex-col gap-2"
-        ghost-class="opacity-50"
-        @start="onItemDragStart"
-        @end="onItemsDragEnd"
-      >
-        <template #item="{ element: item }">
-          <div
-            :data-id="item.id"
-            class="border-grey-100 grid grid-cols-1 items-center gap-3 rounded-xl border p-3 md:grid-cols-5"
-          >
-            <!-- Title + drag -->
-            <div class="flex items-center gap-2 md:pl-3">
-              <button class="drag-handle cursor-grab" type="button">
-                <IconGripvertical
-                  :font-controlled="false"
-                  class="text-grey-500 size-4 transition-colors"
-                  :class="
-                    draggingItemId === item.id ? 'opacity-100' : 'opacity-60'
-                  "
-                />
-              </button>
+        <!-- Table head -->
+        <div
+          v-if="localItems.length > 0"
+          class="text-grey-500 mt-5 hidden animate-fadeIn grid-cols-5 gap-3 pb-4 text-xs md:grid"
+        >
+          <div class="pl-6">Título</div>
+          <div>Estimado</div>
+          <div>Custo actual</div>
+          <div>Montante pago</div>
+          <div>Montante devido</div>
+        </div>
 
-              <span class="text-grey-900 text-sm font-medium">
-                {{ item.title }}
-              </span>
-            </div>
-
-            <div class="text-grey-700 text-sm">
-              {{ formatMoney(getEstimated(item), template.currency) }}
-            </div>
-
-            <div class="text-grey-700 text-sm">
-              {{ formatMoney(getActual(item), template.currency) }}
-            </div>
-
-            <div class="text-sm text-green-700">
-              {{ formatMoney(getPaid(item), template.currency) }}
-            </div>
-
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-grey-900 text-sm">
-                {{ formatMoney(getDue(item), template.currency) }}
-              </span>
-
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  class="text-grey-500 hover:text-primary-700 transition"
-                  title="Editar"
-                  @click.stop="openEditItem(item)"
-                >
-                  <IconPencil :font-controlled="false" class="size-4" />
+        <!-- Items (draggable) -->
+        <draggable
+          v-model="localItems"
+          item-key="id"
+          handle=".drag-handle"
+          class="flex flex-col gap-2"
+          ghost-class="opacity-50"
+          @start="onItemDragStart"
+          @end="onItemsDragEnd"
+        >
+          <template #item="{ element: item }">
+            <div
+              :data-id="item.id"
+              class="border-grey-100 grid grid-cols-1 items-center gap-3 rounded-xl border p-3 md:grid-cols-5"
+            >
+              <!-- Title + drag -->
+              <div class="flex items-center gap-2 md:pl-3">
+                <button class="drag-handle cursor-grab" type="button">
+                  <IconGripvertical
+                    :font-controlled="false"
+                    class="text-grey-500 size-4 transition-colors"
+                    :class="
+                      draggingItemId === item.id ? 'opacity-100' : 'opacity-60'
+                    "
+                  />
                 </button>
 
-                <button
-                  type="button"
-                  class="text-grey-500 transition hover:text-red-600"
-                  title="Remover"
-                  @click.stop="removeItem(item.id)"
-                >
-                  <IconTrash :font-controlled="false" class="size-4" />
-                </button>
+                <span class="text-grey-900 text-sm font-medium">
+                  {{ item.title }}
+                </span>
+              </div>
+
+              <div class="text-grey-700 text-sm">
+                {{ formatMoney(getEstimated(item), template.currency) }}
+              </div>
+
+              <div class="text-grey-700 text-sm">
+                {{ formatMoney(getActual(item), template.currency) }}
+              </div>
+
+              <div class="text-sm text-green-700">
+                {{ formatMoney(getPaid(item), template.currency) }}
+              </div>
+
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-grey-900 text-sm">
+                  {{ formatMoney(getDue(item), template.currency) }}
+                </span>
+
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="text-grey-500 hover:text-primary-700 transition"
+                    title="Editar"
+                    @click.stop="openEditItem(item)"
+                  >
+                    <IconPencil :font-controlled="false" class="size-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    class="text-grey-500 transition hover:text-red-600"
+                    title="Remover"
+                    @click.stop="openRemoveItem(item)"
+                  >
+                    <IconTrash :font-controlled="false" class="size-4" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </template>
-      </draggable>
+          </template>
+        </draggable>
 
-      <!-- Add item -->
-      <button
-        type="button"
-        class="text-grey-500 hover:text-primary-700 mt-2 inline-flex items-center gap-2 text-sm font-semibold transition"
-        @click="openCreateItem"
-      >
-        <span class="text-primary-700">+</span>
-        Adicionar novo item
-      </button>
+        <!-- Add item -->
+        <button
+          type="button"
+          class="text-grey-300 hover:text-primary-700 group my-4 inline-flex items-center gap-1 text-sm transition"
+          @click="openCreateItem"
+        >
+          <IconPlusSimple
+            :font-controlled="false"
+            class="text-primary-700 block size-[18px]"
+          />
+          <span>Adicionar novo item</span>
+        </button>
 
-      <!-- Subtotal -->
-      <div class="border-grey-100 mt-3 border-t pt-3">
-        <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
-          <div class="text-grey-500 text-sm font-semibold md:pl-6">
-            Subtotal
+        <!-- Subtotal -->
+        <div class="border-grey-100/60 my-4 border-t pt-3">
+          <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
+            <div class="text-grey-500 text-sm font-semibold md:pl-6">
+              Subtotal
+            </div>
+            <div class="text-grey-900 text-sm font-semibold">
+              {{ formatMoney(subtotalEstimated, template.currency) }}
+            </div>
+            <div class="text-grey-900 text-sm font-semibold">
+              {{ formatMoney(subtotalActual, template.currency) }}
+            </div>
+            <div class="text-sm font-semibold text-green-700">
+              {{ formatMoney(subtotalPaid, template.currency) }}
+            </div>
+            <div class="text-grey-900 text-sm font-semibold">
+              {{ formatMoney(subtotalDue, template.currency) }}
+            </div>
           </div>
-          <div class="text-grey-900 text-sm font-semibold">
-            {{ formatMoney(subtotalEstimated, template.currency) }}
-          </div>
-          <div class="text-grey-900 text-sm font-semibold">
-            {{ formatMoney(subtotalActual, template.currency) }}
-          </div>
-          <div class="text-sm font-semibold text-green-700">
-            {{ formatMoney(subtotalPaid, template.currency) }}
-          </div>
-          <div class="text-grey-900 text-sm font-semibold">
-            {{ formatMoney(subtotalDue, template.currency) }}
-          </div>
-        </div>
-
-        <div class="mt-3 flex flex-wrap items-center justify-end gap-2">
-          <BaseButton
-            variant="secondary"
-            @click="isEditCategoryModalOpen = true"
-          >
-            Editar categoria
-          </BaseButton>
-          <BaseButton variant="danger" @click="removeCategory">
-            Remover categoria
-          </BaseButton>
         </div>
       </div>
-    </div>
+    </transition>
 
     <!-- Modals -->
     <LazyBudgetCategoryFormModal
@@ -340,6 +366,29 @@ const subtotalDue = computed(() =>
       :item="selectedItem"
       @close="isEditItemModalOpen = false"
       @saved="emit('changed')"
+    />
+
+    <!-- Remove Category -->
+    <LazyBudgetCategoryRemoveModal
+      :show="isRemoveCategoryModalOpen"
+      mode="TEMPLATE"
+      :category="category"
+      @close-modal="isRemoveCategoryModalOpen = false"
+      @success="emit('changed')"
+    />
+
+    <!-- Remove Template Item -->
+    <LazyBudgetItemRemoveModal
+      :show="isRemoveItemModalOpen"
+      :item="selectedItem"
+      @close-modal="
+        isRemoveItemModalOpen = false;
+        selectedItem = undefined;
+      "
+      @success="
+        emit('changed');
+        selectedItem = undefined;
+      "
     />
   </div>
 </template>

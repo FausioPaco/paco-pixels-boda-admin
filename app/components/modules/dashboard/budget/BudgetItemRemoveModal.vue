@@ -2,14 +2,18 @@
 import { useToast } from 'vue-toastification';
 import { getBudgetService } from '~/services/budgetService';
 
+type Mode = 'EVENT' | 'TEMPLATE';
+
 interface IBudgetItemRemoveModal {
   show?: boolean;
-  item?: BudgetItem | undefined;
+  item?: BudgetItem | BudgetTemplateItem | undefined;
+  mode?: Mode;
 }
 
 const props = withDefaults(defineProps<IBudgetItemRemoveModal>(), {
   show: false,
   item: undefined,
+  mode: 'EVENT',
 });
 
 const toast = useToast();
@@ -30,13 +34,20 @@ const onSubmit = () => {
   isSubmiting.value = true;
   serverErrors.value.hasErrors = false;
   serverErrors.value.message = '';
+  const request =
+    props.mode === 'EVENT'
+      ? budgetService.deleteItem(Number(props.item.id))
+      : budgetService.deleteTemplateItem(Number(props.item.id));
 
-  budgetService
-    .deleteItem(Number(props.item.id))
+  request
     .then(() => {
       emit('closeModal');
       emit('success');
-      toast.success('O item foi removido com sucesso');
+      toast.success(
+        props.mode === 'EVENT'
+          ? 'O item foi removido com sucesso'
+          : 'O item foi removido do modelo com sucesso',
+      );
     })
     .catch((err) => {
       console.log(err?.data ?? err);
