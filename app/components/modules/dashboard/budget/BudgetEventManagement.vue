@@ -84,8 +84,15 @@ const toggleControlMode = async () => {
 
     refreshBudget({ force: true });
   } catch (e) {
-    toast.error('Não foi possível alterar o modo de controlo.');
-    toast.error(getServerErrors(e as ServerError));
+    if (isFetchErrorLike(e)) {
+      toast.error(getServerErrors(e.data), {
+        timeout: false,
+      });
+    } else {
+      toast.error('Não foi possível alterar o modo de controlo.', {
+        timeout: false,
+      });
+    }
   }
 };
 
