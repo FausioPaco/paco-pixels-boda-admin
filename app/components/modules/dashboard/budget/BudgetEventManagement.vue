@@ -143,7 +143,7 @@ const displayedCategories = computed(() => {
             <p class="text-grey-300 mb-0 text-sm">Orçamento</p>
             <div class="flex flex-wrap gap-3">
               <p class="text-primary-700 text-2xl font-bold md:text-3xl">
-                {{ formatToMZN(budget.totalBudget) }}
+                {{ formatMoney(budget.totalBudget, budget.currency) }}
               </p>
 
               <button
@@ -166,6 +166,7 @@ const displayedCategories = computed(() => {
           </div>
         </div>
 
+        <!-- Ultrapassou budget -->
         <div
           v-if="budget?.totals?.isOverBudget"
           class="my-4 flex animate-fadeIn flex-wrap items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700"
@@ -175,7 +176,8 @@ const displayedCategories = computed(() => {
             class="block size-[16px] text-red-700"
           />
           O custo actual ultrapassou o orçamento em
-          {{ formatToMZN(budget.totals.overBudgetBy) }}.
+          <b>{{ formatMoney(budget.totals.overBudgetBy, budget.currency) }}</b
+          >.
         </div>
       </div>
 
@@ -272,31 +274,31 @@ const displayedCategories = computed(() => {
           <div>
             <div class="text-grey-500 text-xs">Total estimado</div>
             <div class="text-primary-800 font-semibold">
-              {{ formatToMZN(budget.totals!.estimatedTotal) }}
+              {{ formatMoney(budget.totals!.estimatedTotal, budget.currency) }}
             </div>
           </div>
           <div>
             <div class="text-grey-500 text-xs">Custo actual</div>
             <div class="text-primary-800 font-semibold">
-              {{ formatToMZN(budget.totals!.actualTotal) }}
+              {{ formatMoney(budget.totals!.actualTotal, budget.currency) }}
             </div>
           </div>
           <div>
             <div class="text-grey-500 text-xs">Pago</div>
             <div class="font-semibold text-green-700">
-              {{ formatToMZN(budget.totals!.paidTotal) }}
+              {{ formatMoney(budget.totals!.paidTotal, budget.currency) }}
             </div>
           </div>
           <div>
             <div class="text-grey-500 text-xs">Devido</div>
             <div class="font-semibold text-red-700">
-              {{ formatToMZN(budget.totals!.dueTotal) }}
+              {{ formatMoney(budget.totals!.dueTotal, budget.currency) }}
             </div>
           </div>
           <div>
             <div class="text-grey-500 text-xs">Orçamento</div>
             <div class="text-primary-800 font-semibold">
-              {{ formatToMZN(budget.totalBudget) }}
+              {{ formatMoney(budget.totalBudget, budget.currency) }}
             </div>
           </div>
         </div>

@@ -258,20 +258,20 @@ const openRemoveItem = (item: BudgetItem) => {
               </div>
 
               <div class="text-grey-700 text-sm">
-                {{ formatToMZN(getEstimated(item)) }}
+                {{ formatMoney(getEstimated(item), budget.currency) }}
               </div>
 
               <div class="text-grey-700 text-sm">
-                {{ formatToMZN(getActual(item)) }}
+                {{ formatMoney(getActual(item), budget.currency) }}
               </div>
 
               <div class="text-sm text-green-700">
-                {{ formatToMZN(getPaid(item)) }}
+                {{ formatMoney(getPaid(item), budget.currency) }}
               </div>
 
               <div class="flex items-center justify-between gap-2">
                 <span class="text-grey-900 text-sm">
-                  {{ formatToMZN(getDue(item)) }}
+                  {{ formatMoney(getDue(item), budget.currency) }}
                 </span>
 
                 <div class="flex items-center gap-2">
@@ -318,16 +318,16 @@ const openRemoveItem = (item: BudgetItem) => {
               Subtotal
             </div>
             <div class="text-grey-900 text-sm font-semibold">
-              {{ formatToMZN(subtotalEstimated) }}
+              {{ formatMoney(subtotalEstimated, budget.currency) }}
             </div>
             <div class="text-grey-900 text-sm font-semibold">
-              {{ formatToMZN(subtotalActual) }}
+              {{ formatMoney(subtotalActual, budget.currency) }}
             </div>
             <div class="text-sm font-semibold text-green-700">
-              {{ formatToMZN(subtotalPaid) }}
+              {{ formatMoney(subtotalPaid, budget.currency) }}
             </div>
             <div class="text-grey-900 text-sm font-semibold">
-              {{ formatToMZN(subtotalDue) }}
+              {{ formatMoney(subtotalDue, budget.currency) }}
             </div>
           </div>
         </div>

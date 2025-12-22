@@ -228,20 +228,20 @@ const subtotalDue = computed(() =>
             </div>
 
             <div class="text-grey-700 text-sm">
-              {{ formatToMZN(getEstimated(item)) }}
+              {{ formatMoney(getEstimated(item), template.currency) }}
             </div>
 
             <div class="text-grey-700 text-sm">
-              {{ formatToMZN(getActual(item)) }}
+              {{ formatMoney(getActual(item), template.currency) }}
             </div>
 
             <div class="text-sm text-green-700">
-              {{ formatToMZN(getPaid(item)) }}
+              {{ formatMoney(getPaid(item), template.currency) }}
             </div>
 
             <div class="flex items-center justify-between gap-2">
               <span class="text-grey-900 text-sm">
-                {{ formatToMZN(getDue(item)) }}
+                {{ formatMoney(getDue(item), template.currency) }}
               </span>
 
               <div class="flex items-center gap-2">
@@ -285,16 +285,16 @@ const subtotalDue = computed(() =>
             Subtotal
           </div>
           <div class="text-grey-900 text-sm font-semibold">
-            {{ formatToMZN(subtotalEstimated) }}
+            {{ formatMoney(subtotalEstimated, template.currency) }}
           </div>
           <div class="text-grey-900 text-sm font-semibold">
-            {{ formatToMZN(subtotalActual) }}
+            {{ formatMoney(subtotalActual, template.currency) }}
           </div>
           <div class="text-sm font-semibold text-green-700">
-            {{ formatToMZN(subtotalPaid) }}
+            {{ formatMoney(subtotalPaid, template.currency) }}
           </div>
           <div class="text-grey-900 text-sm font-semibold">
-            {{ formatToMZN(subtotalDue) }}
+            {{ formatMoney(subtotalDue, template.currency) }}
           </div>
         </div>
 

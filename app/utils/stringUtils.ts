@@ -23,22 +23,6 @@ export function plurarize(count: number, str: string): string {
   return count === 1 ? str : `${str}s`;
 }
 
-export function formatToMZN(amount: number | string): string {
-  const parsed = typeof amount === 'string' ? parseFloat(amount) : amount;
-
-  if (isNaN(parsed)) {
-    throw new Error('O valor fornecido não é um número válido.');
-  }
-
-  const formatted = new Intl.NumberFormat('pt-PT', {
-    useGrouping: true,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(parsed);
-
-  return `${formatted} MZN`;
-}
-
 export function transformToDecimal(
   value: string,
   originalValue: string,
