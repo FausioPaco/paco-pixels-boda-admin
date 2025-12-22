@@ -28,6 +28,8 @@ const isCreateCategoryModalOpen = ref(false);
 
 const localCategories = ref<BudgetTemplateCategory[]>([]);
 
+const openCreateCategory = () => (isCreateCategoryModalOpen.value = true);
+
 watch(
   () => template.value?.categories,
   (list) => {
@@ -41,6 +43,7 @@ watch(
 );
 
 const draggingId = ref<number | null>(null);
+const search = ref('');
 
 function onDragStart(evt: SortableEvent) {
   const id = Number((evt.item as HTMLElement)?.dataset?.id);
@@ -73,13 +76,8 @@ const toggleTemplateControlMode = async () => {
   if (!template.value) return;
 
   try {
-    isControlled.value = !isControlled.value;
-
     const response = await budgetService.toggleTemplateControlMode(
       template.value.id,
-      isControlled.value
-        ? BudgetControlMode.Controllable
-        : BudgetControlMode.NonControllable,
     );
 
     isControlled.value =
@@ -87,20 +85,53 @@ const toggleTemplateControlMode = async () => {
 
     toast.success(
       isControlled.value
-        ? 'Modo de controlo para o modelo actualizado.'
-        : 'Modo não controlado para o modelo actualizado',
+        ? 'Modo de controlo actualizado.'
+        : 'Modo não controlado actualizado',
     );
 
     refreshTemplate({ force: true });
   } catch (e) {
-    toast.error('Não foi possível alterar o modo de controlo.');
-    toast.error(getServerErrors(e as ServerError));
+    console.log(e);
+    if (isFetchErrorLike(e)) {
+      toast.error(getServerErrors(e.data), {
+        timeout: false,
+      });
+    } else {
+      toast.error('Não foi possível alterar o modo de controlo.', {
+        timeout: false,
+      });
+    }
   }
 };
 
 onMounted(() => {
   isControlled.value =
     template.value?.defaultControlMode === BudgetControlMode.Controllable;
+});
+
+function matchesBudgetTemplateItem(item: BudgetTemplateItem, term: string) {
+  return listContains(item.title, term);
+}
+
+function matchesBudgetCategory(category: BudgetTemplateCategory, term: string) {
+  const categoryMatch = listContains(category.title, term);
+
+  if (categoryMatch) return true;
+
+  const items = category.items as BudgetTemplateItem[] | undefined;
+  return items?.some((item) => matchesBudgetTemplateItem(item, term)) ?? false;
+}
+
+const normalizedSearch = computed(() => listNormalize(search.value));
+const isFiltering = computed(() => !!normalizedSearch.value);
+
+const displayedCategories = computed(() => {
+  if (!isFiltering.value) return localCategories.value;
+
+  const term = normalizedSearch.value;
+  return localCategories.value.filter((cat) =>
+    matchesBudgetCategory(cat, term),
+  );
 });
 </script>
 
@@ -140,35 +171,61 @@ onMounted(() => {
     </BaseSearchNotFound>
 
     <div v-else class="flex flex-col gap-4">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-2">
-          <div class="text-primary-700/50 text-base font-semibold">
-            Categorias deste modelo
+      <!-- Header -->
+      <div class="my-3 flex flex-col gap-1 md:my-5">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex flex-col gap-1">
+            <p class="text-grey-300 mb-0 text-sm">Orçamento do modelo</p>
+            <div class="flex flex-wrap gap-3">
+              <p class="text-primary-700 text-2xl font-bold md:text-3xl">
+                {{ formatMoney(template.baseTotalBudget, template.currency) }}
+              </p>
+
+              <button
+                class="text-grey-400 hover:text-primary-700 transition-colors"
+                type="button"
+                title="Editar orçamento"
+                @click="isHeaderModalOpen = true"
+              >
+                <IconPencil :font-controlled="false" class="size-[20px]" />
+              </button>
+            </div>
           </div>
 
-          <button
-            class="text-grey-500 hover:text-primary-700 transition-colors"
-            type="button"
-            title="Editar cabeçalho do template"
-            @click="isHeaderModalOpen = true"
-          >
-            <IconPencil :font-controlled="false" class="size-4" />
-          </button>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <span class="text-grey-500 text-sm">Modo controlável</span>
-          <BaseToggle
-            :model-value="isControlled"
-            @update:model-value="toggleTemplateControlMode"
-          />
-          <BaseButton @click="isCreateCategoryModalOpen = true"
-            >Adicionar categoria</BaseButton
-          >
+          <div class="flex items-center gap-3">
+            <BaseToggle
+              :model-value="isControlled"
+              :label="isControlled ? 'Desactivar controlo' : 'Activar controlo'"
+              @update:model-value="toggleTemplateControlMode"
+            />
+          </div>
         </div>
       </div>
 
+      <!-- Search + Actions -->
+      <div class="my-4 flex flex-wrap items-end justify-between gap-3">
+        <div class="w-full md:w-[40%]">
+          <BaseInput
+            id="searchCategory"
+            v-model="search"
+            label="Pesquisa:"
+            type="search"
+            placeholder="Filtrar categorias ou itens..."
+            disable-margins
+          />
+        </div>
+        <BaseButton
+          icon="add"
+          btn-size="sm"
+          btn-type="outline-primary"
+          @click="openCreateCategory"
+          >Adicionar categoria</BaseButton
+        >
+      </div>
+
+      <!-- Categories (draggable) -->
       <draggable
+        v-if="!isFiltering"
         v-model="localCategories"
         item-key="id"
         handle=".drag-handle"
@@ -203,6 +260,27 @@ onMounted(() => {
           </div>
         </template>
       </draggable>
+
+      <!-- Categories (searching) -->
+      <div v-else class="flex w-full flex-col gap-4">
+        <div
+          v-for="category in displayedCategories"
+          :key="category.id"
+          class="flex w-full items-start gap-3"
+        >
+          <!-- Sem drag handle (ou desactivado) -->
+          <button class="pt-4 opacity-30" type="button" disabled>
+            <IconGripvertical :font-controlled="false" class="size-5" />
+          </button>
+
+          <BudgetTemplateCategoryCard
+            class="flex-1"
+            :template="template"
+            :category="category"
+            @changed="refreshTemplate({ force: true })"
+          />
+        </div>
+      </div>
     </div>
 
     <LazyBudgetHeaderFormModal

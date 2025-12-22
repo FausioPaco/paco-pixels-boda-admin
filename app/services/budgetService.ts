@@ -226,15 +226,11 @@ export const getBudgetService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
     );
   },
 
-  async toggleTemplateControlMode(
-    templateId: number,
-    controlMode: BudgetControlMode,
-  ): Promise<BudgetTemplate> {
+  async toggleTemplateControlMode(templateId: number): Promise<BudgetTemplate> {
     return $fetch<BudgetTemplate>(
       `${TEMPLATE_RESOURCE}/${templateId}/toggle-control-mode`,
       {
         method: 'PUT',
-        body: { controlMode },
       },
     );
   },
