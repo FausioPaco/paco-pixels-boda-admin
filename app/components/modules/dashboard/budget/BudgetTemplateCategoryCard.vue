@@ -222,11 +222,11 @@ const subtotalDue = computed(() =>
           v-if="localItems.length > 0"
           class="text-grey-500 mt-5 hidden animate-fadeIn grid-cols-5 gap-3 pb-4 text-xs md:grid"
         >
-          <div class="pl-6">Título</div>
+          <div class="pl-7">Título</div>
           <div>Estimado</div>
           <div>Custo actual</div>
           <div>Montante pago</div>
-          <div>Montante devido</div>
+          <div class="-ml-2">Montante devido</div>
         </div>
 
         <!-- Items (draggable) -->

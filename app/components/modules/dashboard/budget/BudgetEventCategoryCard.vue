@@ -222,7 +222,7 @@ const openRemoveItem = (item: BudgetItem) => {
           <div>Estimado</div>
           <div>Custo actual</div>
           <div>Montante pago</div>
-          <div>Montante devido</div>
+          <div class="-ml-2">Montante devido</div>
         </div>
 
         <!-- Items (draggable) -->
