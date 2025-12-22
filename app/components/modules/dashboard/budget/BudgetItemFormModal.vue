@@ -101,8 +101,13 @@ const onSubmit = handleSubmit(async (values) => {
     emit('saved');
     close();
   } catch (e) {
-    serverErrors.value.message = getServerErrors(e as ServerError);
     serverErrors.value.hasErrors = true;
+
+    if (isFetchErrorLike(e)) {
+      serverErrors.value.message = getServerErrors(e.data);
+    } else {
+      serverErrors.value.message = 'Ocorreu um erro inesperado.';
+    }
   }
 });
 </script>

@@ -63,10 +63,6 @@ const onSubmit = () => {
       </p>
 
       <div class="w-full">
-        <div v-if="isSubmiting" class="mt-4 flex items-center justify-center">
-          <BaseLoading size="md" orientation="horizontal" />
-        </div>
-
         <BaseError v-if="serverErrors.hasErrors">{{
           serverErrors.message
         }}</BaseError>

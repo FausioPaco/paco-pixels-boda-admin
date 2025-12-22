@@ -288,7 +288,7 @@ const openRemoveItem = (item: BudgetItem) => {
                     type="button"
                     class="text-grey-500 transition hover:text-red-600"
                     title="Remover"
-                    @click.stop="openRemoveItem(item.id)"
+                    @click.stop="openRemoveItem(item)"
                   >
                     <IconTrash :font-controlled="false" class="size-4" />
                   </button>

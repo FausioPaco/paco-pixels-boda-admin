@@ -161,8 +161,12 @@ const displayedCategories = computed(() => {
 
         <div
           v-if="budget?.totals?.isOverBudget"
-          class="rounded-lg bg-red-50 p-3 text-sm text-red-700"
+          class="my-4 flex animate-fadeIn flex-wrap items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700"
         >
+          <IconWarning
+            :font-controlled="false"
+            class="block size-[16px] text-red-700"
+          />
           O custo actual ultrapassou o orçamento em
           {{ formatToMZN(budget.totals.overBudgetBy) }}.
         </div>
