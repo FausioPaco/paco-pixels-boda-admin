@@ -117,8 +117,7 @@ const onSubmit = handleSubmit(async (values) => {
         :error-message="errors.title"
         :readonly="isSubmitting"
         label="Título"
-        placeholder="Ex.: Fase 1 – Preparação"
-        required
+        placeholder="Ex.: Fase 1 - Preparação"
       />
 
       <BaseInput

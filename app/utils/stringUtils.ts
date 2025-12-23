@@ -23,22 +23,6 @@ export function plurarize(count: number, str: string): string {
   return count === 1 ? str : `${str}s`;
 }
 
-export function formatToMZN(amount: number | string): string {
-  const parsed = typeof amount === 'string' ? parseFloat(amount) : amount;
-
-  if (isNaN(parsed)) {
-    throw new Error('O valor fornecido não é um número válido.');
-  }
-
-  const formatted = new Intl.NumberFormat('pt-PT', {
-    useGrouping: true,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(parsed);
-
-  return `${formatted} MZN`;
-}
-
 export function transformToDecimal(
   value: string,
   originalValue: string,
@@ -112,3 +96,9 @@ export function generateSlug(str: string): string {
     .replace(/[^a-z0-9]+/g, '-') // substitui tudo que não é alfanumérico por "-"
     .replace(/^-+|-+$/g, ''); // remove traços no início/fim
 }
+
+export const listNormalize = (v?: string | null) =>
+  (v ?? '').toString().trim().toLowerCase();
+
+export const listContains = (value: string | undefined | null, term: string) =>
+  listNormalize(value).includes(term);

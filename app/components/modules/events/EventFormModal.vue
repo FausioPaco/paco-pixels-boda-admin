@@ -107,10 +107,11 @@ const [autoCreateChecklist, autoCreateChecklistAttrs] = defineField(
 const onSubmit = handleSubmit((values) => {
   isSubmiting.value = true;
   serverErrors.value.hasErrors = false;
+  const trimmedDescription = values.description?.trim();
 
   const payload: EventInput = {
     name: values.name,
-    description: values.description ?? '',
+    description: trimmedDescription ? trimmedDescription : null,
     initials: values.initials,
     eventTypeId: values.eventTypeId,
     event_Date: values.event_Date ?? undefined,
