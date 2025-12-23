@@ -1,4 +1,3 @@
-<!-- components/budget/BudgetTemplateCategoryCard.vue -->
 <script setup lang="ts">
 import draggable from 'vuedraggable';
 import { useToast } from 'vue-toastification';
