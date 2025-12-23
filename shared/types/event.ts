@@ -38,7 +38,7 @@ export interface EventParameters {
 
 export interface EventInput {
   name: string;
-  description: string;
+  description?: string | null | undefined;
   initials: string;
   eventTypeId?: number | undefined;
   slug?: string | undefined;
