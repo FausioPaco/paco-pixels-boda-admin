@@ -3,7 +3,7 @@ import type { NitroFetchRequest, $Fetch } from 'nitropack';
 const BEVERAGE_RESOURCE = '/BeverageCatalog';
 const EVENT_BEVERAGE_RESOURCE = '/EventBeverages';
 
-export const getBeverageCatalogService = <T>(
+export const getBeverageService = <T>(
   $fetch: $Fetch<T, NitroFetchRequest>,
 ) => ({
   async getCatalogItems(
@@ -161,6 +161,19 @@ export const getBeverageCatalogService = <T>(
         method: 'post',
         query: { eventId },
         body: input,
+      },
+    );
+  },
+
+  async getStockMovements(
+    eventId: number,
+    parameters: BeverageStockReportParameters,
+  ): Promise<Pagination<StockMovement>> {
+    return fetchWithPagination<StockMovement>(
+      $fetch,
+      `${EVENT_BEVERAGE_RESOURCE}/GetMovements/${eventId}`,
+      {
+        query: parameters,
       },
     );
   },

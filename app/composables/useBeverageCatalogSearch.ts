@@ -1,8 +1,8 @@
-import { getBeverageCatalogService } from '~/services/beverageService';
+import { getBeverageService } from '~/services/beverageService';
 
 export const useBeverageCatalogSearch = () => {
   const nuxtApp = useNuxtApp();
-  const service = getBeverageCatalogService(nuxtApp.$api);
+  const service = getBeverageService(nuxtApp.$api);
 
   const results = ref<BeverageCatalogItem[]>([]);
   const isSearching = ref(false);

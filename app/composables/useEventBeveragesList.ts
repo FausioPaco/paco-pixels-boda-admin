@@ -1,4 +1,4 @@
-import { getBeverageCatalogService } from '~/services/beverageService';
+import { getBeverageService } from '~/services/beverageService';
 
 export const useEventBeveragesList = async (opts: {
   parameters?: Partial<Omit<EventBeveragesParameters, 'eventId'>>;
@@ -18,7 +18,7 @@ export const useEventBeveragesList = async (opts: {
   const eventId = eventStore.ensureSelected();
 
   const nuxtApp = useNuxtApp();
-  const service = getBeverageCatalogService(nuxtApp.$api);
+  const service = getBeverageService(nuxtApp.$api);
 
   const parameters = ref<Omit<EventBeveragesParameters, 'eventId'>>({
     searchQuery: opts.parameters?.searchQuery ?? '',

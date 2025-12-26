@@ -165,3 +165,12 @@ export interface RestockBeveragesInput {
 export interface RestockBeveragesResult {
   updatedCount: number;
 }
+
+export interface BeverageStockReportParameters {
+  eventId?: number;
+  searchQuery: string;
+  startDate: string;
+  endDate: string;
+  pageNumber: number;
+  pageSize: number;
+}

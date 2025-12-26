@@ -1,4 +1,4 @@
-import { getBeverageCatalogService } from '~/services/beverageService';
+import { getBeverageService } from '~/services/beverageService';
 
 export const useBeverageCategoriesList = async (opts?: {
   parameters?: Partial<BeverageCategoriesParameters>;
@@ -6,7 +6,7 @@ export const useBeverageCategoriesList = async (opts?: {
   cacheKey?: string;
 }) => {
   const nuxtApp = useNuxtApp();
-  const service = getBeverageCatalogService(nuxtApp.$api);
+  const service = getBeverageService(nuxtApp.$api);
   const beverageCategories = useState<BeverageCategory[]>(
     'beverage-categories-list',
     () => [],

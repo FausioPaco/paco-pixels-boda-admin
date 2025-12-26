@@ -1,4 +1,4 @@
-import { getBeverageCatalogService } from '~/services/beverageService';
+import { getBeverageService } from '~/services/beverageService';
 
 export const useBeverageCatalogList = async (opts?: {
   parameters?: Partial<BeverageCatalogParameters>;
@@ -15,7 +15,7 @@ export const useBeverageCatalogList = async (opts?: {
   );
 
   const nuxtApp = useNuxtApp();
-  const service = getBeverageCatalogService(nuxtApp.$api);
+  const service = getBeverageService(nuxtApp.$api);
 
   const parameters = ref<BeverageCatalogParameters>({
     searchQuery: opts?.parameters?.searchQuery ?? '',
