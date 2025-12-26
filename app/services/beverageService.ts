@@ -150,4 +150,18 @@ export const getBeverageCatalogService = <T>(
       },
     );
   },
+
+  async restock(
+    eventId: number,
+    input: RestockBeveragesInput,
+  ): Promise<RestockBeveragesResult> {
+    return $fetch<RestockBeveragesResult>(
+      `${EVENT_BEVERAGE_RESOURCE}/Restock`,
+      {
+        method: 'post',
+        query: { eventId },
+        body: input,
+      },
+    );
+  },
 });
