@@ -136,6 +136,7 @@ export interface StockMovement {
   occurredAt: string;
   note: string | null | undefined;
   beverageName?: string | null | undefined;
+  createdByName: string;
 }
 
 export interface StockMovementCreateInput {

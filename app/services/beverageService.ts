@@ -167,14 +167,12 @@ export const getBeverageService = <T>(
 
   async getStockMovements(
     eventId: number,
-    parameters: BeverageStockReportParameters,
+    parameters: Omit<BeverageStockReportParameters, 'eventId'>,
   ): Promise<Pagination<StockMovement>> {
     return fetchWithPagination<StockMovement>(
       $fetch,
       `${EVENT_BEVERAGE_RESOURCE}/GetMovements/${eventId}`,
-      {
-        query: parameters,
-      },
+      { query: parameters },
     );
   },
 });

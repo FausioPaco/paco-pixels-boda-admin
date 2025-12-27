@@ -73,6 +73,13 @@ export const useBeverageStockMovements = async (
     }
   });
 
+  const refreshStockMovements = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key.value);
+    }
+    await refresh();
+  };
+
   return {
     stockMovements,
     pagination,
@@ -80,6 +87,6 @@ export const useBeverageStockMovements = async (
     isRefreshing: status.value === 'pending',
     isError: status.value === 'error',
     isSuccess: status.value === 'success',
-    refreshStockMovements: refresh,
+    refreshStockMovements,
   };
 };

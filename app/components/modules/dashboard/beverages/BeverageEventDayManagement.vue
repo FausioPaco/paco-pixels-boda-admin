@@ -1,4 +1,3 @@
-<!-- components/beverages/BeverageEventDayManagement.vue -->
 <script setup lang="ts">
 import { useToast } from 'vue-toastification';
 import { getBeverageService } from '~/services/beverageService';
@@ -321,7 +320,7 @@ function onPageSelected(newPage: number) {
       "
     />
 
-    <BeverageRestockListModal
+    <LazyBeverageRestockListModal
       :show="showRestockListModal"
       :candidates="restockCandidates"
       @close-modal="showRestockListModal = false"
