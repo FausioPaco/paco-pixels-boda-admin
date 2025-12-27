@@ -61,6 +61,10 @@ const close = () => emit('closeModal');
         >?
       </p>
 
+      <BaseError v-if="serverErrors.hasErrors">{{
+        serverErrors.message
+      }}</BaseError>
+
       <div class="flex w-full justify-center gap-3">
         <BaseButton
           type="submit"

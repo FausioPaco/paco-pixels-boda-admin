@@ -40,12 +40,9 @@ watch(searchQuery, () => {
   debouncedSearch();
 });
 
-watch(
-  () => ({ ...queryParameters }),
-  () => {
-    refreshEventBeverages({ force: true });
-  },
-);
+watch(queryParameters, () => {
+  refreshEventBeverages({ force: true });
+});
 
 function onPageChange(newPage: number) {
   queryParameters.pageNumber = newPage;

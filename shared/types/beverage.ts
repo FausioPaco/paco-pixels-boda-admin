@@ -158,8 +158,8 @@ export interface EventBeverageSettings {
 
 export interface RestockBeverageItemInput {
   eventBeverageId: number;
-  quantity?: number | null;
-  boxesQty?: number | null;
+  quantity: number | null;
+  boxesQty: number | null;
   note?: string | null;
 }
 

@@ -280,6 +280,10 @@ watch(
         :readonly="isSubmitting"
       />
 
+      <BaseError v-if="serverErrors.hasErrors">{{
+        serverErrors.message
+      }}</BaseError>
+
       <div class="mt-4 flex w-full justify-center gap-3">
         <BaseButton
           btn-type="outline-primary"
