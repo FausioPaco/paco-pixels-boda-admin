@@ -1,4 +1,3 @@
-<!-- components/beverages/BeveragePlanningManagement.vue -->
 <script setup lang="ts">
 import { useToast } from 'vue-toastification';
 
@@ -262,7 +261,7 @@ const onRefresh = async () => {
       <!-- First empty state -->
       <LazyBaseFirstEmptyState
         v-if="isFirstTime"
-        icon="icon-drink"
+        icon="icon-beverage"
         title="Ainda não registou bebidas"
         description="Adicione bebidas para controlar o inventário e gerir o consumo no dia do evento."
         :show-button="true"
@@ -349,9 +348,9 @@ const onRefresh = async () => {
     </div>
 
     <!-- Modals -->
-    <BeverageUpsertModal
+    <LazyBeverageUpsertModal
       :show="showUpsertModal"
-      :event-id="eventId"
+      :event-id="eventId!"
       :beverage="selectedBeverage"
       @close-modal="showUpsertModal = false"
       @success="
@@ -360,9 +359,9 @@ const onRefresh = async () => {
       "
     />
 
-    <BeverageRemoveModal
+    <LazyBeverageRemoveModal
       :show="showRemoveModal"
-      :event-id="eventId"
+      :event-id="eventId!"
       :beverage="selectedBeverage"
       @close-modal="showRemoveModal = false"
       @success="
