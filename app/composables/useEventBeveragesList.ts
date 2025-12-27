@@ -1,7 +1,7 @@
 import { getBeverageService } from '~/services/beverageService';
 
 export const useEventBeveragesList = async (opts: {
-  parameters?: Partial<Omit<EventBeveragesParameters, 'eventId'>>;
+  parameters?: EventBeveragesParameters;
   immediate?: boolean;
   cacheKey?: string;
 }) => {
@@ -20,7 +20,7 @@ export const useEventBeveragesList = async (opts: {
   const nuxtApp = useNuxtApp();
   const service = getBeverageService(nuxtApp.$api);
 
-  const parameters = ref<Omit<EventBeveragesParameters, 'eventId'>>({
+  const parameters = ref<EventBeveragesParameters>({
     searchQuery: opts.parameters?.searchQuery ?? '',
     categoryId: opts.parameters?.categoryId ?? null,
     stockStatus: opts.parameters?.stockStatus ?? '',
@@ -104,8 +104,8 @@ export const useEventBeveragesList = async (opts: {
     parameters,
     beverages: eventBeverages,
     pagination,
-    isLoading: pending,
-    error,
+    isRefreshing: pending,
+    isError: error,
     refreshEventBeverages,
     setSearchQuery,
     setCategoryId,

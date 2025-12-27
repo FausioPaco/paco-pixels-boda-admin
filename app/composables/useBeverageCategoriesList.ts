@@ -1,7 +1,7 @@
 import { getBeverageService } from '~/services/beverageService';
 
 export const useBeverageCategoriesList = async (opts?: {
-  parameters?: Partial<BeverageCategoriesParameters>;
+  parameters?: BeverageCategoriesParameters;
   immediate?: boolean;
   cacheKey?: string;
 }) => {

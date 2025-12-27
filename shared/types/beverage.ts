@@ -16,7 +16,14 @@ export enum BeverageModuleStatus {
   Closed = 3,
 }
 
-export type EventBeverageStockStatus = 'OK' | 'Low' | 'OutOfStock';
+export type EventBeverageStockStatus =
+  | 'OK'
+  | 'Low'
+  | 'OutOfStock'
+  | 'ok'
+  | 'low'
+  | 'outofstock'
+  | '';
 
 /**
  * ===== Catálogo Global =====
@@ -85,10 +92,10 @@ export interface EventBeverage {
 }
 
 export interface EventBeveragesParameters {
-  eventId: number;
+  eventId?: number;
   searchQuery?: string;
   categoryId?: number | null | undefined;
-  stockStatus?: 'ok' | 'low' | 'outofstock' | '';
+  stockStatus?: EventBeverageStockStatus;
   startDate?: string;
   endDate?: string;
   pageNumber?: number;
@@ -102,7 +109,7 @@ export interface EventBeverageCreateInput {
   unitsPerBox?: number | null | undefined;
   boxesQty?: number | null | undefined;
   initialUnits?: number | null | undefined;
-  minimumUnits: number;
+  minimumUnits: number | undefined;
   notes?: string | null | undefined;
 }
 
@@ -113,7 +120,7 @@ export interface EventBeverageUpdateInput {
   unitsPerBox?: number | null | undefined;
   boxesQty?: number | null | undefined;
   initialUnits?: number | null | undefined;
-  minimumUnits: number;
+  minimumUnits: number | null | undefined;
   notes?: string | null | undefined;
 }
 

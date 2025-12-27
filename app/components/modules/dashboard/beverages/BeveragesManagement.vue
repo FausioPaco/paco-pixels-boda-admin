@@ -17,7 +17,7 @@ const { eventId } = useEventStore();
     <BaseTab>
       <BaseTabItem
         id="beverages-planning"
-        icon="beverage"
+        icon="beverage-stock"
         :tab-position="1"
         :total-tabs="2"
         :is-active="activeTab === 'PLANNING'"
@@ -28,8 +28,8 @@ const { eventId } = useEventStore();
       </BaseTabItem>
 
       <BaseTabItem
-        id="beverages-eventday"
-        icon="beverage-eventday"
+        id="beverages-event"
+        icon="beverage-event"
         :tab-position="2"
         :total-tabs="2"
         :is-active="activeTab === 'EVENT_DAY'"
