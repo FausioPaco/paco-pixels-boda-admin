@@ -15,7 +15,7 @@ const queryParameters = reactive<EventBeveragesParameters>({
 });
 
 const { beverages, pagination, isRefreshing, isError, refreshEventBeverages } =
-  await useEventBeveragesList({ parameters: queryParameters });
+  await useEventBeveragesList(queryParameters);
 
 const { categories, refreshCategories } = await useBeverageCategoriesList({
   parameters: {
@@ -56,7 +56,7 @@ const statusOptions = computed<SelectOption[]>(() => [
   { id: '', name: 'Mostrar todos estados' },
   { id: 'OK', name: 'OK' },
   { id: 'LOW', name: 'Baixo' },
-  { id: 'OUT_OF_STOCK', name: 'Sem stock' },
+  { id: 'OUTOFSTOCK', name: 'Sem stock' },
 ]);
 
 const categoryOptions = computed<SelectOption[]>(() => {
@@ -167,6 +167,7 @@ const onRefresh = async () => {
                 ? String(queryParameters.categoryId)
                 : ''
             "
+            disable-empty
             @update:model-value="onCategoryChanged"
           />
 
@@ -176,6 +177,7 @@ const onRefresh = async () => {
             :options="statusOptions"
             :disabled="isRefreshing"
             :model-value="queryParameters.stockStatus ?? ''"
+            disable-empty
             @update:model-value="onStatusChanged"
           />
 
@@ -279,8 +281,8 @@ const onRefresh = async () => {
             <th scope="col" class="hidden md:table-cell">Por caixa</th>
             <th scope="col" class="hidden md:table-cell">Caixas</th>
             <th scope="col">Estoque inicial</th>
-            <th scope="col">Estoque disponível</th>
-            <th scope="col">Estoque mínimo</th>
+            <th scope="col">Disponível</th>
+            <th scope="col">Mínimo</th>
             <th scope="col">Estado</th>
             <th scope="col">Acções</th>
           </tr>
@@ -313,23 +315,26 @@ const onRefresh = async () => {
                 "
               />
             </td>
-            <td class="flex flex-wrap gap-2">
-              <BaseButton
-                btn-type="outline-primary"
-                btn-size="sm"
-                icon="edit"
-                @click.prevent="openEditModal(bev)"
-              >
-                Editar
-              </BaseButton>
-              <BaseButton
-                btn-type="outline-primary"
-                btn-size="sm"
-                icon="trash"
-                @click.prevent="openRemoveModal(bev)"
-              >
-                Remover
-              </BaseButton>
+            <td>
+              <div class="my-2 flex items-center gap-3">
+                <button
+                  type="button"
+                  class="text-grey-500 hover:text-primary-700 transition"
+                  title="Editar"
+                  @click.stop="openEditModal(bev)"
+                >
+                  <IconPencil :font-controlled="false" class="size-4" />
+                </button>
+
+                <button
+                  type="button"
+                  class="text-grey-500 transition hover:text-red-600"
+                  title="Remover"
+                  @click.stop="openRemoveModal(bev)"
+                >
+                  <IconTrash :font-controlled="false" class="size-4" />
+                </button>
+              </div>
             </td>
           </tr>
         </template>

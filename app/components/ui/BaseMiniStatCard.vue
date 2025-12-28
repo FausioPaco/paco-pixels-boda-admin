@@ -1,4 +1,3 @@
-<!-- components/ui/BaseMiniStatCard.vue -->
 <script setup lang="ts">
 interface IProps {
   title: string;

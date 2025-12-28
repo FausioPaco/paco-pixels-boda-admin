@@ -1,10 +1,8 @@
 import { getBeverageService } from '~/services/beverageService';
 
-export const useEventBeveragesList = async (opts: {
-  parameters?: EventBeveragesParameters;
-  immediate?: boolean;
-  cacheKey?: string;
-}) => {
+export const useEventBeveragesList = async (
+  overrides?: EventBeveragesParameters,
+) => {
   const eventBeverages = useState<EventBeverage[]>(
     'event-beverages-list',
     () => [],
@@ -20,19 +18,20 @@ export const useEventBeveragesList = async (opts: {
   const nuxtApp = useNuxtApp();
   const service = getBeverageService(nuxtApp.$api);
 
-  const parameters = ref<EventBeveragesParameters>({
-    searchQuery: opts.parameters?.searchQuery ?? '',
-    categoryId: opts.parameters?.categoryId ?? null,
-    stockStatus: opts.parameters?.stockStatus ?? '',
-    pageNumber: opts.parameters?.pageNumber ?? 1,
-    pageSize: opts.parameters?.pageSize ?? 10,
-    startDate: opts.parameters?.startDate ?? undefined,
-    endDate: opts.parameters?.endDate ?? undefined,
-  });
+  const queryParameters =
+    (overrides as EventBeveragesParameters | undefined) ??
+    reactive<EventBeveragesParameters>({
+      searchQuery: '',
+      categoryId: null,
+      stockStatus: '',
+      pageNumber: 1,
+      pageSize: 10,
+      eventId,
+    });
 
   const cacheKey = computed(
     () =>
-      `event-beverages-${eventId}-${parameters.value.searchQuery ?? ''}-${parameters.value.categoryId ?? 'all'}-${parameters.value.stockStatus ?? 'all'}-${parameters.value.pageNumber}-${parameters.value.pageSize}`,
+      `event-beverages-${eventId}-${queryParameters.searchQuery ?? ''}-${queryParameters.categoryId ?? 'all'}-${queryParameters.stockStatus ?? 'all'}-${queryParameters.pageNumber}-${queryParameters.pageSize}`,
   );
 
   const { data, pending, error, refresh } = await useAsyncData(
@@ -40,10 +39,10 @@ export const useEventBeveragesList = async (opts: {
     () =>
       service.getEventBeverages({
         eventId,
-        ...parameters.value,
+        ...toRaw(queryParameters),
       }),
     {
-      immediate: opts.immediate ?? true,
+      immediate: true,
       transform(input) {
         const { data, ...paginationData } = input;
         return {
@@ -75,41 +74,11 @@ export const useEventBeveragesList = async (opts: {
     await refresh();
   };
 
-  const setSearchQuery = async (searchQuery: string) => {
-    parameters.value.searchQuery = searchQuery;
-    parameters.value.pageNumber = 1;
-    await refresh();
-  };
-
-  const setCategoryId = async (categoryId: number | null) => {
-    parameters.value.categoryId = categoryId;
-    parameters.value.pageNumber = 1;
-    await refresh();
-  };
-
-  const setStockStatus = async (
-    stockStatus: EventBeveragesParameters['stockStatus'],
-  ) => {
-    parameters.value.stockStatus = stockStatus ?? '';
-    parameters.value.pageNumber = 1;
-    await refresh();
-  };
-
-  const setPage = async (pageNumber: number) => {
-    parameters.value.pageNumber = pageNumber;
-    await refresh();
-  };
-
   return {
-    parameters,
     beverages: eventBeverages,
     pagination,
     isRefreshing: pending,
     isError: error,
     refreshEventBeverages,
-    setSearchQuery,
-    setCategoryId,
-    setStockStatus,
-    setPage,
   };
 };

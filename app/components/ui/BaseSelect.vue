@@ -5,7 +5,7 @@ defineOptions({
   inheritAttrs: false,
 });
 
-withDefaults(defineProps<ISelectProps>(), {
+const props = withDefaults(defineProps<ISelectProps>(), {
   helperText: '',
   errorMessage: '',
   success: false,
@@ -15,12 +15,19 @@ withDefaults(defineProps<ISelectProps>(), {
   emptyMessage: 'Selecione',
   background: 'white',
   disableMargins: false,
+  asNumber: false,
 });
 
 const emit = defineEmits(['update:modelValue']);
 
 const updateValue = ($event: Event) => {
-  const { value } = $event.target as HTMLTextAreaElement;
+  const { value } = $event.target as HTMLSelectElement;
+
+  if (props.asNumber) {
+    emit('update:modelValue', value === '' ? value : Number(value));
+    return;
+  }
+
   emit('update:modelValue', value);
 };
 </script>

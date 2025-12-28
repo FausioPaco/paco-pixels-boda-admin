@@ -2,7 +2,7 @@
 import { toTypedSchema } from '@vee-validate/yup';
 import { useForm } from 'vee-validate';
 import { useToast } from 'vue-toastification';
-import { mixed, number, object, string } from 'yup';
+import { number, object, string } from 'yup';
 import { getBeverageService } from '~/services/beverageService';
 
 const props = withDefaults(
@@ -46,13 +46,29 @@ const schema = toTypedSchema(
     beverageCategoryId: number()
       .required('A categoria é obrigatória.')
       .typeError('A categoria é obrigatória.'),
-    purchaseMode: mixed<BeveragePurchaseMode.Unit | BeveragePurchaseMode.Box>()
-      .oneOf([BeveragePurchaseMode.Unit, BeveragePurchaseMode.Box])
-      .required('O modo de compra é obrigatório.'),
+    purchaseMode: number()
+      .transform((_, originalValue) => {
+        if (
+          originalValue === '' ||
+          originalValue === null ||
+          originalValue === undefined
+        )
+          return undefined;
+
+        const n = Number(originalValue);
+        return Number.isNaN(n) ? undefined : n;
+      })
+      .oneOf(
+        [BeveragePurchaseMode.Unit, BeveragePurchaseMode.Box],
+        'O modo de compra deve ser por unidade ou por caixa.',
+      )
+      .required('O modo de compra é obrigatório.')
+      .typeError('O modo de compra é obrigatório.'),
     unitsPerBox: number()
       .nullable()
+      .typeError('Unidades por caixa deve ser um número.')
       .when('purchaseMode', {
-        is: BeveragePurchaseMode.Box,
+        is: (v: unknown) => Number(v) === BeveragePurchaseMode.Box,
         then: (s) =>
           s
             .required('Unidades por caixa é obrigatório.')
@@ -61,8 +77,9 @@ const schema = toTypedSchema(
       }),
     boxesQty: number()
       .nullable()
+      .typeError('Número de caixas deve ser um número.')
       .when('purchaseMode', {
-        is: BeveragePurchaseMode.Box,
+        is: (v: unknown) => Number(v) === BeveragePurchaseMode.Box,
         then: (s) =>
           s
             .required('Número de caixas é obrigatório.')
@@ -71,15 +88,26 @@ const schema = toTypedSchema(
       }),
     initialUnits: number()
       .nullable()
+      .typeError('Estoque inicial deve ser um número.')
       .when('purchaseMode', {
-        is: BeveragePurchaseMode.Unit,
+        is: (v: unknown) => Number(v) === BeveragePurchaseMode.Unit,
         then: (s) =>
           s
             .required('Estoque inicial é obrigatório.')
             .min(0, 'Não pode ser negativo.'),
         otherwise: (s) => s.nullable(),
       }),
-    minimumUnits: number().nullable().min(0, 'Não pode ser negativo.'),
+    minimumUnits: number()
+      .nullable()
+      .typeError('Estoque mínimo deve ser um número.')
+      .when('purchaseMode', {
+        is: (v: unknown) => Number(v) === BeveragePurchaseMode.Box,
+        then: (s) =>
+          s
+            .required('Estoque mínimo é obrigatório.')
+            .min(0, 'Não pode ser negativo.'),
+        otherwise: (s) => s.nullable().min(0, 'Não pode ser negativo.'),
+      }),
     notes: string().nullable(),
   }),
 );
@@ -107,6 +135,7 @@ const [boxesQty, boxesQtyAttrs] = defineField('boxesQty');
 const [initialUnits, initialUnitsAttrs] = defineField('initialUnits');
 const [minimumUnits, minimumUnitsAttrs] = defineField('minimumUnits');
 const [notes, notesAttrs] = defineField('notes');
+const minimumBoxes = ref<number | null>(null);
 
 const serverErrors = ref<ServerError>({
   hasErrors: false,
@@ -114,9 +143,27 @@ const serverErrors = ref<ServerError>({
 });
 
 const isEditing = computed(() => !!props.beverage?.id);
+const purchaseModeNumber = computed(() => Number(purchaseMode.value));
+const isBoxMode = computed(
+  () => purchaseModeNumber.value === BeveragePurchaseMode.Box,
+);
 
 const onSubmit = handleSubmit(async (values) => {
   serverErrors.value = { hasErrors: false, message: '' };
+
+  const finalValues: EventBeverageCreateInput = {
+    ...values,
+    purchaseMode: Number(values.purchaseMode) as BeveragePurchaseMode,
+  };
+
+  if (Number(finalValues.purchaseMode) === BeveragePurchaseMode.Box) {
+    const upb = Number(unitsPerBox.value);
+    const mb = Number(minimumBoxes.value);
+
+    if (upb > 0 && mb > 0) {
+      finalValues.minimumUnits = mb * upb;
+    }
+  }
 
   try {
     if (props.beverage?.id) {
@@ -124,19 +171,24 @@ const onSubmit = handleSubmit(async (values) => {
       await beverageService.updateEventBeverage(
         props.eventId,
         props.beverage.id,
-        { ...values },
+        finalValues,
       );
       toast.success('Bebida actualizada com sucesso.');
     } else {
       // Create
-      await beverageService.createEventBeverage(props.eventId, values);
+      await beverageService.createEventBeverage(props.eventId, finalValues);
       toast.success('Bebida criada com sucesso.');
     }
 
     emit('success');
     close();
-  } catch (error: unknown) {
-    serverErrors.value.message = getServerErrors(error as ServerError);
+  } catch (err: unknown) {
+    console.error(err);
+    if (isFetchErrorLike(err)) {
+      serverErrors.value.message = getServerErrors(err.data);
+    } else {
+      serverErrors.value.message = 'Ocorreu um erro ao abastecer';
+    }
     serverErrors.value.hasErrors = true;
   }
 });
@@ -157,14 +209,133 @@ const getInitialFormValues = (): EventBeverageCreateInput => {
 
 const close = () => emit('closeModal');
 
+const catalogSuggestions = ref<BeverageCatalogItem[]>([]);
+const isSearchingCatalog = ref(false);
+const searchCatalog = useDebounceFn(async (q: string) => {
+  const query = q.trim();
+  if (query.length < 2) {
+    catalogSuggestions.value = [];
+    return;
+  }
+
+  try {
+    isSearchingCatalog.value = true;
+
+    // // se quiseres filtrar por categoria seleccionada, usa beverageCategoryId.value quando > 0
+    // const categoryId =
+    //   beverageCategoryId.value && Number(beverageCategoryId.value) > 0
+    //     ? Number(beverageCategoryId.value)
+    //     : null;
+
+    const result = await beverageService.search({
+      q: query,
+      categoryId: null,
+      take: 8,
+    });
+
+    catalogSuggestions.value = result ?? [];
+  } catch {
+    // aqui prefiro não mostrar toast a cada keypress.
+    catalogSuggestions.value = [];
+  } finally {
+    isSearchingCatalog.value = false;
+  }
+}, 350);
+
+const onCatalogSearch = (q: string) => {
+  searchCatalog(q);
+};
+
+const onCatalogSelect = (item: BeverageCatalogItem) => {
+  // 1) nome (já vai ser preenchido pelo componente, mas garantimos)
+  name.value = item.name;
+
+  // 2) categoria (se fizer sentido e se o user ainda não escolheu)
+  if (item.beverageCategoryId) {
+    beverageCategoryId.value = item.beverageCategoryId;
+  }
+
+  // 3) defaults do catálogo
+  if (item.defaultPurchaseMode === 'Box') {
+    purchaseMode.value = BeveragePurchaseMode.Box;
+    unitsPerBox.value = item.defaultUnitsPerBox ?? null;
+    minimumBoxes.value = minimumBoxes.value ?? 1;
+
+    // se muda para box, evita ficar com campos de Unit preenchidos indevidamente
+    initialUnits.value = null;
+  }
+
+  if (item.defaultPurchaseMode === 'Unit') {
+    purchaseMode.value = BeveragePurchaseMode.Unit;
+
+    // se muda para unit, limpa campos de Box para não confundir
+    unitsPerBox.value = null;
+    boxesQty.value = null;
+  }
+};
+
+const minimumUnitsEquivalent = computed(() => {
+  const upb = Number(unitsPerBox.value);
+  const mb = Number(minimumBoxes.value);
+
+  if (!isBoxMode.value) return null;
+  if (!upb || upb <= 0) return null;
+  if (!mb || mb <= 0) return 0;
+
+  return mb * upb;
+});
+
+const totalUnitsEquivalent = computed(() => {
+  if (!isBoxMode.value) return null;
+  if (!unitsPerBox.value) return null;
+  if (!Number(unitsPerBox.value) || Number(unitsPerBox.value) <= 0) return null;
+  if (!boxesQty.value || boxesQty.value <= 0) return 0;
+
+  const result = Number(boxesQty.value) * Number(unitsPerBox.value);
+
+  return result <= 0 ? null : result;
+});
+
+watch(
+  [isBoxMode, unitsPerBox, minimumBoxes],
+  () => {
+    if (!isBoxMode.value) return;
+
+    const eq = minimumUnitsEquivalent.value;
+
+    if (eq === null) return;
+
+    minimumUnits.value = eq;
+  },
+  { immediate: true },
+);
+
 watch(
   () => props.show,
   (open) => {
-    if (!open) return;
+    if (!open) {
+      catalogSuggestions.value = [];
+      isSearchingCatalog.value = false;
+      return;
+    }
 
     resetForm({
       values: getInitialFormValues(),
     });
+
+    if (Number(purchaseMode.value) === BeveragePurchaseMode.Box) {
+      const upb = Number(unitsPerBox.value);
+      const minU = Number(minimumUnits.value);
+
+      if (upb > 0 && minU >= 0) {
+        // se não for múltiplo, usamos ceil para não ficar abaixo do mínimo real
+        minimumBoxes.value = Math.ceil(minU / upb);
+      } else {
+        minimumBoxes.value = null;
+      }
+    } else {
+      minimumBoxes.value = null;
+    }
   },
   { immediate: true },
 );
@@ -177,15 +348,24 @@ watch(
     @close-modal="close"
   >
     <form @submit.prevent="onSubmit">
-      <BaseInput
+      <BaseAutoCompleteInput
         id="bevName"
         v-model="name"
         v-bind="nameAttrs"
-        :error-message="errors.name"
         name="bevName"
         label="Nome:"
         placeholder="Ex: Coca-Cola"
         :readonly="isSubmitting"
+        :disabled="isSubmitting"
+        :error-message="errors.name"
+        :items="catalogSuggestions"
+        item-label="name"
+        item-key="id"
+        :loading="isSearchingCatalog"
+        no-results-text="Sem resultados no catálogo."
+        :min-chars="2"
+        @search="onCatalogSearch"
+        @select="onCatalogSelect"
       />
 
       <BaseSelect
@@ -208,13 +388,12 @@ watch(
         label="Modo de compra:"
         :options="purchaseModeOptions"
         :disabled="isSubmitting"
+        disable-empty
+        as-number
       />
 
-      <div
-        v-if="purchaseMode === BeveragePurchaseMode.Box"
-        class="grid grid-cols-1 gap-4 md:grid-cols-2"
-      >
-        <div>
+      <div v-if="isBoxMode" class="animate-fadeIn">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <BaseInput
             id="unitsPerBox"
             v-model="unitsPerBox"
@@ -225,48 +404,62 @@ watch(
             type="number"
             :readonly="isSubmitting"
           />
-        </div>
 
-        <div>
           <BaseInput
             id="boxesQty"
             v-model="boxesQty"
             v-bind="boxesQtyAttrs"
             :error-message="errors.boxesQty"
             name="boxesQty"
-            label="Caixas:"
+            label="Estoque inicial (caixas):"
             type="number"
             :readonly="isSubmitting"
+            :helper-text="
+              totalUnitsEquivalent
+                ? `Equivale a ${totalUnitsEquivalent} unidades.`
+                : ''
+            "
           />
         </div>
+
+        <BaseInput
+          id="minimumBoxes"
+          v-model="minimumBoxes"
+          :error-message="errors.minimumUnits"
+          name="minimumBoxes"
+          label="Estoque mínimo (caixas):"
+          type="number"
+          :readonly="isSubmitting"
+          :helper-text="
+            minimumUnitsEquivalent
+              ? `Equivale a ${minimumUnitsEquivalent} unidades.`
+              : ''
+          "
+        />
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div>
-          <BaseInput
-            id="initialUnits"
-            v-model="initialUnits"
-            v-bind="initialUnitsAttrs"
-            :error-message="errors.initialUnits"
-            name="initialUnits"
-            label="Estoque inicial:"
-            type="number"
-            :readonly="isSubmitting"
-          />
-        </div>
+      <div v-else class="grid animate-fadeIn grid-cols-1 gap-4 md:grid-cols-2">
+        <BaseInput
+          id="initialUnits"
+          v-model="initialUnits"
+          v-bind="initialUnitsAttrs"
+          :error-message="errors.initialUnits"
+          name="initialUnits"
+          label="Estoque inicial:"
+          type="number"
+          :readonly="isSubmitting"
+        />
 
-        <div>
-          <BaseInput
-            id="minimumUnits"
-            v-model="minimumUnits"
-            v-bind="minimumUnitsAttrs"
-            :error-message="errors.minimumUnits"
-            name="minimumUnits"
-            label="Estoque mínimo:"
-            type="number"
-            :readonly="isSubmitting"
-          />
-        </div>
+        <BaseInput
+          id="minimumUnits"
+          v-model="minimumUnits"
+          v-bind="minimumUnitsAttrs"
+          :error-message="errors.minimumUnits"
+          name="minimumUnits"
+          label="Estoque mínimo:"
+          type="number"
+          :readonly="isSubmitting"
+        />
       </div>
 
       <BaseTextArea
@@ -296,7 +489,6 @@ watch(
         <BaseButton
           btn-type="primary"
           btn-size="md"
-          icon="save"
           :disabled="isSubmitting"
           :loading="isSubmitting"
           type="submit"

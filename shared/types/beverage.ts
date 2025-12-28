@@ -38,7 +38,7 @@ export interface BeverageCategory {
 export interface BeverageCatalogItem {
   id: number;
   name: string;
-  categoryId: number;
+  beverageCategoryId: number;
   defaultUnitsPerBox: number | null | undefined;
   defaultPurchaseMode: 'Unit' | 'Box' | null | undefined;
 }
