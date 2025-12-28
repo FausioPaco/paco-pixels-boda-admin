@@ -12,23 +12,27 @@ withDefaults(defineProps<IProps>(), {
 </script>
 
 <template>
-  <div class="border-grey-200 bg-grey-50 w-full rounded-md border p-4">
-    <div class="flex items-start justify-between gap-3">
-      <div class="min-w-0">
-        <p class="text-grey-500 text-sm font-medium">
+  <div class="border-primary-100 bg-primary-50/10 w-full rounded-md border p-4">
+    <div class="flex flex-wrap-reverse items-center justify-between gap-3">
+      <dl class="min-w-0">
+        <dt class="text-grey-300 text-sm">
           {{ title }}
-        </p>
+        </dt>
 
-        <p class="text-grey-800 mt-1 text-2xl font-bold">
+        <dd class="text-grey-800 mt-1 text-2xl font-bold">
           {{ value }}
-        </p>
-      </div>
+        </dd>
+      </dl>
 
       <div
         v-if="icon"
-        class="bg-primary-100 text-primary-700 flex h-10 w-10 items-center justify-center rounded-md"
+        class="bg-primary-50 text-primary-800 flex h-10 w-10 items-center justify-center rounded-md"
       >
-        <BaseIcon :name="icon" class="h-5 w-5" />
+        <component
+          :is="`icon-${icon}`"
+          :font-controlled="false"
+          class="size-6"
+        />
       </div>
     </div>
   </div>

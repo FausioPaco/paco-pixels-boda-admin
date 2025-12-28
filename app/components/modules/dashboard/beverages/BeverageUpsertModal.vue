@@ -269,7 +269,7 @@ watch(
         </div>
       </div>
 
-      <BaseTextarea
+      <BaseTextArea
         id="notes"
         v-model="notes"
         v-bind="notesAttrs"

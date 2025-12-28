@@ -223,7 +223,7 @@ const onRefresh = async () => {
         <BaseMiniStatCard
           title="Unidades em estoque"
           :value="pageStats.unitsInStock"
-          icon="stock"
+          icon="beverage-stock"
         />
         <BaseMiniStatCard
           title="Fora do estoque"
