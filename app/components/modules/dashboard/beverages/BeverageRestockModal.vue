@@ -225,14 +225,14 @@ const onSubmit = handleSubmit(async (values) => {
             </p>
 
             <BaseBadge
-              :variant="
+              :type="
                 (props.candidates?.find((x) => x.id === r.eventBeverageId)
                   ?.status ?? 'OK') === 'OK'
                   ? 'success'
                   : (props.candidates?.find((x) => x.id === r.eventBeverageId)
                         ?.status ?? 'OK') === 'Low'
                     ? 'warning'
-                    : 'danger'
+                    : 'error'
               "
               :text="
                 (props.candidates?.find((x) => x.id === r.eventBeverageId)

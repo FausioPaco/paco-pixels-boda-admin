@@ -175,4 +175,15 @@ export const getBeverageService = <T>(
       { query: parameters },
     );
   },
+
+  async getBeverageModuleStatus(
+    eventId: number,
+  ): Promise<{ status: EventBeverageStatus }> {
+    return $fetch<{ status: EventBeverageStatus }>(
+      `${EVENT_BEVERAGE_RESOURCE}/Mode/Status`,
+      {
+        query: { eventId },
+      },
+    );
+  },
 });

@@ -2,7 +2,7 @@
 import { toTypedSchema } from '@vee-validate/yup';
 import { useForm } from 'vee-validate';
 import { useToast } from 'vue-toastification';
-import { mixed, number, object, string } from 'yup';
+import { number, object, string } from 'yup';
 import { getBeverageService } from '~/services/beverageService';
 
 const props = withDefaults(
@@ -40,18 +40,28 @@ const movementOptions = computed<SelectOption[]>(() => [
 
 const schema = toTypedSchema(
   object({
-    type: mixed<
-      | BeverageStockMovementType.In
-      | BeverageStockMovementType.Out
-      | BeverageStockMovementType.Adjust
-      | BeverageStockMovementType.MarkOutOfStock
-    >()
-      .oneOf([
-        BeverageStockMovementType.In,
-        BeverageStockMovementType.Out,
-        BeverageStockMovementType.Adjust,
-        BeverageStockMovementType.MarkOutOfStock,
-      ])
+    type: number()
+      .transform((_, originalValue) => {
+        if (
+          originalValue === '' ||
+          originalValue === null ||
+          originalValue === undefined
+        )
+          return undefined;
+
+        const n = Number(originalValue);
+        return Number.isNaN(n) ? undefined : n;
+      })
+      .oneOf(
+        [
+          BeverageStockMovementType.In,
+          BeverageStockMovementType.Out,
+          BeverageStockMovementType.Adjust,
+          BeverageStockMovementType.MarkOutOfStock,
+        ],
+        'O tipo de movimento é inválido.',
+      )
+      .typeError('O tipo de movimento é obrigatório.')
       .required(),
     quantity: number()
       .nullable()

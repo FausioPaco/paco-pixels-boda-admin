@@ -4,11 +4,15 @@ import { getBeverageService } from '~/services/beverageService';
 
 const props = defineProps<{
   eventId: number;
+  moduleStatus: EventBeverageStatus;
 }>();
 
 const toast = useToast();
 const nuxtApp = useNuxtApp();
 const beverageService = getBeverageService(nuxtApp.$api);
+
+const isEventDayMode = computed(() => props.moduleStatus === 'EventDay');
+const isClosed = computed(() => props.moduleStatus === 'Closed');
 
 const queryParameters = reactive<EventBeveragesParameters>({
   eventId: props.eventId,
@@ -21,6 +25,8 @@ const queryParameters = reactive<EventBeveragesParameters>({
 
 const { beverages, pagination, isRefreshing, isError, refreshEventBeverages } =
   await useEventBeveragesList(queryParameters);
+
+const { refreshStockMovements } = await useBeverageStockMovements();
 
 const searchQuery = ref('');
 const debouncedSearch = useDebounceFn(() => {
@@ -45,6 +51,8 @@ const isUpdating = ref<Record<number, boolean>>({});
 
 const applyOut = async (bev: EventBeverage, quantity: number) => {
   try {
+    if (!ensureEventDayMode()) return;
+
     isUpdating.value[bev.id] = true;
 
     const result = await beverageService.addStockMovement(
@@ -66,6 +74,7 @@ const applyOut = async (bev: EventBeverage, quantity: number) => {
         : x,
     );
     toast.success('Consumo registado com sucesso');
+    refreshStockMovements({ force: true });
   } catch (e) {
     console.error(e);
     toast.error('Ocorreu um erro ao registar o consumo');
@@ -76,6 +85,8 @@ const applyOut = async (bev: EventBeverage, quantity: number) => {
 
 const markOutOfStock = async (bev: EventBeverage) => {
   try {
+    if (!ensureEventDayMode()) return;
+
     isUpdating.value[bev.id] = true;
 
     const result = await beverageService.addStockMovement(
@@ -95,6 +106,8 @@ const markOutOfStock = async (bev: EventBeverage) => {
         ? { ...x, currentUnits: result.currentUnits, status: result.status }
         : x,
     );
+    refreshStockMovements({ force: true });
+    toast.success('Bebida marcada como fora do estoque com sucesso');
   } catch (e) {
     console.error(e);
     toast.error('Ocorreu um erro ao marcar fora do estoque');
@@ -111,6 +124,8 @@ const showRestockListModal = ref(false);
 const selectedBeverage = ref<EventBeverage | null>(null);
 
 const openManual = (bev: EventBeverage) => {
+  if (!ensureEventDayMode()) return;
+
   selectedBeverage.value = bev;
   showManualModal.value = true;
 };
@@ -129,16 +144,38 @@ function onPageChange(newPage: number) {
 function onPageSelected(newPage: number) {
   queryParameters.pageNumber = newPage;
 }
+
+const canRegisterMovements = computed(
+  () => isEventDayMode.value && !isClosed.value,
+);
+
+const ensureEventDayMode = () => {
+  if (!canRegisterMovements.value) {
+    toast.info(
+      'Para registar movimentos, active o modo Dia do Evento no topo.',
+    );
+    return false;
+  }
+  return true;
+};
 </script>
 
 <template>
   <section
     class="relative flex min-h-[450px] w-full flex-col items-center px-4 py-5"
   >
-    <p class="text-grey-600 my-4 font-medium">
+    <p class="text-grey-400 my-4 font-medium">
       Utilize esta secção para registar a saída de bebidas e manter o controlo
       actualizado do stock.
     </p>
+
+    <BaseAlert
+      :show="!isEventDayMode"
+      title="Modo Planeamento Activo"
+      message=" Para registar movimentos (consumo, ajustes e abastecimentos), active o modo
+  “Dia do evento” no topo."
+      type="informative"
+    />
 
     <div
       class="flex min-w-full max-w-full flex-col items-stretch justify-stretch"
@@ -168,7 +205,7 @@ function onPageSelected(newPage: number) {
             btn-type="outline-primary"
             btn-size="md"
             icon="list"
-            :disabled="restockCount === 0"
+            :disabled="restockCount === 0 || !canRegisterMovements"
             @click="showRestockListModal = true"
           >
             Ver lista de reposição ({{ restockCount }})
@@ -230,11 +267,14 @@ function onPageSelected(newPage: number) {
             </p>
           </div>
 
-          <div class="mt-6 grid grid-cols-3 gap-2">
+          <div
+            v-if="bev.status !== 'OutOfStock'"
+            class="mt-6 grid grid-cols-3 gap-2"
+          >
             <BaseButton
               btn-type="outline-primary"
               btn-size="sm"
-              :disabled="!!isUpdating[bev.id]"
+              :disabled="!!isUpdating[bev.id] || !canRegisterMovements"
               @click="applyOut(bev, 1)"
             >
               -1
@@ -242,7 +282,7 @@ function onPageSelected(newPage: number) {
             <BaseButton
               btn-type="outline-primary"
               btn-size="sm"
-              :disabled="!!isUpdating[bev.id]"
+              :disabled="!!isUpdating[bev.id] || !canRegisterMovements"
               @click="applyOut(bev, 6)"
             >
               -6
@@ -250,7 +290,7 @@ function onPageSelected(newPage: number) {
             <BaseButton
               btn-type="outline-primary"
               btn-size="sm"
-              :disabled="!!isUpdating[bev.id]"
+              :disabled="!!isUpdating[bev.id] || !canRegisterMovements"
               @click="applyOut(bev, 12)"
             >
               -12
@@ -259,9 +299,10 @@ function onPageSelected(newPage: number) {
 
           <div class="mt-4 flex flex-col gap-2 pb-5 md:flex-row">
             <BaseButton
+              v-if="bev.status !== 'OutOfStock'"
               btn-type="outline-primary"
               btn-size="sm"
-              :disabled="!!isUpdating[bev.id]"
+              :disabled="!!isUpdating[bev.id] || !canRegisterMovements"
               @click="markOutOfStock(bev)"
             >
               Marcar fora do estoque
@@ -270,7 +311,7 @@ function onPageSelected(newPage: number) {
             <BaseButton
               btn-type="outline-primary"
               btn-size="sm"
-              :disabled="!!isUpdating[bev.id]"
+              :disabled="!!isUpdating[bev.id] || !canRegisterMovements"
               @click="openManual(bev)"
             >
               Registro Manual
@@ -300,6 +341,7 @@ function onPageSelected(newPage: number) {
       @success="
         showManualModal = false;
         refreshEventBeverages({ force: true });
+        refreshStockMovements({ force: true });
       "
     />
 
@@ -311,6 +353,7 @@ function onPageSelected(newPage: number) {
       @success="
         showRestockModal = false;
         refreshEventBeverages({ force: true });
+        refreshStockMovements({ force: true });
       "
     />
 

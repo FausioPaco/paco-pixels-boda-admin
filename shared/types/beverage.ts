@@ -25,6 +25,8 @@ export type EventBeverageStockStatus =
   | 'outofstock'
   | '';
 
+export type EventBeverageStatus = 'Planning' | 'EventDay' | 'Closed';
+
 /**
  * ===== Catálogo Global =====
  */
