@@ -127,6 +127,14 @@ export interface EventBeverageUpdateInput {
 /**
  * ===== Movimentos de Stock =====
  */
+
+export type StockMovementType = 'In' | 'Out' | 'Adjust' | 'MarkOutOfStock';
+export const StockMovementIcons = {
+  In: 'stock-in',
+  Out: 'stock-out',
+  Adjust: 'stock-adjust',
+  MarkOutOfStock: 'out-of-stock',
+};
 export interface StockMovement {
   id: number;
   eventId: number;

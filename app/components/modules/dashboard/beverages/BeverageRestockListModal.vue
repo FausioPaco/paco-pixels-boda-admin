@@ -41,7 +41,7 @@ const close = () => emit('closeModal');
 
           <div class="flex items-center gap-2">
             <BaseBadge
-              :variant="b.status === 'Low' ? 'warning' : 'danger'"
+              :type="b.status === 'Low' ? 'warning' : 'error'"
               :text="b.status === 'Low' ? 'Baixo' : 'Sem stock'"
             />
             <span class="text-grey-800 font-bold">{{

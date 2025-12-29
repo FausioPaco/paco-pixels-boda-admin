@@ -195,7 +195,6 @@ const close = () => emit('closeModal');
         <BaseButton
           btn-type="primary"
           btn-size="md"
-          icon="save"
           :disabled="isSubmitting"
           :loading="isSubmitting"
           type="submit"

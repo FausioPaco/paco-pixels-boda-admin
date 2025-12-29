@@ -16,7 +16,7 @@ const queryParameters = reactive<EventBeveragesParameters>({
   stockStatus: '',
   searchQuery: '',
   pageNumber: 1,
-  pageSize: 12,
+  pageSize: 20,
 });
 
 const { beverages, pagination, isRefreshing, isError, refreshEventBeverages } =
@@ -65,6 +65,7 @@ const applyOut = async (bev: EventBeverage, quantity: number) => {
         ? { ...x, currentUnits: result.currentUnits, status: result.status }
         : x,
     );
+    toast.success('Consumo registado com sucesso');
   } catch (e) {
     console.error(e);
     toast.error('Ocorreu um erro ao registar o consumo');
@@ -134,6 +135,11 @@ function onPageSelected(newPage: number) {
   <section
     class="relative flex min-h-[450px] w-full flex-col items-center px-4 py-5"
   >
+    <p class="text-grey-600 my-4 font-medium">
+      Utilize esta secção para registar a saída de bebidas e manter o controlo
+      actualizado do stock.
+    </p>
+
     <div
       class="flex min-w-full max-w-full flex-col items-stretch justify-stretch"
     >
@@ -224,7 +230,7 @@ function onPageSelected(newPage: number) {
             </p>
           </div>
 
-          <div class="mt-4 grid grid-cols-3 gap-2">
+          <div class="mt-6 grid grid-cols-3 gap-2">
             <BaseButton
               btn-type="outline-primary"
               btn-size="sm"
@@ -251,7 +257,7 @@ function onPageSelected(newPage: number) {
             </BaseButton>
           </div>
 
-          <div class="mt-4 flex flex-col gap-2 md:flex-row">
+          <div class="mt-4 flex flex-col gap-2 pb-5 md:flex-row">
             <BaseButton
               btn-type="outline-primary"
               btn-size="sm"
@@ -267,14 +273,11 @@ function onPageSelected(newPage: number) {
               :disabled="!!isUpdating[bev.id]"
               @click="openManual(bev)"
             >
-              Manual
+              Registro Manual
             </BaseButton>
           </div>
         </BaseCard>
       </div>
-
-      <!-- Placeholder: Activity feed -->
-      <BeverageStockMovements :event-id="eventId" />
 
       <!-- Pagination -->
       <BasePagination
@@ -283,6 +286,9 @@ function onPageSelected(newPage: number) {
         @page-change="onPageChange"
         @page-selected="onPageSelected"
       />
+
+      <!-- Activity feed -->
+      <BeverageStockMovements :event-id="eventId" />
     </div>
 
     <!-- Modals -->
