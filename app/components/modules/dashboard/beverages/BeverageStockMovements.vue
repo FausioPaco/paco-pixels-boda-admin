@@ -21,11 +21,14 @@ onMounted(() => {
 </script>
 <template>
   <div v-if="!isRefreshing && !isError" class="mt-6 w-full">
-    <div class="border-grey-200 rounded border">
-      <h4 class="text-xl font-bold">Registo de actividades</h4>
-      <p class="text-grey-600">
-        Movimentos recentes (consumo, ajustes e abastecimentos).
-      </p>
+    <div class="border-primary-100 rounded-xl border p-4 md:p-5">
+      <div class="mb-3 mt-2">
+        <h4 class="text-xl font-bold">Registo de actividades</h4>
+        <p class="text-grey-600">
+          Movimentos recentes (consumo, ajustes e abastecimentos).
+        </p>
+      </div>
+
       <BaseLoading
         v-if="isRefreshing"
         size="md"
@@ -37,14 +40,10 @@ onMounted(() => {
         Não foi possível carregar o registo de actividades.
       </BaseError>
 
-      <div v-else class="space-y-3">
-        <div
-          v-for="m in stockMovements"
-          :key="m.id"
-          class="border-grey-200 rounded-md border p-3"
-        >
+      <div v-else class="divide-grey-100 space-y-3 divide-y p-3">
+        <div v-for="m in stockMovements" :key="m.id" class="pt-3">
           <div class="flex items-center justify-between">
-            <p class="text-grey-900 font-semibold">
+            <p class="text-grey-900 text-lg font-semibold">
               {{ m.beverageName }}
             </p>
 
@@ -54,7 +53,7 @@ onMounted(() => {
           </div>
 
           <div class="mt-1 flex items-center justify-between">
-            <p class="text-grey-700 text-sm">
+            <p class="text-grey-400 text-sm">
               <span v-if="m.type === 'Out'">Consumo</span>
               <span v-else-if="m.type === 'In'">Abastecimento</span>
               <span v-else-if="m.type === 'Adjust'">Ajuste</span>
@@ -69,7 +68,7 @@ onMounted(() => {
             </p>
           </div>
 
-          <p v-if="m.note" class="text-grey-600 mt-2 text-sm">
+          <p v-if="m.note" class="text-grey-300 mt-2 text-sm">
             {{ m.note }}
           </p>
         </div>

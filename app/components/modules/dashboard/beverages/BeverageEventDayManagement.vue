@@ -20,7 +20,7 @@ const queryParameters = reactive<EventBeveragesParameters>({
 });
 
 const { beverages, pagination, isRefreshing, isError, refreshEventBeverages } =
-  await useEventBeveragesList({ parameters: queryParameters });
+  await useEventBeveragesList(queryParameters);
 
 const searchQuery = ref('');
 const debouncedSearch = useDebounceFn(() => {
@@ -139,7 +139,7 @@ function onPageSelected(newPage: number) {
     >
       <!-- Toolbar -->
       <div
-        class="flex w-full animate-fadeIn flex-col lg:flex-row lg:justify-between"
+        class="mb-6 mt-3 flex w-full animate-fadeIn flex-col gap-3 lg:flex-row lg:justify-between"
       >
         <div class="w-full lg:w-1/2">
           <BaseInput
@@ -151,6 +151,7 @@ function onPageSelected(newPage: number) {
             label="Pesquisa:"
             placeholder="Filtre categorias ou itens..."
             :readonly="isRefreshing"
+            disable-margins
           />
         </div>
 
@@ -168,7 +169,6 @@ function onPageSelected(newPage: number) {
           </BaseButton>
 
           <BaseButton
-            icon="add"
             size="md"
             btn-type="primary"
             @click.prevent="showRestockModal = true"
@@ -274,19 +274,7 @@ function onPageSelected(newPage: number) {
       </div>
 
       <!-- Placeholder: Activity feed -->
-      <div v-if="!isRefreshing && !isError" class="mt-6 w-full">
-        <BaseCard
-          title="Registo de actividades"
-          description="Em breve: movimentos recentes (precisamos do endpoint getRecentMovements)."
-        >
-          <div class="text-grey-600 bg-grey-50 rounded-md px-4 py-3">
-            <p class="text-sm">
-              Esta secção vai mostrar o histórico de movimentos (consumo,
-              ajustes e abastecimentos) em tempo real.
-            </p>
-          </div>
-        </BaseCard>
-      </div>
+      <BeverageStockMovements :event-id="eventId" />
 
       <!-- Pagination -->
       <BasePagination
