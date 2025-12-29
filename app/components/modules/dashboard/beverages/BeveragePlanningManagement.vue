@@ -277,7 +277,6 @@ const onRefresh = async () => {
         <template #thead>
           <tr>
             <th scope="col">Bebida</th>
-            <th scope="col" class="hidden md:table-cell">Categoria</th>
             <th scope="col" class="hidden md:table-cell">Por caixa</th>
             <th scope="col" class="hidden md:table-cell">Caixas</th>
             <th scope="col">Estoque inicial</th>
@@ -290,8 +289,14 @@ const onRefresh = async () => {
 
         <template #tbody>
           <tr v-for="bev in beverages" :key="bev.id">
-            <td>{{ bev.name }}</td>
-            <td class="hidden md:table-cell">{{ bev.beverageCategoryName }}</td>
+            <td>
+              <div class="flex-col gap-1">
+                <p class="mb-0">{{ bev.name }}</p>
+                <small class="text-grey-400">
+                  {{ bev.beverageCategoryName }}</small
+                >
+              </div>
+            </td>
             <td class="hidden md:table-cell">{{ bev.unitsPerBox ?? '-' }}</td>
             <td class="hidden md:table-cell">{{ bev.boxesQty ?? '-' }}</td>
             <td>{{ bev.initialUnits ?? 0 }}</td>
