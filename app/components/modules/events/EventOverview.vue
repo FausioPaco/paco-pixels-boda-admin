@@ -41,8 +41,11 @@ const daysRemaining = computed(() => {
 const guestsCount = computed(() => event.value?.guestsCount ?? 0);
 const suppliersCount = computed(() => event.value?.suppliersCount ?? 0);
 
-// placeholder por enquanto (ajustas quando tiveres no modelo)
-const budgetDisplay = computed(() => '--');
+const budgetDisplay = computed(() =>
+  event?.value?.budgetTotal
+    ? formatMoney(event?.value.budgetTotal, event?.value.budgetCurrency)
+    : '—',
+);
 const eventStore = useEventStore();
 const authStore = useAuthStore();
 

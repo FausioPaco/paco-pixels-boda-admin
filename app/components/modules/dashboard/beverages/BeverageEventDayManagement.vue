@@ -158,6 +158,16 @@ const ensureEventDayMode = () => {
   }
   return true;
 };
+
+const isFirstTime = computed(
+  () =>
+    !isRefreshing.value &&
+    !isError.value &&
+    (beverages.value?.length ?? 0) === 0 &&
+    searchQuery.value === '' &&
+    !queryParameters.categoryId &&
+    !queryParameters.stockStatus,
+);
 </script>
 
 <template>
@@ -172,8 +182,7 @@ const ensureEventDayMode = () => {
     <BaseAlert
       :show="!isEventDayMode"
       title="Modo Planeamento Activo"
-      message=" Para registar movimentos (consumo, ajustes e abastecimentos), active o modo
-  “Dia do evento” no topo."
+      message=" Para registar movimentos (consumo, ajustes e abastecimentos), active o modo “Dia do evento” no topo."
       type="informative"
     />
 
@@ -194,6 +203,7 @@ const ensureEventDayMode = () => {
             label="Pesquisa:"
             placeholder="Filtre categorias ou itens..."
             :readonly="isRefreshing"
+            :disabled="!canRegisterMovements"
             disable-margins
           />
         </div>
@@ -214,6 +224,7 @@ const ensureEventDayMode = () => {
           <BaseButton
             size="md"
             btn-type="primary"
+            :disabled="!canRegisterMovements || beverages.length === 0"
             @click.prevent="showRestockModal = true"
           >
             Abastecer
@@ -228,6 +239,17 @@ const ensureEventDayMode = () => {
         size="lg"
         orientation="vertical"
         class="block md:hidden"
+      />
+
+      <!-- No beverages for the first time -->
+      <BaseFirstEmptyState
+        v-if="isFirstTime"
+        icon="icon-beverage-event"
+        title="Ainda não registou bebidas"
+        description="Adicione bebidas para controlar o inventário e gerir o consumo no dia do evento."
+        :show-button="false"
+        button-label="Adicionar primeira bebida"
+        button-icon="add"
       />
 
       <!-- Cards -->
