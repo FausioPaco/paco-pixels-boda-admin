@@ -106,7 +106,7 @@ export interface EventBeveragesParameters {
 
 export interface EventBeverageCreateInput {
   name: string;
-  beverageCategoryId: number;
+  beverageCategoryId: number | undefined;
   purchaseMode: BeveragePurchaseMode;
   unitsPerBox?: number | null | undefined;
   boxesQty?: number | null | undefined;
@@ -117,7 +117,7 @@ export interface EventBeverageCreateInput {
 
 export interface EventBeverageUpdateInput {
   name: string;
-  beverageCategoryId: number;
+  beverageCategoryId: number | undefined;
   purchaseMode: BeveragePurchaseMode;
   unitsPerBox?: number | null | undefined;
   boxesQty?: number | null | undefined;
