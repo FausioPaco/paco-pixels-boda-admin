@@ -7,6 +7,8 @@ export interface BodaEvent {
   messagesCount: number;
   fileCount: number;
   suppliersCount: number;
+  budgetTotal: number;
+  budgetCurrency: string;
   initials: string;
   slug: string | undefined;
   eventTypeId: number | undefined;

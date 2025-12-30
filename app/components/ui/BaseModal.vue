@@ -95,13 +95,19 @@ onUnmounted(() => {
       <div class="bg-primary-800/25 fixed inset-0"></div>
 
       <!-- Modal Container -->
-      <div class="slide-down fixed inset-x-0 top-0 mx-3">
+      <div
+        class="slide-down fixed inset-x-0 top-0 mx-3"
+        :class="['max-h-[calc(100vh-24px)]']"
+      >
         <div
           class="relative mx-auto mt-3 max-w-2xl rounded bg-white px-3 pb-6 pt-3 shadow-xl"
         >
           <!-- Modal Title -->
           <div class="flex items-center justify-between py-3">
-            <h3 class="text-grey-800 text-lg font-bold md:text-2xl">
+            <h3
+              tabindex="-1"
+              class="text-grey-800 text-lg font-bold md:text-2xl"
+            >
               {{ title }}
             </h3>
 
@@ -129,7 +135,7 @@ onUnmounted(() => {
           </div>
 
           <!-- Modal Content -->
-          <div class="py-3">
+          <div class="max-h-[calc(100vh-120px)] overflow-y-auto px-3 py-3">
             <slot></slot>
           </div>
         </div>

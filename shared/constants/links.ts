@@ -25,6 +25,12 @@ export const ADMIN_MAIN_LINKS: AdminLink[] = [
     icon: 'dashboard-budget',
     restricted: false,
   },
+  {
+    label: 'Bebidas',
+    link: '/admin/bebidas',
+    icon: 'beverage',
+    restricted: false,
+  },
 ];
 
 export const ADMIN_CONFIGURATION_LINKS: AdminLink[] = [

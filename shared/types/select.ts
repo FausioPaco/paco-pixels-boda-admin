@@ -18,4 +18,5 @@ export interface ISelectProps {
   emptyMessage?: string;
   background?: 'white' | 'dark';
   disableMargins?: boolean;
+  asNumber?: boolean;
 }
