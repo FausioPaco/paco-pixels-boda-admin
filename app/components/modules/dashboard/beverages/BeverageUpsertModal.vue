@@ -197,7 +197,7 @@ const getInitialFormValues = (): EventBeverageCreateInput => {
   const b = props.beverage;
   return {
     name: b?.name ?? '',
-    beverageCategoryId: b?.beverageCategoryId ?? 0,
+    beverageCategoryId: b?.beverageCategoryId ?? undefined,
     purchaseMode: b?.purchaseMode ?? BeveragePurchaseMode.Unit,
     unitsPerBox: b?.unitsPerBox ?? null,
     boxesQty: b?.boxesQty ?? null,
