@@ -120,6 +120,7 @@ const markOutOfStock = async (bev: EventBeverage) => {
 const showManualModal = ref(false);
 const showRestockModal = ref(false);
 const showRestockListModal = ref(false);
+const showEventDayAlert = ref(!isEventDayMode.value);
 
 const selectedBeverage = ref<EventBeverage | null>(null);
 
@@ -180,10 +181,11 @@ const isFirstTime = computed(
     </p>
 
     <BaseAlert
-      :show="!isEventDayMode"
+      :show="showEventDayAlert"
       title="Modo Planeamento Activo"
       message=" Para registar movimentos (consumo, ajustes e abastecimentos), active o modo “Dia do evento” no topo."
       type="informative"
+      @close="showEventDayAlert = !showEventDayAlert"
     />
 
     <div
