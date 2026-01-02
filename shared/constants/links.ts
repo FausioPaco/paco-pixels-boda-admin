@@ -31,6 +31,12 @@ export const ADMIN_MAIN_LINKS: AdminLink[] = [
     icon: 'beverage',
     restricted: false,
   },
+  {
+    label: 'Fornecedores',
+    link: '/admin/fornecedores',
+    icon: 'dashboard-suppliers',
+    restricted: false,
+  },
 ];
 
 export const ADMIN_CONFIGURATION_LINKS: AdminLink[] = [

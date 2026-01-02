@@ -1,18 +1,22 @@
 import { getSupplierService } from '~/services/supplierService';
 
-export const useSupplier = async (supplierId: number) => {
-  const supplier = useState<Supplier | null>('get-supplier', () => null);
+export const useEventSupplierCatalogItemIds = async (eventId: number) => {
+  const ids = useState<number[]>(
+    `event-supplier-catalog-ids-${eventId}`,
+    () => [],
+  );
+
   const nuxtApp = useNuxtApp();
-  const key = computed(() => 'get-supplier-' + supplierId);
+  const key = computed(() => `event-supplier-catalog-ids-${eventId}`);
 
   const { data, refresh, status } = await useAsyncData(
     key,
-    () => getSupplierService(nuxtApp.$api).getSupplier(supplierId),
+    () =>
+      getSupplierService(nuxtApp.$api).getEventSupplierCatalogItemIds(eventId),
     {
-      default: () => null,
       transform(input) {
         return {
-          ...input,
+          list: input,
           fetchedAt: new Date(),
         };
       },
@@ -26,21 +30,18 @@ export const useSupplier = async (supplierId: number) => {
   );
 
   watchEffect(() => {
-    if (data.value) {
-      supplier.value = data.value;
-    }
+    if (!data.value) return;
+    ids.value = data.value.list;
   });
 
-  const refreshSupplier = async (opts?: { force?: boolean }) => {
-    if (opts?.force) {
-      clearNuxtData(key.value);
-    }
+  const refreshIds = async (opts?: { force?: boolean }) => {
+    if (opts?.force) clearNuxtData(key.value);
     await refresh();
   };
 
   return {
-    supplier,
+    ids,
     isRefreshing: status.value === 'pending',
-    refreshSupplier,
+    refreshIds,
   };
 };

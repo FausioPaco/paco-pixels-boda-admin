@@ -34,7 +34,7 @@ export const useEventBeveragesList = async (
       `event-beverages-${eventId}-${queryParameters.searchQuery ?? ''}-${queryParameters.categoryId ?? 'all'}-${queryParameters.stockStatus ?? 'all'}-${queryParameters.pageNumber}-${queryParameters.pageSize}`,
   );
 
-  const { data, pending, error, refresh } = await useAsyncData(
+  const { data, pending, error, refresh } = await useLazyAsyncData(
     cacheKey,
     () =>
       service.getEventBeverages({

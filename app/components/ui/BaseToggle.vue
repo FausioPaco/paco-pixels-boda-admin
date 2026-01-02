@@ -2,7 +2,7 @@
 type ToggleSize = 'sm' | 'md' | 'lg';
 
 interface Props {
-  modelValue: boolean;
+  modelValue?: boolean | undefined;
   label?: string;
   description?: string;
   hint?: string;
@@ -38,6 +38,7 @@ const props = withDefaults(defineProps<Props>(), {
   offText: 'Desactivado',
   showStateText: false,
   reverse: false,
+  modelValue: false,
 });
 
 const emit = defineEmits<{

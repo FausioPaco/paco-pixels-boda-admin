@@ -1,48 +1,45 @@
 import { getSupplierService } from '~/services/supplierService';
 
-export const useSuppliersList = async (
-  overrides?: SupplierParameters | undefined,
+export const useSupplierCatalogList = async (
+  overrides?: SupplierCatalogParameters | undefined,
 ) => {
-  const suppliers = useState<Supplier[]>('suppliers-list', () => []);
-  const pagination = useState<PaginationData<Supplier> | null>(
-    'suppliers-pagination',
+  const catalogItems = useState<SupplierCatalogItem[]>(
+    'supplier-catalog-list',
+    () => [],
+  );
+
+  const pagination = useState<PaginationData<SupplierCatalogItem> | null>(
+    'supplier-catalog-pagination',
     () => null,
   );
 
-  const eventStore = useEventStore();
-  const eventId = eventStore.ensureSelected();
-
   const queryParameters =
-    (overrides as SupplierParameters | undefined) ??
-    reactive<SupplierParameters>({
+    (overrides as SupplierCatalogParameters | undefined) ??
+    reactive<SupplierCatalogParameters>({
       searchQuery: '',
-      startDate: '',
-      endDate: '',
       pageNumber: 1,
-      pageSize: 10,
-      eventId,
+      pageSize: 12,
+      isActive: undefined,
     });
-
-  queryParameters.eventId = eventId;
 
   const nuxtApp = useNuxtApp();
 
   const key = computed(() =>
     [
-      'suppliers-list',
-      queryParameters.eventId,
+      'supplier-catalog-list',
       queryParameters.searchQuery,
-      queryParameters.startDate,
-      queryParameters.endDate,
       queryParameters.pageNumber,
       queryParameters.pageSize,
+      queryParameters.isActive ?? 'null',
     ].join('|'),
   );
 
-  const { data, refresh, status } = await useAsyncData(
+  const { data, refresh, status } = await useLazyAsyncData(
     key,
     () =>
-      getSupplierService(nuxtApp.$api).getAllSuppliers(toRaw(queryParameters)),
+      getSupplierService(nuxtApp.$api).getSupplierCatalog(
+        toRaw(queryParameters),
+      ),
     {
       transform(input) {
         const { data, ...paginationData } = input;
@@ -63,22 +60,24 @@ export const useSuppliersList = async (
 
   watchEffect(() => {
     if (!data.value) return;
-    suppliers.value = data.value.list;
+    catalogItems.value = data.value.list;
     pagination.value = data.value.pagination;
   });
 
-  const refreshSuppliers = async (opts?: { force?: boolean }) => {
-    if (opts?.force) clearNuxtData(key.value);
+  const refreshCatalog = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key.value);
+    }
     await refresh();
   };
 
   return {
-    suppliers,
+    catalogItems,
     pagination,
     isIdle: status.value === 'idle',
     isRefreshing: status.value === 'pending',
     isError: status.value === 'error',
     isSuccess: status.value === 'success',
-    refreshSuppliers,
+    refreshCatalog,
   };
 };

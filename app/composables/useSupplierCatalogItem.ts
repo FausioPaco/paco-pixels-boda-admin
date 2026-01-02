@@ -1,20 +1,21 @@
 import { getSupplierService } from '~/services/supplierService';
 
-export const useSupplier = async (supplierId: number) => {
-  const supplier = useState<Supplier | null>('get-supplier', () => null);
+export const useSupplierCatalogItem = async (id: number) => {
+  const catalogItem = useState<SupplierCatalogItem | null>(
+    `supplier-catalog-item-${id}`,
+    () => null,
+  );
+
   const nuxtApp = useNuxtApp();
-  const key = computed(() => 'get-supplier-' + supplierId);
+  const key = computed(() => `supplier-catalog-item-${id}`);
 
   const { data, refresh, status } = await useAsyncData(
     key,
-    () => getSupplierService(nuxtApp.$api).getSupplier(supplierId),
+    () => getSupplierService(nuxtApp.$api).getSupplierCatalogItem(id),
     {
       default: () => null,
       transform(input) {
-        return {
-          ...input,
-          fetchedAt: new Date(),
-        };
+        return { ...input, fetchedAt: new Date() };
       },
       getCachedData(key) {
         const cached = nuxtApp.payload.data[key] || nuxtApp.static.data[key];
@@ -26,12 +27,10 @@ export const useSupplier = async (supplierId: number) => {
   );
 
   watchEffect(() => {
-    if (data.value) {
-      supplier.value = data.value;
-    }
+    if (data.value) catalogItem.value = data.value;
   });
 
-  const refreshSupplier = async (opts?: { force?: boolean }) => {
+  const refreshCatalogItem = async (opts?: { force?: boolean }) => {
     if (opts?.force) {
       clearNuxtData(key.value);
     }
@@ -39,8 +38,8 @@ export const useSupplier = async (supplierId: number) => {
   };
 
   return {
-    supplier,
+    catalogItem,
     isRefreshing: status.value === 'pending',
-    refreshSupplier,
+    refreshCatalogItem,
   };
 };
