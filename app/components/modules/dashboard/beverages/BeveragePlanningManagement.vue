@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useToast } from 'vue-toastification';
+import { getBeverageService } from '~/services/beverageService';
 
 defineProps<{
   moduleStatus: EventBeverageStatus;
@@ -9,6 +10,7 @@ const toast = useToast();
 
 const { eventId } = useEventStore();
 const queryParameters = reactive<EventBeveragesParameters>({
+  eventId: eventId!,
   categoryId: undefined,
   stockStatus: '',
   searchQuery: '',
@@ -136,6 +138,35 @@ const onRefresh = async () => {
     toast.error('Ocorreu um erro ao carregar as bebidas');
   }
 };
+
+const nuxtApp = useNuxtApp();
+const beverageService = getBeverageService(nuxtApp.$api);
+const isExporting = ref(false);
+
+const exportBeverages = async () => {
+  try {
+    isExporting.value = true;
+
+    const blob = await beverageService.exportEventBeverages(queryParameters);
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+
+    const fileName = `Bebidas_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')}.xlsx`;
+    link.setAttribute('download', fileName);
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Erro ao exportar as bebidas:', err);
+    toast.error('Ocorreu um erro ao exportar as bebidas');
+  } finally {
+    isExporting.value = false;
+  }
+};
 </script>
 
 <template>
@@ -212,6 +243,16 @@ const onRefresh = async () => {
             @click.prevent="openCreateModal"
           >
             Adicionar bebida
+          </BaseButton>
+          <BaseButton
+            v-if="(beverages?.length ?? 0) > 0"
+            btn-type="outline-primary"
+            btn-size="md"
+            icon="download"
+            :disabled="isExporting"
+            @click="exportBeverages"
+          >
+            {{ isExporting ? 'A exportar...' : 'Exportar' }}
           </BaseButton>
         </div>
       </div>
