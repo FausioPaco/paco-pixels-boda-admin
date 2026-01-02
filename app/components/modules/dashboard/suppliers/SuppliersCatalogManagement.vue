@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { useToast } from 'vue-toastification';
+import { getSupplierService } from '~/services/supplierService';
 
 const toast = useToast();
+const nuxtApp = useNuxtApp();
+const supplierService = getSupplierService(nuxtApp.$api);
 
 const queryParameters = reactive<SupplierCatalogParameters>({
   searchQuery: '',
@@ -9,6 +12,8 @@ const queryParameters = reactive<SupplierCatalogParameters>({
   pageSize: 12,
   isActive: undefined,
 });
+
+const { eventId } = useEventStore();
 
 const { catalogItems, pagination, isRefreshing, isError, refreshCatalog } =
   await useSupplierCatalogList(queryParameters);
@@ -85,6 +90,41 @@ const onRefresh = async () => {
     toast.error('Ocorreu um erro ao carregar o catálogo de fornecedores');
   }
 };
+
+const addingToEventId = ref<number | null>(null);
+
+const addToEvent = async (it: SupplierCatalogItem) => {
+  if (!eventId) {
+    toast.error('Evento não encontrado na sessão.');
+    return;
+  }
+
+  try {
+    addingToEventId.value = it.id;
+    await supplierService.addSupplierFromCatalogToEvent(it.id, eventId);
+
+    toast.success('Fornecedor adicionado ao evento com sucesso.');
+  } catch (e) {
+    console.error(e);
+    toast.error(
+      isFetchErrorLike(e)
+        ? getServerErrors(e.data)
+        : 'Ocorreu um erro ao adicionar o fornecedor ao evento',
+    );
+
+    // Se backend devolver 409 (duplicado)
+    const status = isFetchErrorLike(e) ? e?.statusCode : null;
+
+    if (status === 409) {
+      toast.info('Este fornecedor já foi adicionado a este evento.');
+      return;
+    }
+
+    toast.error('Não foi possível adicionar este fornecedor ao evento.');
+  } finally {
+    addingToEventId.value = null;
+  }
+};
 </script>
 
 <template>
@@ -133,8 +173,8 @@ const onRefresh = async () => {
               <h3 class="text-primary-700 text-2xl font-bold">
                 {{
                   (pagination?.totalCount ?? 0) === 1
-                    ? '1 Item'
-                    : `${pagination ? pagination.totalCount : 0} Itens`
+                    ? '1 Fornecedor'
+                    : `${pagination ? pagination.totalCount : 0} Fornecedores`
                 }}
               </h3>
             </div>
@@ -220,6 +260,16 @@ const onRefresh = async () => {
 
             <td>
               <div class="my-2 flex items-center gap-3">
+                <BaseButton
+                  btn-type="outline-primary"
+                  size="sm"
+                  :disabled="addingToEventId === it.id || !it.isActive"
+                  :loading="addingToEventId === it.id"
+                  @click.stop="addToEvent(it)"
+                >
+                  Adicionar ao evento
+                </BaseButton>
+
                 <button
                   type="button"
                   class="text-grey-500 hover:text-primary-700 transition"
