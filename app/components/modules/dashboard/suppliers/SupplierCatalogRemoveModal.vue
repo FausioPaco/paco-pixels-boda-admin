@@ -27,7 +27,7 @@ const onSubmit = async () => {
   try {
     isSubmiting.value = true;
     await supplierService.removeSupplierCatalogItem(props.catalogItem.id);
-    toast.success('Item removido do catálogo com sucesso');
+    toast.success('Fornecedor removido do catálogo com sucesso');
     emit('success');
   } catch (e) {
     console.error(e);

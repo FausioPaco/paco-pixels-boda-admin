@@ -214,32 +214,32 @@ const onToggleConfirm = async (s: Supplier) => {
 
             <td>
               <div class="my-2 flex items-center gap-3">
-                <button
-                  type="button"
-                  class="text-grey-500 hover:text-primary-700 transition"
-                  title="Editar"
-                  @click.stop="openEditModal(s)"
-                >
-                  <IconPencil :font-controlled="false" class="size-4" />
-                </button>
-
-                <button
-                  type="button"
-                  class="text-grey-500 transition hover:text-red-600"
-                  title="Remover"
-                  @click.stop="openRemoveModal(s)"
-                >
-                  <IconTrash :font-controlled="false" class="size-4" />
-                </button>
-
                 <BaseButton
-                  btn-type="outline-primary"
-                  size="sm"
+                  :btn-type="s.isConfirmed ? 'outline-primary' : 'primary'"
+                  btn-size="sm"
                   :loading="isConfirming === Number(s.id)"
                   :disabled="isConfirming === Number(s.id)"
                   @click.stop="onToggleConfirm(s)"
                 >
-                  {{ s.isConfirmed ? 'Desconfirmar' : 'Confirmar' }}
+                  {{ s.isConfirmed ? 'Desconfirmar' : 'Confirmar presença' }}
+                </BaseButton>
+
+                <BaseButton
+                  btn-type="outline-primary"
+                  icon="pencil"
+                  btn-size="sm"
+                  :icon-size="12"
+                  @click.stop="openEditModal(s)"
+                  >Editar
+                </BaseButton>
+
+                <BaseButton
+                  btn-type="outline-primary"
+                  icon="trash"
+                  btn-size="sm"
+                  :icon-size="12"
+                  @click.stop="openRemoveModal(s)"
+                  >Remover
                 </BaseButton>
               </div>
             </td>

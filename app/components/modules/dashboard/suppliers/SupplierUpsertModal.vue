@@ -21,6 +21,7 @@ const emit = defineEmits<{
 const toast = useToast();
 const nuxtApp = useNuxtApp();
 const supplierService = getSupplierService(nuxtApp.$api);
+const { refreshIds } = await useEventSupplierCatalogItemIds(props.eventId);
 
 const isEditing = computed(() => !!props.supplier?.id);
 
@@ -119,9 +120,11 @@ const onSubmit = handleSubmit(async (values) => {
 
     if (props.supplier?.id) {
       await supplierService.updateSupplier(Number(props.supplier.id), payload);
+      refreshIds({ force: true });
       toast.success('Fornecedor actualizado com sucesso.');
     } else {
       await supplierService.createSupplier(payload);
+      refreshIds({ force: true });
       toast.success('Fornecedor criado com sucesso.');
     }
 
@@ -176,6 +179,7 @@ watch(
         :min-chars="2"
         @search="onCatalogSearch"
         @select="onCatalogSelect"
+        @keydown.enter.prevent="onSubmit"
       />
 
       <BaseInput
@@ -188,6 +192,7 @@ watch(
         :readonly="isSubmitting"
         :disabled="isSubmitting"
         :error-message="errors.job_Description"
+        @keydown.enter.prevent="onSubmit"
       />
 
       <BaseInput
@@ -200,6 +205,7 @@ watch(
         :readonly="isSubmitting"
         :disabled="isSubmitting"
         :error-message="errors.phone"
+        @keydown.enter.prevent="onSubmit"
       />
 
       <BaseError v-if="serverErrors.hasErrors">{{

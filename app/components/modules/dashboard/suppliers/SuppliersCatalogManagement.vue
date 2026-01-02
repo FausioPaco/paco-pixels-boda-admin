@@ -257,7 +257,7 @@ const addToEvent = async (it: SupplierCatalogItem) => {
           <tr v-for="it in catalogItems" :key="it.id">
             <td>
               <div class="flex-col gap-1">
-                <p class="mb-0">{{ it.name }}</p>
+                <p class="mb-0 md:max-w-[250px]">{{ it.name }}</p>
                 <small class="text-grey-400">{{ it.job_Description }}</small>
               </div>
             </td>
@@ -274,8 +274,10 @@ const addToEvent = async (it: SupplierCatalogItem) => {
             <td>
               <div class="my-2 flex items-center gap-3">
                 <BaseButton
-                  btn-type="outline-primary"
-                  size="sm"
+                  btn-type="primary"
+                  btn-size="sm"
+                  :icon="isAlreadyAdded(it.id) ? 'checkmark' : 'add'"
+                  :icon-size="12"
                   :disabled="
                     addingToEventId === it.id ||
                     !it.isActive ||
@@ -291,23 +293,23 @@ const addToEvent = async (it: SupplierCatalogItem) => {
                   }}
                 </BaseButton>
 
-                <button
-                  type="button"
-                  class="text-grey-500 hover:text-primary-700 transition"
-                  title="Editar"
+                <BaseButton
+                  btn-type="outline-primary"
+                  icon="pencil"
+                  btn-size="sm"
+                  :icon-size="12"
                   @click.stop="openEditModal(it)"
-                >
-                  <IconPencil :font-controlled="false" class="size-4" />
-                </button>
+                  >Editar
+                </BaseButton>
 
-                <button
-                  type="button"
-                  class="text-grey-500 transition hover:text-red-600"
-                  title="Remover"
+                <BaseButton
+                  btn-type="outline-primary"
+                  icon="trash"
+                  btn-size="sm"
+                  :icon-size="12"
                   @click.stop="openRemoveModal(it)"
-                >
-                  <IconTrash :font-controlled="false" class="size-4" />
-                </button>
+                  >Remover
+                </BaseButton>
               </div>
             </td>
           </tr>
