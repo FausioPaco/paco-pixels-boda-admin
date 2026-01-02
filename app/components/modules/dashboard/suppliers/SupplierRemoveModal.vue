@@ -18,6 +18,7 @@ const emit = defineEmits<{
 const toast = useToast();
 const nuxtApp = useNuxtApp();
 const supplierService = getSupplierService(nuxtApp.$api);
+const { refreshIds } = await useEventSupplierCatalogItemIds(props.eventId);
 
 const isSubmiting = ref(false);
 const serverErrors = ref<ServerError>({ hasErrors: false, message: '' });
@@ -28,6 +29,7 @@ const onSubmit = async () => {
   try {
     isSubmiting.value = true;
     await supplierService.removeSupplier(Number(props.supplier.id));
+    refreshIds({ force: true });
     toast.success('Fornecedor removido com sucesso');
     emit('success');
   } catch (e) {

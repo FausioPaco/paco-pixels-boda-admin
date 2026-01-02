@@ -18,6 +18,14 @@ const { eventId } = useEventStore();
 const { catalogItems, pagination, isRefreshing, isError, refreshCatalog } =
   await useSupplierCatalogList(queryParameters);
 
+const { ids: eventCatalogIds, refreshIds } =
+  await useEventSupplierCatalogItemIds(eventId!);
+
+const eventCatalogIdsSet = computed(() => new Set(eventCatalogIds.value));
+
+const isAlreadyAdded = (catalogItemId: number) =>
+  eventCatalogIdsSet.value.has(catalogItemId);
+
 onMounted(async () => {
   await refreshCatalog({ force: true });
 });
@@ -102,6 +110,11 @@ const addToEvent = async (it: SupplierCatalogItem) => {
   try {
     addingToEventId.value = it.id;
     await supplierService.addSupplierFromCatalogToEvent(it.id, eventId);
+    await refreshIds({ force: true });
+
+    eventCatalogIds.value = Array.from(
+      new Set([...eventCatalogIds.value, it.id]),
+    );
 
     toast.success('Fornecedor adicionado ao evento com sucesso.');
   } catch (e) {
@@ -263,11 +276,19 @@ const addToEvent = async (it: SupplierCatalogItem) => {
                 <BaseButton
                   btn-type="outline-primary"
                   size="sm"
-                  :disabled="addingToEventId === it.id || !it.isActive"
+                  :disabled="
+                    addingToEventId === it.id ||
+                    !it.isActive ||
+                    isAlreadyAdded(it.id)
+                  "
                   :loading="addingToEventId === it.id"
                   @click.stop="addToEvent(it)"
                 >
-                  Adicionar ao evento
+                  {{
+                    isAlreadyAdded(it.id)
+                      ? 'Já adicionado'
+                      : 'Adicionar ao evento'
+                  }}
                 </BaseButton>
 
                 <button

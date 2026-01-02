@@ -110,4 +110,10 @@ export const getSupplierService = <T>(
       query: { eventId },
     });
   },
+
+  async getEventSupplierCatalogItemIds(eventId: number): Promise<number[]> {
+    return $fetch<number[]>(
+      `${EVENT_RESOURCE}/by-event/${eventId}/catalog-items-ids`,
+    );
+  },
 });
