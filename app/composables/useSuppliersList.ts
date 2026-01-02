@@ -26,6 +26,7 @@ export const useSuppliersList = async (
   queryParameters.eventId = eventId;
 
   const nuxtApp = useNuxtApp();
+
   const key = computed(() =>
     [
       'suppliers-list',
@@ -46,7 +47,7 @@ export const useSuppliersList = async (
       transform(input) {
         const { data, ...paginationData } = input;
         return {
-          suppliersList: data,
+          list: data,
           pagination: paginationData,
           fetchedAt: new Date(),
         };
@@ -61,16 +62,13 @@ export const useSuppliersList = async (
   );
 
   watchEffect(() => {
-    if (data.value) {
-      suppliers.value = data.value.suppliersList;
-      pagination.value = data.value.pagination;
-    }
+    if (!data.value) return;
+    suppliers.value = data.value.list;
+    pagination.value = data.value.pagination;
   });
 
   const refreshSuppliers = async (opts?: { force?: boolean }) => {
-    if (opts?.force) {
-      clearNuxtData(key.value);
-    }
+    if (opts?.force) clearNuxtData(key.value);
     await refresh();
   };
 
