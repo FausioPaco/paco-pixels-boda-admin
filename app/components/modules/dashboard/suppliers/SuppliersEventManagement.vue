@@ -169,7 +169,7 @@ const onToggleConfirm = async (s: Supplier) => {
       <!-- First empty state -->
       <LazyBaseFirstEmptyState
         v-if="isFirstTime"
-        icon="icon-users"
+        icon="icon-suppliers-event"
         title="Ainda não registou fornecedores"
         description="Adicione fornecedores para acompanhar os seus contactos e confirmar se o deal está fechado."
         :show-button="true"

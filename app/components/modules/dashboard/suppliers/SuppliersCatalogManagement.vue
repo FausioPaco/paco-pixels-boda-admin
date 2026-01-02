@@ -230,7 +230,7 @@ const addToEvent = async (it: SupplierCatalogItem) => {
       <!-- First empty state -->
       <LazyBaseFirstEmptyState
         v-if="isFirstTime"
-        icon="icon-catalog"
+        icon="icon-suppliers-catalog"
         title="Ainda não tem fornecedores no catálogo"
         description="Adicione fornecedores ao catálogo para facilitar a criação de eventos futuros."
         :show-button="true"
