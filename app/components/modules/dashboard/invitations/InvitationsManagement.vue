@@ -15,9 +15,9 @@ const eventId = eventStore.ensureSelected();
 
 const { apiImageUrl } = useRuntimeConfig().public;
 
-/**
- * data
- */
+// -------------------------
+// Data
+// -------------------------
 const {
   templates,
   refreshTemplates,
@@ -34,11 +34,40 @@ const activeTemplateId = computed(
   () => settings.value?.activeTemplateId ?? null,
 );
 
-/**
- * Preview modal
- */
+const eventTypeSlug = computed(
+  () => eventStore.eventTypeSlug as InvitationEventTypeSlug | null,
+);
+
+const invitationSlug = computed(
+  () => eventTypeSlug.value as keyof InvitationDetailsMap | null,
+);
+
+// -------------------------
+// Helpers
+// -------------------------
+function safeParse<T>(json: string | null | undefined): T | null {
+  if (!json) return null;
+  try {
+    return JSON.parse(json) as T;
+  } catch {
+    return null;
+  }
+}
+
+const initialDetails = computed(
+  () => safeParse(settings.value?.settingsJson) ?? {},
+);
+
+// -------------------------
+// Preview modal
+// -------------------------
 const showPreviewModal = ref(false);
 const previewTemplate = ref<InvitationTemplate | null>(null);
+
+const previewImageUrl = computed(() => {
+  const url = previewTemplate.value?.thumbnail_Url;
+  return url ? `${apiImageUrl}${url}` : null;
+});
 
 const openPreview = (t: InvitationTemplate) => {
   previewTemplate.value = t;
@@ -50,25 +79,22 @@ const closePreview = () => {
   previewTemplate.value = null;
 };
 
-const previewImageUrl = computed(() => {
-  if (!previewTemplate.value?.thumbnail_Url) return null;
-  // assumimos URL relativa
-  return `${apiImageUrl}${previewTemplate.value.thumbnail_Url}`;
-});
-
-/**
- * Set active template
- */
+// -------------------------
+// Template actions
+// -------------------------
 const isSettingTemplate = ref(false);
+
 const useTemplate = async (templateId: number) => {
   try {
     isSettingTemplate.value = true;
-    await invitationService.setActiveTemplate(eventId, templateId);
 
+    await invitationService.setActiveTemplate(eventId, templateId);
     closePreview();
 
-    await refreshSettings({ force: true });
-    await refreshTemplates({ force: true });
+    await Promise.all([
+      refreshSettings({ force: true }),
+      refreshTemplates({ force: true }),
+    ]);
 
     toast.success('Modelo actualizado com sucesso!');
   } catch (err) {
@@ -79,21 +105,41 @@ const useTemplate = async (templateId: number) => {
   }
 };
 
-/**
- * Upload cover image (clique, sem dropzone) – padrão GuestsQRCode.vue
- */
+// -------------------------
+// Upload cover image (click only)
+// -------------------------
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const previewUrl = ref<string | null>(null);
 const fileToUpload = ref<File | null>(null);
 const isUploading = ref(false);
 const uploadError = ref<string | null>(null);
 
-const openFileDialog = () => fileInputRef.value?.click();
-
 const coverImageUrl = computed(() => {
   const url = settings.value?.coverImage_Url;
   return url ? `${apiImageUrl}${url}` : null;
 });
+
+const openFileDialog = () => fileInputRef.value?.click();
+
+const resetUpload = () => {
+  fileToUpload.value = null;
+
+  if (previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value);
+    previewUrl.value = null;
+  }
+};
+
+const validateSelectedFile = (file: File): string | null => {
+  const allowed = ['image/png', 'image/jpeg', 'image/jpg'];
+  const maxSizeBytes = 8 * 1024 * 1024;
+
+  if (!allowed.includes(file.type))
+    return 'Por favor seleccione um ficheiro PNG ou JPG.';
+  if (file.size > maxSizeBytes) return 'O tamanho máximo permitido é 8MB.';
+
+  return null;
+};
 
 const onFileSelected = (event: Event) => {
   const target = event.target as HTMLInputElement;
@@ -102,17 +148,9 @@ const onFileSelected = (event: Event) => {
 
   uploadError.value = null;
 
-  const maxSizeBytes = 8 * 1024 * 1024; // 8MB
-  const allowed = ['image/png', 'image/jpeg', 'image/jpg'];
-
-  if (!allowed.includes(file.type)) {
-    uploadError.value = 'Por favor seleccione um ficheiro PNG ou JPG.';
-    target.value = '';
-    return;
-  }
-
-  if (file.size > maxSizeBytes) {
-    uploadError.value = 'O tamanho máximo permitido é 8MB.';
+  const error = validateSelectedFile(file);
+  if (error) {
+    uploadError.value = error;
     target.value = '';
     return;
   }
@@ -135,23 +173,14 @@ const saveCoverImage = async () => {
       file: fileToUpload.value,
     });
 
-    // backend devolve url relativa (padrão do QR)
-    // agora guardamos nas settings via updateSettings (ou se o endpoint já actualizar, ainda assim mantemos consistente)
     await invitationService.updateSettings(
       eventId,
       buildSettingsPayload({ coverImage_Url: result.url }),
     );
 
-    // refresh
     await refreshSettings({ force: true });
 
-    // limpar preview
-    fileToUpload.value = null;
-    if (previewUrl.value) {
-      URL.revokeObjectURL(previewUrl.value);
-      previewUrl.value = null;
-    }
-
+    resetUpload();
     toast.success('Imagem do convite actualizada com sucesso!');
   } catch (err) {
     console.error(err);
@@ -162,37 +191,9 @@ const saveCoverImage = async () => {
   }
 };
 
-const eventTypeSlug = computed(
-  () => eventStore.eventTypeSlug as InvitationEventTypeSlug | null,
-);
-
-const invitationSlug = computed(
-  () => eventTypeSlug.value as keyof InvitationDetailsMap | null,
-);
-
-function safeParse<T>(json: string | null | undefined): T | null {
-  if (!json) return null;
-  try {
-    return JSON.parse(json) as T;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Valores iniciais por tipo
- */
-const initialDetails = computed(() => {
-  const parsed = safeParse(settings.value?.settingsJson);
-  return parsed ?? {};
-});
-
-/**
- * Schema dinâmico por tipo
- * - Wedding: partyLocation/partyTime required + regra do par Civil*
- * - outros: campos opcionais (podes apertar depois)
- */
-
+// -------------------------
+// Form
+// -------------------------
 type InvitationFormValues = {
   // wedding
   civilLocation: string | null;
@@ -255,12 +256,6 @@ const schema = computed(() => {
   );
 });
 
-const { handleSubmit, values, errors, setValues, defineField, isSubmitting } =
-  useForm<InvitationFormValues>({
-    validationSchema: schema,
-    initialValues: buildInitialFormValues(), // função tua (abaixo)
-  });
-
 function buildInitialFormValues(): InvitationFormValues {
   const slug = eventTypeSlug.value;
   const details = initialDetails.value;
@@ -290,6 +285,7 @@ function buildInitialFormValues(): InvitationFormValues {
       base.notes = d.notes ?? null;
       break;
     }
+
     case 'evento-corporativo': {
       const d = details as InvitationDetailsMap['evento-corporativo'];
       base.title = d.title ?? null;
@@ -298,6 +294,7 @@ function buildInitialFormValues(): InvitationFormValues {
       base.time = d.time ?? null;
       break;
     }
+
     default: {
       const d = details as
         | InvitationDetailsMap['pre-casamento']
@@ -305,16 +302,23 @@ function buildInitialFormValues(): InvitationFormValues {
         | InvitationDetailsMap['celebracao-infantil']
         | InvitationDetailsMap['aniversario']
         | InvitationDetailsMap['graduacao'];
+
       base.location = d.location ?? null;
       base.time = d.time ?? null;
-      base.contact = 'contact' in d ? (d.contact ?? null) : null;
       base.notes = d.notes ?? null;
+      base.contact = 'contact' in d ? (d.contact ?? null) : null;
       break;
     }
   }
 
   return base;
 }
+
+const { handleSubmit, values, errors, defineField, setValues, isSubmitting } =
+  useForm<InvitationFormValues>({
+    validationSchema: schema,
+    initialValues: buildInitialFormValues(),
+  });
 
 const [civilLocation, civilLocationAttrs] = defineField('civilLocation');
 const [civilTime, civilTimeAttrs] = defineField('civilTime');
@@ -329,19 +333,18 @@ const [time, timeAttrs] = defineField('time');
 const [contact, contactAttrs] = defineField('contact');
 const [notes, notesAttrs] = defineField('notes');
 
-// manter sincronizado quando settings carregarem
+// sync values when settings load
 watch(
   () => settings.value?.settingsJson,
   () => {
-    setValues(initialDetails.value ?? {});
+    // keep your current behaviour (do not change semantics)
+    setValues(initialDetails.value as unknown as InvitationFormValues);
   },
 );
 
-/**
- * Construir payload respeitando o backend:
- * só 1 bloco preenchido conforme slug.
- */
-
+// -------------------------
+// Payload builder
+// -------------------------
 function buildSettingsPayload(extra?: { coverImage_Url?: string | null }) {
   const s = invitationSlug.value;
 
@@ -361,8 +364,7 @@ function buildSettingsPayload(extra?: { coverImage_Url?: string | null }) {
 
   switch (s) {
     case 'casamento': {
-      const v = values as InvitationDetailsMap['casamento'];
-
+      const v = values as unknown as InvitationDetailsMap['casamento'];
       base.wedding = {
         civilLocation: v.civilLocation ?? null,
         civilTime: v.civilTime ?? null,
@@ -374,7 +376,7 @@ function buildSettingsPayload(extra?: { coverImage_Url?: string | null }) {
     }
 
     case 'pre-casamento': {
-      const v = values as InvitationDetailsMap['pre-casamento'];
+      const v = values as unknown as InvitationDetailsMap['pre-casamento'];
       base.preWedding = {
         location: v.location ?? null,
         time: v.time ?? null,
@@ -384,7 +386,7 @@ function buildSettingsPayload(extra?: { coverImage_Url?: string | null }) {
     }
 
     case 'evento-corporativo': {
-      const v = values as InvitationDetailsMap['evento-corporativo'];
+      const v = values as unknown as InvitationDetailsMap['evento-corporativo'];
       base.corporate = {
         title: v.title ?? null,
         description: v.description ?? null,
@@ -393,8 +395,9 @@ function buildSettingsPayload(extra?: { coverImage_Url?: string | null }) {
       };
       break;
     }
+
     case 'evento-familiar': {
-      const v = values as InvitationDetailsMap['evento-familiar'];
+      const v = values as unknown as InvitationDetailsMap['evento-familiar'];
       base.family = {
         location: v.location ?? null,
         time: v.time ?? null,
@@ -402,8 +405,10 @@ function buildSettingsPayload(extra?: { coverImage_Url?: string | null }) {
       };
       break;
     }
+
     case 'celebracao-infantil': {
-      const v = values as InvitationDetailsMap['celebracao-infantil'];
+      const v =
+        values as unknown as InvitationDetailsMap['celebracao-infantil'];
       base.kidsCelebration = {
         location: v.location ?? null,
         time: v.time ?? null,
@@ -412,8 +417,9 @@ function buildSettingsPayload(extra?: { coverImage_Url?: string | null }) {
       };
       break;
     }
+
     case 'aniversario': {
-      const v = values as InvitationDetailsMap['aniversario'];
+      const v = values as unknown as InvitationDetailsMap['aniversario'];
       base.birthday = {
         location: v.location ?? null,
         time: v.time ?? null,
@@ -422,8 +428,9 @@ function buildSettingsPayload(extra?: { coverImage_Url?: string | null }) {
       };
       break;
     }
+
     case 'graduacao': {
-      const v = values as InvitationDetailsMap['graduacao'];
+      const v = values as unknown as InvitationDetailsMap['graduacao'];
       base.graduation = {
         location: v.location ?? null,
         time: v.time ?? null,
@@ -437,34 +444,40 @@ function buildSettingsPayload(extra?: { coverImage_Url?: string | null }) {
   return base;
 }
 
+// -------------------------
+// Submit
+// -------------------------
 const onSubmit = handleSubmit(async () => {
   try {
     await invitationService.updateSettings(eventId, buildSettingsPayload());
-
     await refreshSettings({ force: true });
     toast.success('Definições guardadas com sucesso!');
   } catch (err: unknown) {
     console.error(err);
+
     if (isFetchErrorLike(err)) {
       toast.error(getServerErrors(err.data));
-    } else {
-      toast.error(
-        'Não foi possível guardar as definições. Verifique os dados e tente novamente.',
-      );
+      return;
     }
+
+    toast.error(
+      'Não foi possível guardar as definições. Verifique os dados e tente novamente.',
+    );
   }
 });
 
-/**
- * Exportar todos (ZIP) – devolve zipUrl
- */
+// -------------------------
+// Export
+// -------------------------
 const isExporting = ref(false);
+
 const exportAll = async () => {
   try {
     isExporting.value = true;
-    const result = await invitationService.exportAll(eventId, false);
 
+    const result = await invitationService.exportAll(eventId, false);
     const url = `${apiImageUrl}${result.zipUrl}`;
+
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute(
@@ -547,7 +560,6 @@ const exportAll = async () => {
       </p>
     </BaseCard>
 
-    <!-- 2) Carregar imagem do convite -->
     <BaseCard
       title="Carregar imagem do convite"
       description="Carregue a imagem (cover) que será utilizada na composição do convite."
@@ -624,14 +636,12 @@ const exportAll = async () => {
       </div>
     </BaseCard>
 
-    <!-- 3) Definições do convite -->
     <BaseCard
       title="Definições do convite"
       description="Preencha os dados do convite conforme o tipo de evento."
       outline
     >
       <form class="space-y-4" @submit.prevent="onSubmit">
-        <!-- Wedding -->
         <div
           v-if="eventTypeSlug === 'casamento'"
           class="grid grid-cols-1 gap-4 md:grid-cols-2"
@@ -648,9 +658,9 @@ const exportAll = async () => {
           <BaseInput
             id="invitationCivilLocationTime"
             v-model="civilTime"
-            name="civilTime"
             v-bind="civilTimeAttrs"
             :error-message="errors.civilTime"
+            name="civilTime"
             label="Hora (Civil)"
             placeholder="Ex: 11:00"
           />
@@ -678,16 +688,15 @@ const exportAll = async () => {
             <BaseInput
               id="invitationNotes"
               v-model="notes"
-              name="notes"
               v-bind="notesAttrs"
               :error-message="errors.notes"
+              name="notes"
               label="Notas"
               placeholder="Informações adicionais..."
             />
           </div>
         </div>
 
-        <!-- Corporate -->
         <div
           v-else-if="eventTypeSlug === 'evento-corporativo'"
           class="grid grid-cols-1 gap-4 md:grid-cols-2"
@@ -732,10 +741,9 @@ const exportAll = async () => {
           </div>
         </div>
 
-        <!-- Default (pre-wedding / family / kids / birthday / graduation) -->
         <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <BaseInput
-            id="invitationLocation"
+            id="invitationLocationDefault"
             v-model="location"
             v-bind="locationAttrs"
             :error-message="errors.location"
@@ -744,8 +752,10 @@ const exportAll = async () => {
             placeholder="Ex: Local do evento..."
           />
           <BaseInput
-            id="invitationTime"
+            id="invitationTimeDefault"
             v-model="time"
+            v-bind="timeAttrs"
+            :error-message="errors.time"
             name="time"
             label="Hora"
             placeholder="Ex: 18:00"
@@ -768,7 +778,7 @@ const exportAll = async () => {
 
           <div class="md:col-span-2">
             <BaseInput
-              id="invitationNotes"
+              id="invitationNotesDefault"
               v-model="notes"
               v-bind="notesAttrs"
               :error-message="errors.notes"
@@ -797,14 +807,14 @@ const exportAll = async () => {
           </BaseButton>
         </div>
 
-        <p v-if="isRefreshingSettings" class="text-grey-500 text-xs">
-          A actualizar definições...
-        </p>
+        <BaseLoading
+          v-if="isRefreshingSettings"
+          message="A guardar definições..."
+        />
       </form>
     </BaseCard>
 
-    <!-- Preview Modal -->
-    <InvitationTemplatePreviewModal
+    <LazyInvitationTemplatePreviewModal
       :show="showPreviewModal"
       :template="previewTemplate"
       :image-url="previewImageUrl"

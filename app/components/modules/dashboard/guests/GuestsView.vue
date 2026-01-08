@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useToast } from 'vue-toastification';
 import { getDeskService } from '~/services/deskService';
+import { getInvitationService } from '~/services/invitationService';
 import { generateSlug } from '~/utils/stringUtils';
 
 interface GuestViewProps {
@@ -24,9 +25,13 @@ const isLoadingDesk = ref(false);
 const showForExport = ref(false);
 const qrCodeRef = ref();
 const isExporting = ref(false);
+const isGeneratingInvitation = ref(false);
 const textColorExport = ref<ExportTextColor>('black');
 
-const deskService = getDeskService(useNuxtApp().$api);
+const nuxtApp = useNuxtApp();
+const deskService = getDeskService(nuxtApp.$api);
+const invitationService = getInvitationService(nuxtApp.$api);
+const { apiImageUrl } = useRuntimeConfig().public;
 
 async function fetchDeskById(id: number) {
   if (!id) return;
@@ -165,6 +170,39 @@ const startExport = (exportOptions: ExportQROptions) => {
   showExportFormatModal.value = false;
 };
 
+const generateInvitationPng = async () => {
+  try {
+    isGeneratingInvitation.value = true;
+
+    const eventId = eventStore.ensureSelected();
+    const result = await invitationService.renderGuest(
+      eventId,
+      props.guest.id,
+      false,
+    );
+
+    const url = `${apiImageUrl}${result.fileUrl}`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute(
+      'download',
+      `${eventStore.eventInitials}-${props.guest.localId}-convite.png`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success(
+      result.fromCache ? 'Convite obtido' : 'Convite gerado com sucesso!',
+    );
+  } catch (err) {
+    console.error(err);
+    toast.error('Ocorreu um erro ao gerar o convite.');
+  } finally {
+    isGeneratingInvitation.value = false;
+  }
+};
+
 onMounted(() => {
   const componentName = siteConfig.qrCodeComponent;
 
@@ -204,6 +242,7 @@ onMounted(() => {
             >
               Copiar Link
             </BaseButton> -->
+
             <BaseButton
               v-if="eventStore.eventQRCodeUrl"
               btn-type="primary"
@@ -214,6 +253,17 @@ onMounted(() => {
               @click="showExportFormatModal = true"
             >
               {{ isExporting ? 'A gerar QR Code...' : 'Gerar QR Code' }}
+            </BaseButton>
+            <BaseButton
+              btn-type="outline-primary"
+              btn-size="sm"
+              icon="download"
+              :disabled="isGeneratingInvitation"
+              @click="generateInvitationPng"
+            >
+              {{
+                isGeneratingInvitation ? 'A gerar convite...' : 'Gerar Convite'
+              }}
             </BaseButton>
           </div>
         </div>

@@ -2,20 +2,31 @@
 import { getEventService } from '~/services/eventService';
 import GuestList from './GuestsList.vue';
 import GuestsQRCode from './GuestsQRCode.vue';
+import InvitationsManagement from '../invitations/InvitationsManagement.vue';
 import { useToast } from 'vue-toastification';
-type GuestTab = 'LIST' | 'QRCODE';
+import { getInvitationService } from '~/services/invitationService';
+type GuestTab = 'LIST' | 'QRCODE' | 'INVITATIONS';
 
 const activeTab = ref<GuestTab>('LIST');
 const eventStore = useEventStore();
 
+const { isAdministrator, isSuperAdministrator } = useAuthStore();
+const canManageInvitations = computed(
+  () => isAdministrator || isSuperAdministrator,
+);
+
 const nuxtApp = useNuxtApp();
 const eventService = getEventService(nuxtApp.$api);
-const { clientCode } = useRuntimeConfig().public;
+const invitationService = getInvitationService(nuxtApp.$api);
+
+const { clientCode, apiImageUrl } = useRuntimeConfig().public;
 
 const textColorExport = ref<ExportTextColor>('black');
 
 const showExportFormatModal = ref<boolean>(false);
 const isExporting = ref<boolean>(false);
+const isExportingInvitations = ref<boolean>(false);
+
 const toast = useToast();
 
 const startExport = (exportOptions: ExportQROptions) => {
@@ -54,6 +65,34 @@ const exportQRCodes = async () => {
     isExporting.value = false;
   }
 };
+
+const exportInvitations = async () => {
+  try {
+    isExportingInvitations.value = true;
+
+    const result = await invitationService.exportAll(
+      eventStore.eventId!,
+      false,
+    );
+
+    const url = `${apiImageUrl}${result.zipUrl}`;
+    const link = document.createElement('a');
+    link.href = url;
+
+    const fileName = `CONVITES_EVENTO_${eventStore.eventInitials}.zip`;
+    link.setAttribute('download', fileName);
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    isExportingInvitations.value = false;
+  } catch (err) {
+    console.error('Erro ao exportar convites:', err);
+    toast.error('Ocorreu um erro ao exportar os convites');
+    isExportingInvitations.value = false;
+  }
+};
 </script>
 <template>
   <BaseCard
@@ -83,6 +122,17 @@ const exportQRCodes = async () => {
           @click="showExportFormatModal = true"
           >{{ isExporting ? 'A exportar...' : 'Exportar QRCodes' }}</BaseButton
         >
+
+        <BaseButton
+          v-if="canManageInvitations && !eventStore.eventModeView"
+          btn-size="sm"
+          icon="download"
+          :disabled="isExportingInvitations"
+          class="animate-fadeIn"
+          @click="exportInvitations"
+        >
+          {{ isExportingInvitations ? 'A exportar...' : 'Exportar convites' }}
+        </BaseButton>
       </div>
     </template>
 
@@ -109,13 +159,32 @@ const exportQRCodes = async () => {
         @click="activeTab = 'QRCODE'"
         >QR Code</BaseTabItem
       >
+
+      <BaseTabItem
+        v-if="canManageInvitations"
+        id="invitations"
+        icon="icon-invitation-model"
+        :tab-position="3"
+        :total-tabs="3"
+        :is-active="activeTab === 'INVITATIONS'"
+        class="w-full md:w-1/2"
+        @click="activeTab = 'INVITATIONS'"
+      >
+        Modelo de convite
+      </BaseTabItem>
     </BaseTab>
 
     <!-- Content -->
     <transition name="fade" mode="out-in">
       <component
-        :is="activeTab === 'LIST' ? GuestList : GuestsQRCode"
-      ></component>
+        :is="
+          activeTab === 'LIST'
+            ? GuestList
+            : activeTab === 'QRCODE'
+              ? GuestsQRCode
+              : InvitationsManagement
+        "
+      />
     </transition>
 
     <LazyGuestsExportAllQRCodesModal
