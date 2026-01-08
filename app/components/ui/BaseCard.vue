@@ -3,6 +3,7 @@ interface ICardProps {
   title?: string;
   description?: string;
   backLink?: string | undefined;
+  outline?: boolean;
 }
 
 defineOptions({
@@ -13,11 +14,13 @@ withDefaults(defineProps<ICardProps>(), {
   title: '',
   description: '',
   backLink: undefined,
+  outline: false,
 });
 </script>
 <template>
   <div
-    class="border-primary-100 w-full rounded-2xl border bg-white px-4 py-4 shadow-md md:px-5"
+    class="w-full overflow-hidden rounded-2xl border bg-white px-4 py-4 md:px-5"
+    :class="outline ? 'border-grey-100' : 'border-primary-100 shadow-md'"
   >
     <header
       v-if="title || description"
