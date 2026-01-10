@@ -629,7 +629,7 @@ const hasCover = computed(() => {
 
       <div class="flex flex-wrap gap-2 pt-2">
         <BaseButton
-          v-if="hasCover"
+          v-if="hasCover && !previewUrl"
           btn-type="outline-primary"
           @click="showRemoveCover = true"
         >
@@ -714,14 +714,15 @@ const hasCover = computed(() => {
           />
 
           <div class="md:col-span-2">
-            <BaseInput
+            <BaseTextArea
               id="invitationNotes"
               v-model="notes"
+              rows="8"
               v-bind="notesAttrs"
               :error-message="errors.notes"
               name="notes"
               label="Notas"
-              placeholder="Informações adicionais..."
+              placeholder="Coloque informações adicionais (se tiver)..."
             />
           </div>
         </div>
