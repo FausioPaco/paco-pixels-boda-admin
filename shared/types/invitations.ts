@@ -20,8 +20,9 @@ export interface EventInvitationSettings {
   eventId: number;
 
   activeTemplateId?: number | null | undefined;
-  settingsJson: string; // vem como string do backend (JSON do bloco do tipo)
+  settingsJson: string | null;
   coverImage_Url?: string | null | undefined;
+  coverImageExport_Url?: string | null | undefined;
 
   status: InvitationSettingsStatus;
   validationErrorsJson?: string | null | undefined;
@@ -99,8 +100,6 @@ export type InvitationDetailsMap = {
 
 // payload para update settings
 export interface EventInvitationSettingsForUpdateInput {
-  coverImage_Url?: string | null | undefined;
-
   wedding?: WeddingInvitationDetails | null | undefined;
   preWedding?: PreWeddingInvitationDetails | null | undefined;
   corporate?: CorporateInvitationDetails | null | undefined;
@@ -124,5 +123,6 @@ export interface InvitationExportAllResult {
 }
 
 export interface InvitationUploadResult {
-  url: string;
+  coverImageUrl: string;
+  coverImageExportUrl: string;
 }

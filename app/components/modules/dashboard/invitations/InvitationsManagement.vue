@@ -168,15 +168,10 @@ const saveCoverImage = async () => {
   uploadError.value = null;
 
   try {
-    const result = await invitationService.uploadCoverImage({
+    await invitationService.uploadCoverImage({
       eventId,
       file: fileToUpload.value,
     });
-
-    await invitationService.updateSettings(
-      eventId,
-      buildSettingsPayload({ coverImage_Url: result.url }),
-    );
 
     await refreshSettings({ force: true });
 
@@ -345,12 +340,10 @@ watch(
 // -------------------------
 // Payload builder
 // -------------------------
-function buildSettingsPayload(extra?: { coverImage_Url?: string | null }) {
+function buildSettingsPayload() {
   const s = invitationSlug.value;
 
   const base: EventInvitationSettingsForUpdateInput = {
-    coverImage_Url:
-      extra?.coverImage_Url ?? settings.value?.coverImage_Url ?? null,
     wedding: null,
     preWedding: null,
     corporate: null,
@@ -496,10 +489,19 @@ const exportAll = async () => {
     isExporting.value = false;
   }
 };
+
+const canExport = computed(() => {
+  const s = settings.value;
+  if (!s) return false;
+  if (s.status !== 'Ready') return false;
+  if (!s.settingsJson) return false;
+  return true;
+});
 </script>
 
 <template>
-  <section class="space-y-6">
+  <section class="my-8 space-y-6">
+    <!-- Selecionar Modelo -->
     <BaseCard
       title="Escolher modelo"
       description="Seleccione um modelo de convite para este evento."
@@ -542,9 +544,6 @@ const exportAll = async () => {
 
               <BaseButton
                 btn-size="sm"
-                :btn-type="
-                  activeTemplateId === t.id ? 'primary' : 'outline-primary'
-                "
                 :disabled="activeTemplateId === t.id || isSettingTemplate"
                 @click="useTemplate(t.id)"
               >
@@ -555,87 +554,103 @@ const exportAll = async () => {
         </div>
       </div>
 
-      <p v-if="isRefreshingTemplates" class="text-grey-500 mt-3 text-xs">
-        A actualizar modelos...
-      </p>
+      <BaseLoading
+        v-if="isRefreshingTemplates"
+        message="A actualizar modelos..."
+      />
     </BaseCard>
 
+    <!-- Carregar imagem do convite -->
     <BaseCard
       title="Carregar imagem do convite"
       description="Carregue a imagem (cover) que será utilizada na composição do convite."
       outline
     >
-      <div
-        class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+      <button
+        type="button"
+        class="hover:border-primary-200 hover:bg-primary-25 group flex items-center justify-center overflow-hidden rounded-3xl p-2 transition"
+        :class="
+          previewUrl || coverImageUrl
+            ? undefined
+            : 'border-grey-200 bg-grey-100/30 border-2 border-dashed'
+        "
+        @click="openFileDialog"
       >
-        <div class="space-y-2">
-          <p class="text-grey-600 text-sm">
-            Formatos: <b>PNG ou JPG</b> · Tamanho máximo: <b>8MB</b>
+        <img
+          v-if="previewUrl"
+          :src="previewUrl"
+          class="h-full w-full rounded-2xl object-cover md:h-[450px] md:w-[450px]"
+        />
+        <img
+          v-else-if="coverImageUrl"
+          :src="coverImageUrl"
+          class="h-full w-full rounded-2xl object-cover md:h-[450px] md:w-[450px]"
+          alt="Cover actual"
+        />
+
+        <!-- Placeholder -->
+        <div
+          v-else
+          class="text-grey-400 flex h-full w-full flex-col items-center justify-center gap-3 py-8 md:h-[450px] md:w-[450px] md:py-0"
+        >
+          <IconMenuGallery
+            :font-controlled="false"
+            class="text-grey-300 group-hover:text-primary-700 block size-[80px]"
+          />
+          <p
+            class="text-grey-400 group-hover:text-primary-700 text-lg font-semibold"
+          >
+            Clique aqui para carregar a imagem
           </p>
 
-          <div v-if="uploadError" class="text-xs text-red-600">
-            {{ uploadError }}
-          </div>
-
-          <div
-            v-if="fileToUpload && previewUrl && !isUploading"
-            class="text-primary-700 flex gap-2 text-xs"
+          <p
+            class="text-grey-400 group-hover:text-primary-700 text-xs font-medium"
           >
-            <IconCheckmark :font-controlled="false" class="block size-[18px]" />
-            <p>Pré-visualização pronta. Clique em <b>“Guardar imagem”</b>.</p>
-          </div>
-
-          <div class="flex flex-wrap gap-2 pt-2">
-            <BaseButton
-              btn-type="outline-primary"
-              :disabled="isUploading"
-              @click="openFileDialog"
-            >
-              {{ coverImageUrl ? 'Alterar imagem' : 'Carregar imagem' }}
-            </BaseButton>
-
-            <BaseButton
-              v-if="fileToUpload && previewUrl"
-              btn-type="primary"
-              :loading="isUploading"
-              :disabled="isUploading"
-              @click="saveCoverImage"
-            >
-              Guardar imagem
-            </BaseButton>
-          </div>
-
-          <input
-            ref="fileInputRef"
-            type="file"
-            accept="image/png,image/jpeg"
-            class="hidden"
-            @change="onFileSelected"
-          />
+            Formatos: <b>PNG ou JPG</b> · Tamanho máximo: <b>8MB</b>
+          </p>
         </div>
+      </button>
 
-        <div class="w-full md:w-[360px]">
-          <div class="bg-grey-50 overflow-hidden rounded-2xl border">
-            <img
-              v-if="previewUrl"
-              :src="previewUrl"
-              class="block w-full"
-              alt="Pré-visualização cover"
-            />
-            <img
-              v-else-if="coverImageUrl"
-              :src="coverImageUrl"
-              class="block w-full"
-              alt="Cover actual"
-            />
-            <div v-else class="text-grey-500 p-6 text-sm">
-              Ainda não foi carregada nenhuma imagem.
-            </div>
-          </div>
-        </div>
+      <div
+        v-if="fileToUpload && previewUrl && !isUploading"
+        class="text-primary-700 my-4 flex gap-2 text-xs"
+      >
+        <IconInformation :font-controlled="false" class="block size-[18px]" />
+        <p>Pré-visualização pronta. Clique em <b>“Guardar imagem”</b>.</p>
       </div>
+
+      <BaseError v-if="uploadError" :message="uploadError" />
+
+      <div class="flex flex-wrap gap-2 pt-2">
+        <BaseButton
+          btn-type="outline-primary"
+          :disabled="isUploading"
+          @click="openFileDialog"
+        >
+          {{ coverImageUrl ? 'Alterar imagem' : 'Carregar imagem' }}
+        </BaseButton>
+
+        <BaseButton
+          v-if="fileToUpload && previewUrl"
+          btn-type="primary"
+          :loading="isUploading"
+          :disabled="isUploading"
+          @click="saveCoverImage"
+        >
+          Guardar imagem
+        </BaseButton>
+      </div>
+
+      <input
+        ref="fileInputRef"
+        type="file"
+        accept="image/png,image/jpeg"
+        class="hidden"
+        @change="onFileSelected"
+      />
     </BaseCard>
 
+    <!-- Definições do convite -->
     <BaseCard
       title="Definições do convite"
       description="Preencha os dados do convite conforme o tipo de evento."
@@ -792,7 +807,7 @@ const exportAll = async () => {
         <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
           <BaseButton
             btn-type="outline-primary"
-            :disabled="isExporting"
+            :disabled="isExporting || !canExport"
             @click="exportAll"
           >
             {{ isExporting ? 'A exportar...' : 'Exportar todos os convites' }}

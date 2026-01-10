@@ -163,7 +163,7 @@ const exportInvitations = async () => {
       <BaseTabItem
         v-if="canManageInvitations"
         id="invitations"
-        icon="icon-invitation-model"
+        icon="invitation-model"
         :tab-position="3"
         :total-tabs="3"
         :is-active="activeTab === 'INVITATIONS'"
