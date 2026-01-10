@@ -80,4 +80,11 @@ export const getInvitationService = <T>(
       },
     );
   },
+
+  removeCoverImage(eventId: number) {
+    return $fetch<unknown>(`${INVITATIONS_RESOURCE}/cover`, {
+      method: 'DELETE',
+      query: { eventId },
+    });
+  },
 });

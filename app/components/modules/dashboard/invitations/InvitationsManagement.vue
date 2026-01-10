@@ -12,6 +12,7 @@ const invitationService = getInvitationService(nuxtApp.$api);
 
 const eventStore = useEventStore();
 const eventId = eventStore.ensureSelected();
+const showRemoveCover = ref(false);
 
 const { apiImageUrl } = useRuntimeConfig().public;
 
@@ -497,6 +498,11 @@ const canExport = computed(() => {
   if (!s.settingsJson) return false;
   return true;
 });
+
+const hasCover = computed(() => {
+  const s = settings.value;
+  return !!(s?.coverImage_Url || s?.coverImageExport_Url);
+});
 </script>
 
 <template>
@@ -622,6 +628,14 @@ const canExport = computed(() => {
       <BaseError v-if="uploadError" :message="uploadError" />
 
       <div class="flex flex-wrap gap-2 pt-2">
+        <BaseButton
+          v-if="hasCover"
+          btn-type="outline-primary"
+          @click="showRemoveCover = true"
+        >
+          Remover imagem
+        </BaseButton>
+
         <BaseButton
           btn-type="outline-primary"
           :disabled="isUploading"
@@ -835,6 +849,13 @@ const canExport = computed(() => {
       :image-url="previewImageUrl"
       @close-modal="closePreview"
       @use-template="useTemplate"
+    />
+
+    <LazyInvitationsRemoveCoverModal
+      :show="showRemoveCover"
+      :event-id="eventId!"
+      @close-modal="showRemoveCover = false"
+      @success="refreshSettings({ force: true })"
     />
   </section>
 </template>
