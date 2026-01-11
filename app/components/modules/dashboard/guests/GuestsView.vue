@@ -182,19 +182,28 @@ const generateInvitationPng = async () => {
     );
 
     const url = `${apiImageUrl}${result.fileUrl}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+    });
+
+    if (!response.ok)
+      throw new Error(
+        `Falha ao descarregar imagem. Status: ${response.status}`,
+      );
+
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
     const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute(
-      'download',
-      `${eventStore.eventInitials}-${props.guest.localId}-convite.png`,
-    );
+    link.href = blobUrl;
+    link.download = `${eventStore.eventInitials}-${props.guest.localId}-convite.png`;
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    toast.success(
-      result.fromCache ? 'Convite obtido' : 'Convite gerado com sucesso!',
-    );
+    window.URL.revokeObjectURL(blobUrl);
   } catch (err) {
     console.error(err);
     toast.error('Ocorreu um erro ao gerar o convite.');
