@@ -28,6 +28,7 @@ const {
 const {
   settings,
   refreshSettings,
+  canExport,
   isRefreshing: isRefreshingSettings,
 } = await useInvitationSettings();
 
@@ -490,14 +491,6 @@ const exportAll = async () => {
     isExporting.value = false;
   }
 };
-
-const canExport = computed(() => {
-  const s = settings.value;
-  if (!s) return false;
-  if (s.status !== 'Ready') return false;
-  if (!s.settingsJson) return false;
-  return true;
-});
 
 const hasCover = computed(() => {
   const s = settings.value;

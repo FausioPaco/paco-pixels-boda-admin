@@ -39,12 +39,20 @@ export const useInvitationSettings = async () => {
     await refresh();
   };
 
+  const canExport = computed(() => {
+    const s = settings.value;
+    if (!s) return false;
+    if (s.status !== 'Ready') return false;
+    if (!s.settingsJson) return false;
+    return true;
+  });
   return {
     settings,
     isIdle: status.value === 'idle',
     isRefreshing: status.value === 'pending',
     isError: status.value === 'error',
     isSuccess: status.value === 'success',
+    canExport,
     refreshSettings,
   };
 };

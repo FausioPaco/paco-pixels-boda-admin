@@ -28,6 +28,7 @@ const isExporting = ref<boolean>(false);
 const isExportingInvitations = ref<boolean>(false);
 
 const toast = useToast();
+const { canExport } = await useInvitationSettings();
 
 const startExport = (exportOptions: ExportQROptions) => {
   textColorExport.value = exportOptions.color;
@@ -124,7 +125,7 @@ const exportInvitations = async () => {
         >
 
         <BaseButton
-          v-if="canManageInvitations && !eventStore.eventModeView"
+          v-if="canManageInvitations && canExport && !eventStore.eventModeView"
           btn-size="sm"
           icon="download"
           :disabled="isExportingInvitations"

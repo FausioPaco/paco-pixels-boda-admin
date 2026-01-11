@@ -100,6 +100,8 @@ export type InvitationDetailsMap = {
 
 // payload para update settings
 export interface EventInvitationSettingsForUpdateInput {
+  coverImage_Url?: string | null | undefined;
+
   wedding?: WeddingInvitationDetails | null | undefined;
   preWedding?: PreWeddingInvitationDetails | null | undefined;
   corporate?: CorporateInvitationDetails | null | undefined;
@@ -123,6 +125,5 @@ export interface InvitationExportAllResult {
 }
 
 export interface InvitationUploadResult {
-  coverImageUrl: string;
-  coverImageExportUrl: string;
+  url: string;
 }
