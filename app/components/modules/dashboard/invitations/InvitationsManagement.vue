@@ -607,6 +607,12 @@ const hasCover = computed(() => {
           >
             Formatos: <b>PNG ou JPG</b> · Tamanho máximo: <b>8MB</b>
           </p>
+
+          <p
+            class="text-grey-400 group-hover:text-primary-700 text-xs font-medium"
+          >
+            Resolução recomendada: <b>1080x1080px</b>
+          </p>
         </div>
       </button>
 

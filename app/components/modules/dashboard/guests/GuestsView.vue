@@ -181,7 +181,7 @@ const generateInvitationPng = async () => {
       false,
     );
 
-    const url = `${apiImageUrl}${result.fileUrl}`;
+    const url = `${apiImageUrl}${result.fileUrl}?t=${new Date().getTime()}`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -374,17 +374,5 @@ onMounted(() => {
       @close-modal="showExportFormatModal = false"
       @export="startExport"
     />
-
-    <!-- Invitation File -->
-    <div
-      class="pointer-events-none fixed left-[-9999px] top-[-9999px] opacity-0"
-    >
-      <component
-        :is="InvitationComponent"
-        ref="qrCodeRef"
-        :guest="guest"
-        :color="textColorExport"
-      />
-    </div>
   </BaseCard>
 </template>
