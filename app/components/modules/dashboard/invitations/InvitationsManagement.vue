@@ -36,6 +36,10 @@ const activeTemplateId = computed(
   () => settings.value?.activeTemplateId ?? null,
 );
 
+const activeTemplate = computed(
+  () => templates.value.find((t) => t.id === activeTemplateId.value) || null,
+);
+
 const eventTypeSlug = computed(
   () => eventStore.eventTypeSlug as InvitationEventTypeSlug | null,
 );
@@ -561,8 +565,10 @@ const hasCover = computed(() => {
 
     <!-- Carregar imagem do convite -->
     <BaseCard
+      v-if="activeTemplateId"
       title="Carregar imagem do convite"
       description="Carregue a imagem (cover) que será utilizada na composição do convite."
+      class="animate-fadeIn"
       outline
     >
       <button
@@ -609,9 +615,15 @@ const hasCover = computed(() => {
           </p>
 
           <p
+            v-if="activeTemplateId"
             class="text-grey-400 group-hover:text-primary-700 text-xs font-medium"
           >
-            Resolução recomendada: <b>1080x1080px</b>
+            Resolução recomendada:
+            <b
+              >{{ activeTemplate?.coverWidth }}x{{
+                activeTemplate?.coverHeight
+              }}px</b
+            >
           </p>
         </div>
       </button>

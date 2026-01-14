@@ -11,6 +11,9 @@ export interface InvitationTemplate {
   background_Url: string;
   thumbnail_Url: string;
 
+  coverWidth: number;
+  coverHeight: number;
+
   showLogo: boolean;
   logo_Url?: string | null | undefined;
 }
