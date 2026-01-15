@@ -15,6 +15,31 @@ const emit = defineEmits<{
   (e: 'closeModal'): void;
   (e: 'useTemplate', templateId: number): void;
 }>();
+
+const resolvedImageUrl = ref<string | null>(null);
+
+watch(
+  () => props.imageUrl,
+  (newUrl) => {
+    resolvedImageUrl.value = newUrl;
+  },
+  { immediate: true },
+);
+
+const handleImageError = () => {
+  if (!resolvedImageUrl.value) return;
+
+  // se já for jpeg, não tenta mais nada
+  if (
+    resolvedImageUrl.value.endsWith('.jpeg') ||
+    resolvedImageUrl.value.endsWith('.jpg')
+  ) {
+    resolvedImageUrl.value = null;
+    return;
+  }
+
+  resolvedImageUrl.value = resolvedImageUrl.value.replace(/\.webp$/i, '.jpeg');
+};
 </script>
 
 <template>
@@ -37,10 +62,11 @@ const emit = defineEmits<{
 
       <div class="bg-grey-50 overflow-hidden rounded-xl border">
         <img
-          v-if="props.imageUrl"
-          :src="props.imageUrl"
+          v-if="resolvedImageUrl"
+          :src="resolvedImageUrl"
           class="block w-full"
           alt="Pré-visualização do template"
+          @error="handleImageError"
         />
         <div v-else class="text-grey-500 p-6 text-sm">
           Nenhuma imagem disponível para pré-visualização.
