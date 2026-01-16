@@ -818,9 +818,10 @@ const hasCover = computed(() => {
           />
 
           <div class="md:col-span-2">
-            <BaseInput
+            <BaseTextArea
               id="invitationNotesDefault"
               v-model="notes"
+              rows="8"
               v-bind="notesAttrs"
               :error-message="errors.notes"
               name="notes"

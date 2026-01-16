@@ -170,6 +170,7 @@ const startExport = (exportOptions: ExportQROptions) => {
   showExportFormatModal.value = false;
 };
 
+const { canExport: canExportInvitation } = await useInvitationSettings();
 const generateInvitationPng = async () => {
   try {
     isGeneratingInvitation.value = true;
@@ -264,6 +265,7 @@ onMounted(() => {
               {{ isExporting ? 'A gerar QR Code...' : 'Gerar QR Code' }}
             </BaseButton>
             <BaseButton
+              v-if="canExportInvitation"
               btn-type="outline-primary"
               btn-size="sm"
               icon="download"
