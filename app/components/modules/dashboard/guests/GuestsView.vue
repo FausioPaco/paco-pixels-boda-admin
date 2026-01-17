@@ -255,7 +255,7 @@ onMounted(() => {
 
             <BaseButton
               v-if="eventStore.eventQRCodeUrl"
-              btn-type="primary"
+              btn-type="outline-primary"
               btn-size="sm"
               icon="download"
               :disabled="isExporting"

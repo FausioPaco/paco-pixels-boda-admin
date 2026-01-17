@@ -116,6 +116,7 @@ const exportInvitations = async () => {
         </BaseButton>
         <BaseButton
           v-if="eventStore.eventQRCodeUrl && !eventStore.eventModeView"
+          btn-type="outline-primary"
           btn-size="sm"
           icon="download"
           :disabled="isExporting"
