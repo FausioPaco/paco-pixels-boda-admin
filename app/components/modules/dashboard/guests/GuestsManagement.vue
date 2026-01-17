@@ -158,7 +158,7 @@ const exportInvitations = async () => {
         :is-active="activeTab === 'QRCODE'"
         class="w-full md:w-1/2"
         @click="activeTab = 'QRCODE'"
-        >QR Code</BaseTabItem
+        >Modelo de QR Codes</BaseTabItem
       >
 
       <BaseTabItem
@@ -171,7 +171,7 @@ const exportInvitations = async () => {
         class="w-full md:w-1/2"
         @click="activeTab = 'INVITATIONS'"
       >
-        Modelo de convite
+        Modelo de Convites
       </BaseTabItem>
     </BaseTab>
 

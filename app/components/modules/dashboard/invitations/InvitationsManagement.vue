@@ -770,9 +770,10 @@ const hasCover = computed(() => {
             placeholder="Ex: Hotel..."
           />
           <div class="md:col-span-2">
-            <BaseInput
+            <BaseTextArea
               id="invitationDescription"
               v-model="description"
+              rows="8"
               v-bind="descriptionAttrs"
               :error-message="errors.description"
               name="description"
