@@ -353,6 +353,18 @@ onMounted(() => {
       />
     </div>
 
+    <!-- Invitation File -->
+    <div
+      class="pointer-events-none fixed left-[-9999px] top-[-9999px] opacity-0"
+    >
+      <component
+        :is="InvitationComponent"
+        ref="qrCodeRef"
+        :guest="guest"
+        :color="textColorExport"
+      />
+    </div>
+
     <!-- Example Invitation -->
     <!-- <component :is="InvitationComponent" ref="qrCodeRef" :guest="guest" /> -->
 
