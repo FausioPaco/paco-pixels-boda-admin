@@ -1,9 +1,9 @@
 <script setup lang="ts">
 interface Props {
   show?: boolean;
-  exportTotal?: number | undefined;
-  exportProcessed?: number | undefined;
-  exportPercent?: number | undefined;
+  exportTotal?: Ref<number | undefined>;
+  exportProcessed?: Ref<number | undefined>;
+  exportPercent?: Ref<number | undefined>;
 }
 
 withDefaults(defineProps<Props>(), {

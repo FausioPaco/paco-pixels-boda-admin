@@ -87,4 +87,14 @@ export const getInvitationService = <T>(
       query: { eventId },
     });
   },
+
+  async startExportAll(
+    eventId: number,
+    force: boolean,
+  ): Promise<{ jobId: string; total: number }> {
+    return $fetch<{ jobId: string; total: number }>(
+      `${INVITATIONS_RESOURCE}/ExportAll/Start/${eventId}?force=${force}`,
+      { method: 'post' },
+    );
+  },
 });

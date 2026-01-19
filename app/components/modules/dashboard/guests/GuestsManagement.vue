@@ -5,6 +5,7 @@ import GuestsQRCode from './GuestsQRCode.vue';
 import InvitationsManagement from '../invitations/InvitationsManagement.vue';
 import { useToast } from 'vue-toastification';
 import { getInvitationService } from '~/services/invitationService';
+import { useExportJob } from '~/composables/useExportJob';
 type GuestTab = 'LIST' | 'QRCODE' | 'INVITATIONS';
 
 const activeTab = ref<GuestTab>('LIST');
@@ -24,20 +25,6 @@ const { clientCode, apiImageUrl } = useRuntimeConfig().public;
 const textColorExport = ref<ExportTextColor>('black');
 
 const showExportFormatModal = ref<boolean>(false);
-const isExporting = ref<boolean>(false);
-const isExportingInvitations = ref<boolean>(false);
-
-const showExportProgressModal = ref(false);
-const exportJobId = ref<string | null>(null);
-const exportTotal = ref(0);
-const exportProcessed = ref(0);
-const exportPercent = computed(() =>
-  exportTotal.value <= 0
-    ? 0
-    : Math.round((exportProcessed.value * 100) / exportTotal.value),
-);
-
-let exportPollTimer: number | null = null;
 
 const toast = useToast();
 const { canExport } = await useInvitationSettings();
@@ -49,147 +36,68 @@ const startExport = (exportOptions: ExportQROptions) => {
   showExportFormatModal.value = false;
 };
 
-// const exportQRCodes = async () => {
-//   try {
-//     isExporting.value = true;
-//     const blob = await eventService.exportQRCards(
-//       eventStore.eventId!,
-//       textColorExport.value,
-//       clientCode,
-//     );
-
-//     const url = window.URL.createObjectURL(blob);
-//     const link = document.createElement('a');
-//     link.href = url;
-
-//     const fileName = `QRCODES_EVENTO_${eventStore.eventInitials}.zip`;
-//     link.setAttribute('download', fileName);
-
-//     document.body.appendChild(link);
-//     link.click();
-//     document.body.removeChild(link);
-
-//     window.URL.revokeObjectURL(url);
-
-//     isExporting.value = false;
-//   } catch (err) {
-//     console.error('Erro ao exportar os QRCodes dos convidados:', err);
-//     toast.error('Ocorreu um erro ao exportar os QR Codes');
-//     isExporting.value = false;
-//   }
-// };
-
-const exportQRCodes = async () => {
-  try {
-    isExporting.value = true;
-
-    // 1) start
-    const start = await eventService.startExportQRCards(
+const qrExport = useExportJob({
+  toast,
+  toastId: `export-qrcodes-${eventStore.eventId}-${textColorExport.value}-${clientCode}`,
+  toastTitle: 'Exportação de QR Codes',
+  start: () =>
+    eventService.startExportQRCards(
       eventStore.eventId!,
       textColorExport.value,
       clientCode,
-    );
+    ),
+  getStatus: (jobId) => eventService.getExportStatus(jobId),
+  onCompleted: async (status) => {
+    const url = `${apiImageUrl}${status.zipUrl}`;
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
 
-    exportJobId.value = start.jobId;
-    exportTotal.value = start.total ?? 0;
-    exportProcessed.value = 0;
-
-    showExportProgressModal.value = true;
-
-    // 2) polling
-    if (exportPollTimer) window.clearInterval(exportPollTimer);
-
-    exportPollTimer = window.setInterval(async () => {
-      if (!exportJobId.value) return;
-
-      const status = await eventService.getExportStatus(exportJobId.value);
-
-      exportTotal.value = status.total ?? exportTotal.value;
-      exportProcessed.value = status.processed ?? exportProcessed.value;
-
-      if (status.status === 'Completed') {
-        window.clearInterval(exportPollTimer!);
-        exportPollTimer = null;
-
-        const url = `${apiImageUrl}${status.zipUrl}`;
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute(
-          'download',
-          `QRCODES_EVENTO_${eventStore.eventInitials}.zip`,
-        );
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        toast.success('QR Codes exportados com sucesso!');
-        showExportProgressModal.value = false;
-        isExporting.value = false;
-      }
-
-      if (status.status === 'Failed') {
-        window.clearInterval(exportPollTimer!);
-        exportPollTimer = null;
-
-        toast.error(status.error || 'Ocorreu um erro ao exportar os QR Codes');
-        showExportProgressModal.value = false;
-        isExporting.value = false;
-      }
-
-      if (status.status === 'Cancelled') {
-        window.clearInterval(exportPollTimer!);
-        exportPollTimer = null;
-
-        toast.info('Exportação cancelada.');
-        showExportProgressModal.value = false;
-        isExporting.value = false;
-      }
-    }, 1200);
-  } catch (err) {
-    window.clearInterval(exportPollTimer!);
-    exportPollTimer = null;
-
-    console.error('Erro ao exportar os QR Codes dos convidados:', err);
-    toast.error('Ocorreu um erro ao exportar os QR Codes');
-    isExporting.value = false;
-    showExportProgressModal.value = false;
-  }
-};
-
-const exportInvitations = async () => {
-  try {
-    isExportingInvitations.value = true;
-
-    const result = await invitationService.exportAll(
-      eventStore.eventId!,
-      false,
-    );
-
-    const url = `${apiImageUrl}${result.zipUrl}`;
     const link = document.createElement('a');
-    link.href = url;
-
-    const fileName = `CONVITES_EVENTO_${eventStore.eventInitials}.zip`;
-    link.setAttribute('download', fileName);
-
-    document.body.appendChild(link);
+    link.href = objectUrl;
+    link.download = `QRCODES_EVENTO_${eventStore.eventInitials}.zip`;
     link.click();
-    document.body.removeChild(link);
 
-    isExportingInvitations.value = false;
-  } catch (err) {
-    console.error('Erro ao exportar convites:', err);
-    toast.error('Ocorreu um erro ao exportar os convites');
-    isExportingInvitations.value = false;
-  }
+    URL.revokeObjectURL(objectUrl);
+  },
+});
+
+const invExport = useExportJob({
+  toast,
+  toastId: `export-invitations-${eventStore.eventId}-${clientCode}`,
+  toastTitle: 'Exportação de convites',
+  start: () => invitationService.startExportAll(eventStore.eventId!, false),
+  getStatus: (jobId) => eventService.getExportStatus(jobId),
+  onCompleted: async (status) => {
+    const url = `${apiImageUrl}${status.zipUrl}`;
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = `CONVITES_EVENTO_${eventStore.eventInitials}.zip`;
+    link.click();
+
+    URL.revokeObjectURL(objectUrl);
+  },
+});
+
+const exportQRCodes = async () => {
+  await qrExport.start();
 };
 
-onBeforeUnmount(() => {
-  if (exportPollTimer) {
-    window.clearInterval(exportPollTimer);
-    exportPollTimer = null;
-  }
+const activeExport = computed(() => {
+  if (qrExport.isRunning.value || qrExport.showProgressModal.value)
+    return qrExport;
+  if (invExport.isRunning.value || invExport.showProgressModal.value)
+    return invExport;
+  return null;
 });
+
+const anyExportRunning = computed(
+  () => qrExport.isRunning.value || invExport.isRunning.value,
+);
 </script>
 <template>
   <BaseCard
@@ -215,21 +123,29 @@ onBeforeUnmount(() => {
           btn-type="outline-primary"
           btn-size="sm"
           icon="download"
-          :disabled="isExporting"
+          :disabled="anyExportRunning"
           class="animate-fadeIn"
           @click="showExportFormatModal = true"
-          >{{ isExporting ? 'A exportar...' : 'Exportar QRCodes' }}</BaseButton
+          >{{
+            qrExport.isRunning
+              ? `A exportar... ${qrExport.percent}%`
+              : 'Exportar QRCodes'
+          }}</BaseButton
         >
 
         <BaseButton
           v-if="canManageInvitations && canExport && !eventStore.eventModeView"
           btn-size="sm"
           icon="download"
-          :disabled="isExportingInvitations"
+          :disabled="anyExportRunning"
           class="animate-fadeIn"
-          @click="exportInvitations"
+          @click="invExport.start()"
         >
-          {{ isExportingInvitations ? 'A exportar...' : 'Exportar convites' }}
+          {{
+            invExport.isRunning
+              ? `A exportar... ${invExport.percent}%`
+              : 'Exportar convites'
+          }}
         </BaseButton>
       </div>
     </template>
@@ -292,11 +208,15 @@ onBeforeUnmount(() => {
     />
 
     <LazyGuestsExportStatusModal
-      :show="showExportProgressModal"
-      :export-total="exportTotal"
-      :export-processed="exportProcessed"
-      :export-percent="exportPercent"
-      @close-modal="showExportProgressModal = false"
+      :show="!!activeExport"
+      :export-total="activeExport?.total"
+      :export-processed="activeExport?.processed"
+      :export-percent="activeExport?.percent"
+      @close-modal="
+        () => {
+          if (activeExport) activeExport.showProgressModal.value = false;
+        }
+      "
     />
   </BaseCard>
 </template>
