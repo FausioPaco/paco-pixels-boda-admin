@@ -27,6 +27,18 @@ const showExportFormatModal = ref<boolean>(false);
 const isExporting = ref<boolean>(false);
 const isExportingInvitations = ref<boolean>(false);
 
+const showExportProgressModal = ref(false);
+const exportJobId = ref<string | null>(null);
+const exportTotal = ref(0);
+const exportProcessed = ref(0);
+const exportPercent = computed(() =>
+  exportTotal.value <= 0
+    ? 0
+    : Math.round((exportProcessed.value * 100) / exportTotal.value),
+);
+
+let exportPollTimer: number | null = null;
+
 const toast = useToast();
 const { canExport } = await useInvitationSettings();
 
@@ -37,33 +49,110 @@ const startExport = (exportOptions: ExportQROptions) => {
   showExportFormatModal.value = false;
 };
 
+// const exportQRCodes = async () => {
+//   try {
+//     isExporting.value = true;
+//     const blob = await eventService.exportQRCards(
+//       eventStore.eventId!,
+//       textColorExport.value,
+//       clientCode,
+//     );
+
+//     const url = window.URL.createObjectURL(blob);
+//     const link = document.createElement('a');
+//     link.href = url;
+
+//     const fileName = `QRCODES_EVENTO_${eventStore.eventInitials}.zip`;
+//     link.setAttribute('download', fileName);
+
+//     document.body.appendChild(link);
+//     link.click();
+//     document.body.removeChild(link);
+
+//     window.URL.revokeObjectURL(url);
+
+//     isExporting.value = false;
+//   } catch (err) {
+//     console.error('Erro ao exportar os QRCodes dos convidados:', err);
+//     toast.error('Ocorreu um erro ao exportar os QR Codes');
+//     isExporting.value = false;
+//   }
+// };
+
 const exportQRCodes = async () => {
   try {
     isExporting.value = true;
-    const blob = await eventService.exportQRCards(
+
+    // 1) start
+    const start = await eventService.startExportQRCards(
       eventStore.eventId!,
       textColorExport.value,
       clientCode,
     );
 
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
+    exportJobId.value = start.jobId;
+    exportTotal.value = start.total ?? 0;
+    exportProcessed.value = 0;
 
-    const fileName = `QRCODES_EVENTO_${eventStore.eventInitials}.zip`;
-    link.setAttribute('download', fileName);
+    showExportProgressModal.value = true;
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // 2) polling
+    if (exportPollTimer) window.clearInterval(exportPollTimer);
 
-    window.URL.revokeObjectURL(url);
+    exportPollTimer = window.setInterval(async () => {
+      if (!exportJobId.value) return;
 
-    isExporting.value = false;
+      const status = await eventService.getExportStatus(exportJobId.value);
+
+      exportTotal.value = status.total ?? exportTotal.value;
+      exportProcessed.value = status.processed ?? exportProcessed.value;
+
+      if (status.status === 'Completed') {
+        window.clearInterval(exportPollTimer!);
+        exportPollTimer = null;
+
+        const url = `${apiImageUrl}${status.zipUrl}`;
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute(
+          'download',
+          `QRCODES_EVENTO_${eventStore.eventInitials}.zip`,
+        );
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast.success('QR Codes exportados com sucesso!');
+        showExportProgressModal.value = false;
+        isExporting.value = false;
+      }
+
+      if (status.status === 'Failed') {
+        window.clearInterval(exportPollTimer!);
+        exportPollTimer = null;
+
+        toast.error(status.error || 'Ocorreu um erro ao exportar os QR Codes');
+        showExportProgressModal.value = false;
+        isExporting.value = false;
+      }
+
+      if (status.status === 'Cancelled') {
+        window.clearInterval(exportPollTimer!);
+        exportPollTimer = null;
+
+        toast.info('Exportação cancelada.');
+        showExportProgressModal.value = false;
+        isExporting.value = false;
+      }
+    }, 1200);
   } catch (err) {
-    console.error('Erro ao exportar os QRCodes dos convidados:', err);
+    window.clearInterval(exportPollTimer!);
+    exportPollTimer = null;
+
+    console.error('Erro ao exportar os QR Codes dos convidados:', err);
     toast.error('Ocorreu um erro ao exportar os QR Codes');
     isExporting.value = false;
+    showExportProgressModal.value = false;
   }
 };
 
@@ -94,6 +183,13 @@ const exportInvitations = async () => {
     isExportingInvitations.value = false;
   }
 };
+
+onBeforeUnmount(() => {
+  if (exportPollTimer) {
+    window.clearInterval(exportPollTimer);
+    exportPollTimer = null;
+  }
+});
 </script>
 <template>
   <BaseCard
@@ -193,6 +289,14 @@ const exportInvitations = async () => {
       :show="showExportFormatModal"
       @close-modal="showExportFormatModal = false"
       @export="startExport"
+    />
+
+    <LazyGuestsExportStatusModal
+      :show="showExportProgressModal"
+      :export-total="exportTotal"
+      :export-processed="exportProcessed"
+      :export-percent="exportPercent"
+      @close-modal="showExportProgressModal = false"
     />
   </BaseCard>
 </template>
