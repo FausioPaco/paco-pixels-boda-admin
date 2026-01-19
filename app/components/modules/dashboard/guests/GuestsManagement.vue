@@ -127,8 +127,8 @@ const anyExportRunning = computed(
           class="animate-fadeIn"
           @click="showExportFormatModal = true"
           >{{
-            qrExport.isRunning
-              ? `A exportar... ${qrExport.percent}%`
+            qrExport.isRunning.value
+              ? `A exportar... ${qrExport.percent.value}%`
               : 'Exportar QRCodes'
           }}</BaseButton
         >
@@ -142,8 +142,8 @@ const anyExportRunning = computed(
           @click="invExport.start()"
         >
           {{
-            invExport.isRunning
-              ? `A exportar... ${invExport.percent}%`
+            invExport.isRunning.value
+              ? `A exportar... ${invExport.percent.value}%`
               : 'Exportar convites'
           }}
         </BaseButton>
@@ -208,10 +208,10 @@ const anyExportRunning = computed(
     />
 
     <LazyGuestsExportStatusModal
-      :show="!!activeExport"
-      :export-total="activeExport?.total"
-      :export-processed="activeExport?.processed"
-      :export-percent="activeExport?.percent"
+      :show="activeExport?.showProgressModal.value"
+      :export-total="activeExport?.total.value"
+      :export-processed="activeExport?.processed.value"
+      :export-percent="activeExport?.percent.value"
       @close-modal="
         () => {
           if (activeExport) activeExport.showProgressModal.value = false;
