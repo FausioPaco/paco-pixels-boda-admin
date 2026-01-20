@@ -244,7 +244,6 @@ onMounted(() => {
             btn-size="md"
             icon="download"
             :disabled="isExporting"
-            :loading="isExporting"
             @click="showExportFormatModal = true"
             >{{
               isExporting ? 'A exportar, aguarde...' : 'Exportar'

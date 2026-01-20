@@ -2,21 +2,32 @@
 import { getEventService } from '~/services/eventService';
 import GuestList from './GuestsList.vue';
 import GuestsQRCode from './GuestsQRCode.vue';
+import InvitationsManagement from '../invitations/InvitationsManagement.vue';
 import { useToast } from 'vue-toastification';
-type GuestTab = 'LIST' | 'QRCODE';
+import { getInvitationService } from '~/services/invitationService';
+import { useExportJob } from '~/composables/useExportJob';
+type GuestTab = 'LIST' | 'QRCODE' | 'INVITATIONS';
 
 const activeTab = ref<GuestTab>('LIST');
 const eventStore = useEventStore();
 
+const { isAdministrator, isSuperAdministrator } = useAuthStore();
+const canManageInvitations = computed(
+  () => isAdministrator || isSuperAdministrator,
+);
+
 const nuxtApp = useNuxtApp();
 const eventService = getEventService(nuxtApp.$api);
-const { clientCode } = useRuntimeConfig().public;
+const invitationService = getInvitationService(nuxtApp.$api);
+
+const { clientCode, apiImageUrl } = useRuntimeConfig().public;
 
 const textColorExport = ref<ExportTextColor>('black');
 
 const showExportFormatModal = ref<boolean>(false);
-const isExporting = ref<boolean>(false);
+
 const toast = useToast();
+const { canExport } = await useInvitationSettings();
 
 const startExport = (exportOptions: ExportQROptions) => {
   textColorExport.value = exportOptions.color;
@@ -25,35 +36,68 @@ const startExport = (exportOptions: ExportQROptions) => {
   showExportFormatModal.value = false;
 };
 
-const exportQRCodes = async () => {
-  try {
-    isExporting.value = true;
-    const blob = await eventService.exportQRCards(
+const qrExport = useExportJob({
+  toast,
+  toastId: `export-qrcodes-${eventStore.eventId}-${textColorExport.value}-${clientCode}`,
+  toastTitle: 'Exportação de QR Codes',
+  start: () =>
+    eventService.startExportQRCards(
       eventStore.eventId!,
       textColorExport.value,
       clientCode,
-    );
+    ),
+  getStatus: (jobId) => eventService.getExportStatus(jobId),
+  onCompleted: async (status) => {
+    const url = `${apiImageUrl}${status.zipUrl}`;
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
 
-    const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = url;
-
-    const fileName = `QRCODES_EVENTO_${eventStore.eventInitials}.zip`;
-    link.setAttribute('download', fileName);
-
-    document.body.appendChild(link);
+    link.href = objectUrl;
+    link.download = `QRCODES_EVENTO_${eventStore.eventInitials}.zip`;
     link.click();
-    document.body.removeChild(link);
 
-    window.URL.revokeObjectURL(url);
+    URL.revokeObjectURL(objectUrl);
+  },
+});
 
-    isExporting.value = false;
-  } catch (err) {
-    console.error('Erro ao exportar os QRCodes dos convidados:', err);
-    toast.error('Ocorreu um erro ao exportar os QR Codes');
-    isExporting.value = false;
-  }
+const invExport = useExportJob({
+  toast,
+  toastId: `export-invitations-${eventStore.eventId}-${clientCode}`,
+  toastTitle: 'Exportação de convites',
+  start: () => invitationService.startExportAll(eventStore.eventId!, false),
+  getStatus: (jobId) => eventService.getExportStatus(jobId),
+  onCompleted: async (status) => {
+    const url = `${apiImageUrl}${status.zipUrl}`;
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = `CONVITES_EVENTO_${eventStore.eventInitials}.zip`;
+    link.click();
+
+    URL.revokeObjectURL(objectUrl);
+  },
+});
+
+const exportQRCodes = async () => {
+  await qrExport.start();
 };
+
+const activeExport = computed(() => {
+  if (qrExport.isRunning.value || qrExport.showProgressModal.value)
+    return qrExport;
+  if (invExport.isRunning.value || invExport.showProgressModal.value)
+    return invExport;
+  return null;
+});
+
+const anyExportRunning = computed(
+  () => qrExport.isRunning.value || invExport.isRunning.value,
+);
 </script>
 <template>
   <BaseCard
@@ -76,13 +120,33 @@ const exportQRCodes = async () => {
         </BaseButton>
         <BaseButton
           v-if="eventStore.eventQRCodeUrl && !eventStore.eventModeView"
+          btn-type="outline-primary"
           btn-size="sm"
           icon="download"
-          :disabled="isExporting"
+          :disabled="anyExportRunning"
           class="animate-fadeIn"
           @click="showExportFormatModal = true"
-          >{{ isExporting ? 'A exportar...' : 'Exportar QRCodes' }}</BaseButton
+          >{{
+            qrExport.isRunning.value
+              ? `A exportar... ${qrExport.percent.value}%`
+              : 'Exportar QRCodes'
+          }}</BaseButton
         >
+
+        <BaseButton
+          v-if="canManageInvitations && canExport && !eventStore.eventModeView"
+          btn-size="sm"
+          icon="download"
+          :disabled="anyExportRunning"
+          class="animate-fadeIn"
+          @click="invExport.start()"
+        >
+          {{
+            invExport.isRunning.value
+              ? `A exportar... ${invExport.percent.value}%`
+              : 'Exportar convites'
+          }}
+        </BaseButton>
       </div>
     </template>
 
@@ -107,21 +171,52 @@ const exportQRCodes = async () => {
         :is-active="activeTab === 'QRCODE'"
         class="w-full md:w-1/2"
         @click="activeTab = 'QRCODE'"
-        >QR Code</BaseTabItem
+        >Modelo de QR Codes</BaseTabItem
       >
+
+      <BaseTabItem
+        v-if="canManageInvitations"
+        id="invitations"
+        icon="invitation-model"
+        :tab-position="3"
+        :total-tabs="3"
+        :is-active="activeTab === 'INVITATIONS'"
+        class="w-full md:w-1/2"
+        @click="activeTab = 'INVITATIONS'"
+      >
+        Modelo de Convites
+      </BaseTabItem>
     </BaseTab>
 
     <!-- Content -->
     <transition name="fade" mode="out-in">
       <component
-        :is="activeTab === 'LIST' ? GuestList : GuestsQRCode"
-      ></component>
+        :is="
+          activeTab === 'LIST'
+            ? GuestList
+            : activeTab === 'QRCODE'
+              ? GuestsQRCode
+              : InvitationsManagement
+        "
+      />
     </transition>
 
     <LazyGuestsExportAllQRCodesModal
       :show="showExportFormatModal"
       @close-modal="showExportFormatModal = false"
       @export="startExport"
+    />
+
+    <LazyGuestsExportStatusModal
+      :show="activeExport?.showProgressModal.value"
+      :export-total="activeExport?.total.value"
+      :export-processed="activeExport?.processed.value"
+      :export-percent="activeExport?.percent.value"
+      @close-modal="
+        () => {
+          if (activeExport) activeExport.showProgressModal.value = false;
+        }
+      "
     />
   </BaseCard>
 </template>

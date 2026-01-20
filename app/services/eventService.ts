@@ -68,4 +68,34 @@ export const getEventService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
       `${RESOURCE}/ExportQrCards/${eventId}?color=${color}&clientCode=${clientCode}`,
     );
   },
+
+  async startExportQRCards(
+    eventId: number,
+    color: ExportTextColor,
+    clientCode: string,
+  ): Promise<{ jobId: string; total: number }> {
+    return $fetch<{ jobId: string; total: number }>(
+      `${RESOURCE}/ExportQrCards/Start/${eventId}?color=${color}&clientCode=${clientCode}`,
+      { method: 'post' },
+    );
+  },
+
+  async getExportStatus(jobId: string): Promise<{
+    jobId: string;
+    type: string;
+    status: string;
+    total: number;
+    processed: number;
+    percent: number;
+    zipUrl?: string | null;
+    error?: string | null;
+  }> {
+    return $fetch(`${RESOURCE}/Exports/Status/${jobId}`);
+  },
+
+  async downloadExportQrCards(jobId: string): Promise<{ zipUrl: string }> {
+    return $fetch<{ zipUrl: string }>(
+      `${RESOURCE}/ExportQrCards/Download/${jobId}`,
+    );
+  },
 });

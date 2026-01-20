@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useToast } from 'vue-toastification';
 import { getDeskService } from '~/services/deskService';
+import { getInvitationService } from '~/services/invitationService';
 import { generateSlug } from '~/utils/stringUtils';
 
 interface GuestViewProps {
@@ -24,9 +25,13 @@ const isLoadingDesk = ref(false);
 const showForExport = ref(false);
 const qrCodeRef = ref();
 const isExporting = ref(false);
+const isGeneratingInvitation = ref(false);
 const textColorExport = ref<ExportTextColor>('black');
 
-const deskService = getDeskService(useNuxtApp().$api);
+const nuxtApp = useNuxtApp();
+const deskService = getDeskService(nuxtApp.$api);
+const invitationService = getInvitationService(nuxtApp.$api);
+const { apiImageUrl } = useRuntimeConfig().public;
 
 async function fetchDeskById(id: number) {
   if (!id) return;
@@ -165,6 +170,49 @@ const startExport = (exportOptions: ExportQROptions) => {
   showExportFormatModal.value = false;
 };
 
+const { canExport: canExportInvitation } = await useInvitationSettings();
+const generateInvitationPng = async () => {
+  try {
+    isGeneratingInvitation.value = true;
+
+    const eventId = eventStore.ensureSelected();
+    const result = await invitationService.renderGuest(
+      eventId,
+      props.guest.id,
+      false,
+    );
+
+    const url = `${apiImageUrl}${result.fileUrl}?t=${new Date().getTime()}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+    });
+
+    if (!response.ok)
+      throw new Error(
+        `Falha ao descarregar imagem. Status: ${response.status}`,
+      );
+
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = `${eventStore.eventInitials}-${props.guest.localId}-convite.png`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    console.error(err);
+    toast.error('Ocorreu um erro ao gerar o convite.');
+  } finally {
+    isGeneratingInvitation.value = false;
+  }
+};
+
 onMounted(() => {
   const componentName = siteConfig.qrCodeComponent;
 
@@ -204,9 +252,10 @@ onMounted(() => {
             >
               Copiar Link
             </BaseButton> -->
+
             <BaseButton
               v-if="eventStore.eventQRCodeUrl"
-              btn-type="primary"
+              btn-type="outline-primary"
               btn-size="sm"
               icon="download"
               :disabled="isExporting"
@@ -214,6 +263,18 @@ onMounted(() => {
               @click="showExportFormatModal = true"
             >
               {{ isExporting ? 'A gerar QR Code...' : 'Gerar QR Code' }}
+            </BaseButton>
+            <BaseButton
+              v-if="canExportInvitation"
+              btn-type="outline-primary"
+              btn-size="sm"
+              icon="download"
+              :disabled="isGeneratingInvitation"
+              @click="generateInvitationPng"
+            >
+              {{
+                isGeneratingInvitation ? 'A gerar convite...' : 'Gerar Convite'
+              }}
             </BaseButton>
           </div>
         </div>
@@ -292,6 +353,18 @@ onMounted(() => {
       />
     </div>
 
+    <!-- Invitation File -->
+    <div
+      class="pointer-events-none fixed left-[-9999px] top-[-9999px] opacity-0"
+    >
+      <component
+        :is="InvitationComponent"
+        ref="qrCodeRef"
+        :guest="guest"
+        :color="textColorExport"
+      />
+    </div>
+
     <!-- Example Invitation -->
     <!-- <component :is="InvitationComponent" ref="qrCodeRef" :guest="guest" /> -->
 
@@ -315,17 +388,5 @@ onMounted(() => {
       @close-modal="showExportFormatModal = false"
       @export="startExport"
     />
-
-    <!-- Invitation File -->
-    <div
-      class="pointer-events-none fixed left-[-9999px] top-[-9999px] opacity-0"
-    >
-      <component
-        :is="InvitationComponent"
-        ref="qrCodeRef"
-        :guest="guest"
-        :color="textColorExport"
-      />
-    </div>
   </BaseCard>
 </template>
