@@ -51,11 +51,7 @@ onMounted(async () => {
         class="flex flex-col items-center gap-2 py-4"
       >
         <small class="text-white">Em parceria exclusiva com</small>
-        <NuxtLink
-          href="https://boda.pacopixels.co.mz/"
-          target="_blank"
-          external
-        >
+        <NuxtLink href="https://boda.co.mz/" target="_blank" external>
           <NuxtImg
             :src="siteConfig.bodaPartnerLogo"
             width="196"
