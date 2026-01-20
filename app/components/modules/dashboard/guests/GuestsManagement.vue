@@ -48,17 +48,18 @@ const qrExport = useExportJob({
     ),
   getStatus: (jobId) => eventService.getExportStatus(jobId),
   onCompleted: async (status) => {
-    const url = `${apiImageUrl}${status.zipUrl}`;
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
+    if (!status.zipUrl) return;
+
+    const url = status.zipUrl.startsWith('http')
+      ? status.zipUrl
+      : `${apiImageUrl}${status.zipUrl}`;
 
     const link = document.createElement('a');
-    link.href = objectUrl;
+    link.href = url;
     link.download = `QRCODES_EVENTO_${eventStore.eventInitials}.zip`;
+    document.body.appendChild(link);
     link.click();
-
-    URL.revokeObjectURL(objectUrl);
+    link.remove();
   },
 });
 
@@ -69,17 +70,23 @@ const invExport = useExportJob({
   start: () => invitationService.startExportAll(eventStore.eventId!, false),
   getStatus: (jobId) => eventService.getExportStatus(jobId),
   onCompleted: async (status) => {
-    const url = `${apiImageUrl}${status.zipUrl}`;
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
+    if (!status?.zipUrl) {
+      console.warn('[Invites Export] zipUrl inexistente', status);
+      return;
+    }
+
+    const url = status.zipUrl.startsWith('http')
+      ? status.zipUrl
+      : `${apiImageUrl}${status.zipUrl}`;
 
     const link = document.createElement('a');
-    link.href = objectUrl;
+    link.href = url;
     link.download = `CONVITES_EVENTO_${eventStore.eventInitials}.zip`;
-    link.click();
+    link.rel = 'noopener';
 
-    URL.revokeObjectURL(objectUrl);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   },
 });
 
