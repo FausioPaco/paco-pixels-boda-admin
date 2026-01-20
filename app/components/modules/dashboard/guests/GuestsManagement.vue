@@ -54,12 +54,7 @@ const qrExport = useExportJob({
       ? status.zipUrl
       : `${apiImageUrl}${status.zipUrl}`;
 
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `QRCODES_EVENTO_${eventStore.eventInitials}.zip`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    window.location.assign(url);
   },
 });
 
@@ -79,14 +74,7 @@ const invExport = useExportJob({
       ? status.zipUrl
       : `${apiImageUrl}${status.zipUrl}`;
 
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `CONVITES_EVENTO_${eventStore.eventInitials}.zip`;
-    link.rel = 'noopener';
-
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    window.location.assign(url);
   },
 });
 
