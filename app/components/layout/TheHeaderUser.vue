@@ -109,10 +109,10 @@ const openLink = (url: string) => {
           <li
             v-if="path.includes('/admin')"
             class="hover:bg-primary-100 group cursor-pointer p-2 transition-colors duration-300"
-            @click.prevent="openLink('https://convites.boda.co.mz/')"
+            @click.prevent="openLink('https://convitesmariee.boda.co.mz/')"
           >
             <NuxtLink
-              to="https://convites.boda.co.mz/"
+              to="https://convitesmariee.boda.co.mz/"
               class="group-hover:text-primary-500 relative flex items-center space-x-2 text-sm no-underline transition-colors duration-300"
               external
             >
