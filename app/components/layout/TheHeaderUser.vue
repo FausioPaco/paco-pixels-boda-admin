@@ -25,6 +25,14 @@ const hasProfileImage = computed(() => {
 
   return !!store.user.profileImageUrl && store.user.profileImageUrl !== '';
 });
+
+const openLink = (url: string) => {
+  if (url.startsWith('http')) {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  } else {
+    router.push(url);
+  }
+};
 </script>
 <template>
   <div class="relative z-50 block">
@@ -97,6 +105,27 @@ const hasProfileImage = computed(() => {
               >
             </NuxtLink>
           </li>
+
+          <li
+            v-if="path.includes('/admin')"
+            class="hover:bg-primary-100 group cursor-pointer p-2 transition-colors duration-300"
+            @click.prevent="openLink('https://convites.boda.co.mz/')"
+          >
+            <NuxtLink
+              to="https://convites.boda.co.mz/"
+              class="group-hover:text-primary-500 relative flex items-center space-x-2 text-sm no-underline transition-colors duration-300"
+              external
+            >
+              <icon-digital-invitation
+                :font-controlled="false"
+                class="text-grey-600 group-hover:text-primary-500 h-4 w-4"
+              ></icon-digital-invitation
+              ><span class="text-grey-600 group-hover:text-primary-500"
+                >Convites Digitais</span
+              >
+            </NuxtLink>
+          </li>
+
           <li
             class="hover:bg-primary-100 group cursor-pointer p-2 transition-colors duration-300"
             @click.prevent="logout()"
