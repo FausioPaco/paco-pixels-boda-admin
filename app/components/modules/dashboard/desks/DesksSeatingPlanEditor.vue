@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { Canvg } from 'canvg';
+import jsPDF from 'jspdf';
+
 type Props = {
   eventId: number;
   desks: Desk[];
@@ -202,6 +205,119 @@ async function setCanvasPreset(preset: 'small' | 'medium' | 'large') {
 
   await updateCanvas(planId, next);
 }
+
+function getSvgString(svgEl: SVGSVGElement) {
+  // garante xmlns
+  if (!svgEl.getAttribute('xmlns')) {
+    svgEl.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  }
+
+  // se usares xlink em algum momento:
+  if (!svgEl.getAttribute('xmlns:xlink')) {
+    svgEl.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+  }
+
+  return new XMLSerializer().serializeToString(svgEl);
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function exportSvg(filename = 'seating-plan.svg') {
+  if (!import.meta.client) return;
+  const svg = svgRef.value;
+  if (!svg) return;
+
+  const svgString = getSvgString(svg);
+  const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+  downloadBlob(blob, filename);
+}
+
+async function svgToPngBlob(
+  scale = 2,
+): Promise<{ blob: Blob; width: number; height: number } | null> {
+  if (!import.meta.client) return null;
+  const svg = svgRef.value;
+  if (!svg) return null;
+
+  const svgString = getSvgString(svg);
+
+  // dimensões do SVG
+  const width =
+    Number(svg.getAttribute('width')) || svg.viewBox.baseVal.width || 1600;
+  const height =
+    Number(svg.getAttribute('height')) || svg.viewBox.baseVal.height || 900;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(width * scale);
+  canvas.height = Math.round(height * scale);
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  // render SVG -> canvas
+  const v = Canvg.fromString(ctx, svgString, {
+    ignoreAnimation: true,
+    ignoreMouse: true,
+  });
+  // canvg desenha no tamanho do canvas
+  await v.render();
+
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob((b) => resolve(b), 'image/png'),
+  );
+  if (!blob) return null;
+
+  return { blob, width, height };
+}
+
+async function exportPng(filename = 'seating-plan.png', scale = 2) {
+  const res = await svgToPngBlob(scale);
+  if (!res) return;
+  downloadBlob(res.blob, filename);
+}
+
+async function exportPdf(filename = 'seating-plan.pdf', scale = 2) {
+  const res = await svgToPngBlob(scale);
+  if (!res) return;
+
+  // A4 landscape (mm)
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+
+  // converter blob -> dataURL
+  const dataUrl = await new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.readAsDataURL(res.blob);
+  });
+
+  // manter aspect ratio e encaixar na página
+  const imgW = pageW;
+  const imgH = (res.height / res.width) * imgW;
+
+  let drawW = imgW;
+  let drawH = imgH;
+
+  if (drawH > pageH) {
+    drawH = pageH;
+    drawW = (res.width / res.height) * drawH;
+  }
+
+  const x = (pageW - drawW) / 2;
+  const y = (pageH - drawH) / 2;
+
+  pdf.addImage(dataUrl, 'PNG', x, y, drawW, drawH);
+  pdf.save(filename);
+}
 </script>
 
 <template>
@@ -275,6 +391,26 @@ async function setCanvasPreset(preset: 'small' | 'medium' | 'large') {
             @click="setCanvasPreset('large')"
           >
             Canvas L
+          </button>
+        </div>
+        <div class="ml-auto flex gap-2">
+          <button
+            class="rounded-lg border px-3 py-1 text-sm"
+            @click="exportSvg()"
+          >
+            Exportar SVG
+          </button>
+          <button
+            class="rounded-lg border px-3 py-1 text-sm"
+            @click="exportPng()"
+          >
+            Exportar PNG
+          </button>
+          <button
+            class="rounded-lg border px-3 py-1 text-sm"
+            @click="exportPdf()"
+          >
+            Exportar PDF
           </button>
         </div>
       </div>
