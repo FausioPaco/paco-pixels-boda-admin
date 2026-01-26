@@ -23,6 +23,7 @@ const {
 
 const isClient = computed(() => import.meta.client);
 const isMobile = ref(false);
+const planId = computed(() => seatingPlan.value?.id ?? null);
 
 onMounted(() => {
   const mq = window.matchMedia('(max-width: 1024px)');
@@ -220,6 +221,7 @@ async function setCanvasPreset(preset: 'small' | 'medium' | 'large') {
 type ActionBtn = {
   key: string;
   label: string;
+  name: string;
   icon: string;
   onClick: () => void | Promise<void>;
   disabled?: ComputedRef<boolean>;
@@ -230,14 +232,16 @@ const isDesktopOnlyDisabled = computed(() => isMobile.value);
 const quickActions: ActionBtn[] = [
   {
     key: 'stage',
-    label: 'Adicionar palco',
+    label: '+ Palco',
+    name: 'Palco',
     icon: 'stage',
     onClick: () => quickAdd('Palco'),
     disabled: isDesktopOnlyDisabled,
   },
   {
     key: 'dj',
-    label: 'Adicionar DJ',
+    label: '+ DJ',
+    name: 'DJ',
     icon: 'dj',
     onClick: () => quickAdd('DJ'),
     disabled: isDesktopOnlyDisabled,
@@ -245,6 +249,7 @@ const quickActions: ActionBtn[] = [
   {
     key: 'dance',
     label: '+ Pista',
+    name: 'Pista',
     icon: 'dance-floor',
     onClick: () => quickAdd('Pista'),
     disabled: isDesktopOnlyDisabled,
@@ -252,6 +257,7 @@ const quickActions: ActionBtn[] = [
   {
     key: 'buffet',
     label: '+ Buffet',
+    name: 'Buffet',
     icon: 'buffet',
     onClick: () => quickAdd('Buffet'),
     disabled: isDesktopOnlyDisabled,
@@ -259,16 +265,23 @@ const quickActions: ActionBtn[] = [
   {
     key: 'entry',
     label: '+ Entrada',
+    name: 'Entrada',
     icon: 'entrance',
     onClick: () => quickAdd('Entrada'),
     disabled: isDesktopOnlyDisabled,
   },
 ];
 
+const getQuickActionByLabel = (name: string) => {
+  const action = quickActions.find((a) => a.name === name);
+  return action;
+};
+
 const canvasPresets: ActionBtn[] = [
   {
     key: 'small',
     label: 'Sala pequena',
+    name: 'Sala pequena',
     icon: 'small-room',
     onClick: () => setCanvasPreset('small'),
     disabled: isDesktopOnlyDisabled,
@@ -276,6 +289,7 @@ const canvasPresets: ActionBtn[] = [
   {
     key: 'medium',
     label: 'Sala média',
+    name: 'Sala média',
     icon: 'medium-room',
     onClick: () => setCanvasPreset('medium'),
     disabled: isDesktopOnlyDisabled,
@@ -283,6 +297,7 @@ const canvasPresets: ActionBtn[] = [
   {
     key: 'large',
     label: 'Sala grande',
+    name: 'Sala grande',
     icon: 'large-room',
     onClick: () => setCanvasPreset('large'),
     disabled: isDesktopOnlyDisabled,
@@ -293,12 +308,14 @@ const exportActions: ActionBtn[] = [
   {
     key: 'png',
     label: 'Exportar PNG',
+    name: 'Exportar PNG',
     icon: 'download',
     onClick: () => exportPng(),
   },
   {
     key: 'pdf',
     label: 'Exportar PDF',
+    name: 'Exportar PDF',
     icon: 'download',
     onClick: () => exportPdf(),
   },
@@ -479,7 +496,11 @@ async function exportPdf(
                 :title="e.label"
                 @click="e.onClick"
               >
-                <Icon :name="e.icon" class="h-4 w-4" />
+                <component
+                  :is="`icon-${e.icon}`"
+                  :font-controlled="false"
+                  class="h-4 w-4"
+                />
                 <span class="whitespace-nowrap">{{ e.label }}</span>
               </button>
             </div>
@@ -528,8 +549,9 @@ async function exportPdf(
                 :transform="`translate(${item.x} ${item.y}) rotate(${item.rotation})`"
                 style="cursor: grab"
                 @pointerdown="(e) => onItemPointerDown(e, item.id)"
-                @dblclick="() => deleteItem(seatingPlan!.id, item.id)"
+                @dblclick="() => planId && deleteItem(planId, item.id)"
               >
+                <!-- container -->
                 <rect
                   x="0"
                   y="0"
@@ -539,11 +561,27 @@ async function exportPdf(
                   fill="rgba(0,0,0,0.06)"
                   stroke="rgba(0,0,0,0.25)"
                 />
-                <text x="10" y="22" font-size="14" fill="rgba(0,0,0,0.75)">
+
+                <!-- icon -->
+                <component
+                  :is="`icon-${getQuickActionByLabel(item.type)?.icon || 'item'}`"
+                  :font-controlled="false"
+                  x="68"
+                  y="16"
+                  width="24"
+                  height="24"
+                  class="text-grey-600"
+                  fill="rgba(0,0,0,0.45)"
+                />
+
+                <!-- label -->
+                <text x="70" y="60" font-size="14" fill="rgba(0,0,0,0.75)">
                   {{ item.label || item.type }}
                 </text>
-                <text x="10" y="40" font-size="11" fill="rgba(0,0,0,0.45)">
-                  (duplo clique para remover)
+
+                <!-- helper -->
+                <text x="20" y="88" font-size="11" fill="rgba(0,0,0,0.45)">
+                  duplo clique para remover
                 </text>
               </g>
             </g>
