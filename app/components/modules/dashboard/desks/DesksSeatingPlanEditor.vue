@@ -183,11 +183,11 @@ async function quickAdd(type: SeatingPlanItemType) {
 
   const payload: UpsertSeatingPlanItem = {
     type,
-    label: type === 'stage' ? 'Palco' : type === 'dj' ? 'DJ' : null,
+    label: type,
     x: 80,
     y: 80,
     rotation: 0,
-    width: type === 'stage' ? 260 : 180,
+    width: type === 'Palco' ? 260 : 180,
     height: 120,
     zIndex: 5,
     locked: false,
@@ -215,6 +215,95 @@ async function setCanvasPreset(preset: 'small' | 'medium' | 'large') {
   await updateCanvas(seatingPlan.value.id, next);
 }
 
+// ---- buttons management
+
+type ActionBtn = {
+  key: string;
+  label: string;
+  icon: string;
+  onClick: () => void | Promise<void>;
+  disabled?: ComputedRef<boolean>;
+};
+
+const isDesktopOnlyDisabled = computed(() => isMobile.value);
+
+const quickActions: ActionBtn[] = [
+  {
+    key: 'stage',
+    label: 'Adicionar palco',
+    icon: 'stage',
+    onClick: () => quickAdd('Palco'),
+    disabled: isDesktopOnlyDisabled,
+  },
+  {
+    key: 'dj',
+    label: 'Adicionar DJ',
+    icon: 'dj',
+    onClick: () => quickAdd('DJ'),
+    disabled: isDesktopOnlyDisabled,
+  },
+  {
+    key: 'dance',
+    label: '+ Pista',
+    icon: 'dance-floor',
+    onClick: () => quickAdd('Pista'),
+    disabled: isDesktopOnlyDisabled,
+  },
+  {
+    key: 'buffet',
+    label: '+ Buffet',
+    icon: 'buffet',
+    onClick: () => quickAdd('Buffet'),
+    disabled: isDesktopOnlyDisabled,
+  },
+  {
+    key: 'entry',
+    label: '+ Entrada',
+    icon: 'entrance',
+    onClick: () => quickAdd('Entrada'),
+    disabled: isDesktopOnlyDisabled,
+  },
+];
+
+const canvasPresets: ActionBtn[] = [
+  {
+    key: 'small',
+    label: 'Sala pequena',
+    icon: 'small-room',
+    onClick: () => setCanvasPreset('small'),
+    disabled: isDesktopOnlyDisabled,
+  },
+  {
+    key: 'medium',
+    label: 'Sala média',
+    icon: 'medium-room',
+    onClick: () => setCanvasPreset('medium'),
+    disabled: isDesktopOnlyDisabled,
+  },
+  {
+    key: 'large',
+    label: 'Sala grande',
+    icon: 'large-room',
+    onClick: () => setCanvasPreset('large'),
+    disabled: isDesktopOnlyDisabled,
+  },
+];
+
+const exportActions: ActionBtn[] = [
+  {
+    key: 'png',
+    label: 'Exportar PNG',
+    icon: 'download',
+    onClick: () => exportPng(),
+  },
+  {
+    key: 'pdf',
+    label: 'Exportar PDF',
+    icon: 'download',
+    onClick: () => exportPdf(),
+  },
+];
+
 // ------- export helpers
 
 function getSvgString(svgEl: SVGSVGElement) {
@@ -232,16 +321,6 @@ function downloadBlob(blob: Blob, filename: string) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
-}
-
-async function exportSvg(filename = `seating-plan-${props.eventId}.svg`) {
-  if (!import.meta.client) return;
-  const svg = svgRef.value;
-  if (!svg) return;
-
-  const svgString = getSvgString(svg);
-  const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-  downloadBlob(blob, filename);
 }
 
 async function svgToPngBlob(
@@ -339,196 +418,182 @@ async function exportPdf(
     </BaseSearchNotFound>
 
     <div v-else>
-      <div
+      <BaseAlert
         v-if="isClient && isMobile"
-        class="border-grey-200 rounded-xl border bg-white p-4"
-      >
-        <div class="text-grey-700 text-sm">
-          Este editor está optimizado para desktop. No telemóvel vamos apenas
-          permitir visualizar e exportar.
-        </div>
-      </div>
+        type="informative"
+        class="my-6"
+        message="Este editor está optimizado para desktop. No telemóvel vamos apenas
+          permitir visualizar e exportar."
+        show
+      />
 
-      <div class="mb-3 flex flex-wrap items-center gap-2">
-        <button
-          class="rounded-lg border px-3 py-1 text-sm"
-          @click="quickAdd('stage')"
-        >
-          + Palco
-        </button>
-        <button
-          class="rounded-lg border px-3 py-1 text-sm"
-          @click="quickAdd('dj')"
-        >
-          + DJ
-        </button>
-        <button
-          class="rounded-lg border px-3 py-1 text-sm"
-          @click="quickAdd('dancefloor')"
-        >
-          + Pista
-        </button>
-        <button
-          class="rounded-lg border px-3 py-1 text-sm"
-          @click="quickAdd('buffet')"
-        >
-          + Buffet
-        </button>
-        <button
-          class="rounded-lg border px-3 py-1 text-sm"
-          @click="quickAdd('entrance')"
-        >
-          + Entrada
-        </button>
-
-        <div class="ml-auto flex gap-2">
-          <button
-            class="rounded-lg border px-3 py-1 text-sm"
-            @click="setCanvasPreset('small')"
-          >
-            Canvas S
-          </button>
-          <button
-            class="rounded-lg border px-3 py-1 text-sm"
-            @click="setCanvasPreset('medium')"
-          >
-            Canvas M
-          </button>
-          <button
-            class="rounded-lg border px-3 py-1 text-sm"
-            @click="setCanvasPreset('large')"
-          >
-            Canvas L
-          </button>
-        </div>
-        <div class="ml-auto flex gap-2">
-          <button
-            class="rounded-lg border px-3 py-1 text-sm"
-            @click="exportSvg()"
-          >
-            Exportar SVG
-          </button>
-          <button
-            class="rounded-lg border px-3 py-1 text-sm"
-            @click="exportPng()"
-          >
-            Exportar PNG
-          </button>
-          <button
-            class="rounded-lg border px-3 py-1 text-sm"
-            @click="exportPdf()"
-          >
-            Exportar PDF
-          </button>
-        </div>
-      </div>
-
-      <div class="w-full overflow-auto rounded-2xl border bg-white">
-        <svg
-          ref="svgRef"
-          class="block"
-          :width="seatingPlan!.canvasWidth"
-          :height="seatingPlan!.canvasHeight"
-          :viewBox="`0 0 ${seatingPlan!.canvasWidth} ${seatingPlan!.canvasHeight}`"
-          @pointermove="onPointerMove"
-          @pointerup="onPointerUp"
-          @pointercancel="onPointerUp"
-        >
-          <!-- background grid super leve -->
-          <defs>
-            <pattern
-              id="grid"
-              width="40"
-              height="40"
-              patternUnits="userSpaceOnUse"
+      <div v-else class="my-6 animate-fadeIn">
+        <!-- Main Actions -->
+        <div class="mb-3 flex flex-wrap items-center gap-2">
+          <!-- Quick add -->
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="a in quickActions"
+              :key="a.key"
+              class="inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="a.disabled?.value"
+              :title="a.label"
+              @click="a.onClick"
             >
-              <path
-                d="M 40 0 L 0 0 0 40"
-                fill="none"
-                stroke="rgba(0,0,0,0.06)"
-                stroke-width="1"
+              <component
+                :is="`icon-${a.icon}`"
+                :font-controlled="false"
+                class="h-4 w-4"
               />
-            </pattern>
-          </defs>
-          <rect
-            x="0"
-            y="0"
+              <span class="whitespace-nowrap">{{ a.label }}</span>
+            </button>
+          </div>
+
+          <!-- Right side -->
+          <div class="ml-auto flex flex-wrap items-center gap-2">
+            <!-- Canvas presets -->
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="p in canvasPresets"
+                :key="p.key"
+                class="inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="p.disabled?.value"
+                :title="p.label"
+                @click="p.onClick"
+              >
+                <component
+                  :is="`icon-${p.icon}`"
+                  :font-controlled="false"
+                  class="h-4 w-4"
+                />
+                <span class="whitespace-nowrap">{{ p.label }}</span>
+              </button>
+            </div>
+
+            <!-- Exports -->
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="e in exportActions"
+                :key="e.key"
+                class="inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition"
+                :title="e.label"
+                @click="e.onClick"
+              >
+                <Icon :name="e.icon" class="h-4 w-4" />
+                <span class="whitespace-nowrap">{{ e.label }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Canvas management -->
+        <div class="w-full overflow-auto rounded-2xl border bg-white">
+          <svg
+            ref="svgRef"
+            class="block"
             :width="seatingPlan!.canvasWidth"
             :height="seatingPlan!.canvasHeight"
-            fill="url(#grid)"
-          />
-
-          <!-- Itens (palco, dj, etc.) -->
-          <g v-for="item in seatingPlan!.items" :key="item.id">
-            <g
-              :transform="`translate(${item.x} ${item.y}) rotate(${item.rotation})`"
-              style="cursor: grab"
-              @pointerdown="(e) => onItemPointerDown(e, item.id)"
-              @dblclick="() => deleteItem(seatingPlan!.id, item.id)"
-            >
-              <rect
-                x="0"
-                y="0"
-                :width="item.width"
-                :height="item.height"
-                rx="14"
-                fill="rgba(0,0,0,0.06)"
-                stroke="rgba(0,0,0,0.25)"
-              />
-              <text x="10" y="22" font-size="14" fill="rgba(0,0,0,0.75)">
-                {{ item.label || item.type }}
-              </text>
-              <text x="10" y="40" font-size="11" fill="rgba(0,0,0,0.45)">
-                (duplo clique para remover)
-              </text>
-            </g>
-          </g>
-
-          <!-- Mesas -->
-          <g v-for="layout in seatingPlan!.deskLayouts" :key="layout.deskId">
-            <g
-              :transform="`translate(${layout.x} ${layout.y}) rotate(${layout.rotation})`"
-              style="cursor: grab"
-              @pointerdown="(e) => onDeskPointerDown(e, layout.deskId)"
-            >
-              <circle
-                v-if="layout.shape === 'round'"
-                :cx="layout.width / 2"
-                :cy="layout.height / 2"
-                :r="Math.min(layout.width, layout.height) / 2"
-                fill="rgba(59, 130, 246, 0.10)"
-                stroke="rgba(59, 130, 246, 0.45)"
-                stroke-width="2"
-              />
-              <rect
-                v-else
-                x="0"
-                y="0"
-                :width="layout.width"
-                :height="layout.height"
-                rx="18"
-                fill="rgba(59, 130, 246, 0.10)"
-                stroke="rgba(59, 130, 246, 0.45)"
-                stroke-width="2"
-              />
-              <text
-                :x="layout.width / 2"
-                :y="layout.height / 2"
-                text-anchor="middle"
-                dominant-baseline="middle"
-                font-size="14"
-                fill="rgba(0,0,0,0.75)"
+            :viewBox="`0 0 ${seatingPlan!.canvasWidth} ${seatingPlan!.canvasHeight}`"
+            @pointermove="onPointerMove"
+            @pointerup="onPointerUp"
+            @pointercancel="onPointerUp"
+          >
+            <!-- background grid super leve -->
+            <defs>
+              <pattern
+                id="grid"
+                width="40"
+                height="40"
+                patternUnits="userSpaceOnUse"
               >
-                {{ deskLabel(layout.deskId) }}
-              </text>
-            </g>
-          </g>
-        </svg>
-      </div>
+                <path
+                  d="M 40 0 L 0 0 0 40"
+                  fill="none"
+                  stroke="rgba(0,0,0,0.06)"
+                  stroke-width="1"
+                />
+              </pattern>
+            </defs>
+            <rect
+              x="0"
+              y="0"
+              :width="seatingPlan!.canvasWidth"
+              :height="seatingPlan!.canvasHeight"
+              fill="url(#grid)"
+            />
 
-      <div class="text-grey-500 mt-2 text-xs">
-        Dica: arrasta mesas/itens para posicionar. Duplo clique num item
-        (palco/DJ/etc.) remove.
+            <!-- Itens (palco, dj, etc.) -->
+            <g v-for="item in seatingPlan!.items" :key="item.id">
+              <g
+                :transform="`translate(${item.x} ${item.y}) rotate(${item.rotation})`"
+                style="cursor: grab"
+                @pointerdown="(e) => onItemPointerDown(e, item.id)"
+                @dblclick="() => deleteItem(seatingPlan!.id, item.id)"
+              >
+                <rect
+                  x="0"
+                  y="0"
+                  :width="item.width"
+                  :height="item.height"
+                  rx="14"
+                  fill="rgba(0,0,0,0.06)"
+                  stroke="rgba(0,0,0,0.25)"
+                />
+                <text x="10" y="22" font-size="14" fill="rgba(0,0,0,0.75)">
+                  {{ item.label || item.type }}
+                </text>
+                <text x="10" y="40" font-size="11" fill="rgba(0,0,0,0.45)">
+                  (duplo clique para remover)
+                </text>
+              </g>
+            </g>
+
+            <!-- Mesas -->
+            <g v-for="layout in seatingPlan!.deskLayouts" :key="layout.deskId">
+              <g
+                :transform="`translate(${layout.x} ${layout.y}) rotate(${layout.rotation})`"
+                style="cursor: grab"
+                @pointerdown="(e) => onDeskPointerDown(e, layout.deskId)"
+              >
+                <circle
+                  v-if="layout.shape === 'round'"
+                  :cx="layout.width / 2"
+                  :cy="layout.height / 2"
+                  :r="Math.min(layout.width, layout.height) / 2"
+                  fill="rgba(59, 130, 246, 0.10)"
+                  stroke="rgba(59, 130, 246, 0.45)"
+                  stroke-width="2"
+                />
+                <rect
+                  v-else
+                  x="0"
+                  y="0"
+                  :width="layout.width"
+                  :height="layout.height"
+                  rx="18"
+                  fill="rgba(59, 130, 246, 0.10)"
+                  stroke="rgba(59, 130, 246, 0.45)"
+                  stroke-width="2"
+                />
+                <text
+                  :x="layout.width / 2"
+                  :y="layout.height / 2"
+                  text-anchor="middle"
+                  dominant-baseline="middle"
+                  font-size="14"
+                  fill="rgba(0,0,0,0.75)"
+                >
+                  {{ deskLabel(layout.deskId) }}
+                </text>
+              </g>
+            </g>
+          </svg>
+        </div>
+
+        <div class="text-grey-500 mt-2 text-xs">
+          Dica: arrasta mesas/itens para posicionar. Duplo clique num item
+          (palco/DJ/etc.) remove.
+        </div>
       </div>
     </div>
   </div>

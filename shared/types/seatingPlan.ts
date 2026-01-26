@@ -1,11 +1,13 @@
 export type SeatingPlanItemType =
-  | 'stage'
-  | 'dj'
-  | 'dancefloor'
-  | 'buffet'
-  | 'entrance'
-  | 'wall'
-  | 'generic';
+  | 'Palco'
+  | 'DJ'
+  | 'Pista'
+  | 'Buffet'
+  | 'Entrada'
+  | 'Parede'
+  | 'Saida'
+  | 'Drinks'
+  | 'Generic';
 
 export type DeskShape = 'round' | 'rect';
 
