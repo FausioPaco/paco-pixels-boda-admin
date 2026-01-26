@@ -1,25 +1,58 @@
-import { seatingPlanService } from '~/services/seatingPlanService';
+import { getSeatingPlanService } from '~/services/seatingPlanService';
 
 type UseSeatingPlanOptions = {
   immediate?: boolean;
+  cacheMinutes?: number; // default 20
 };
 
-export function useSeatingPlan(
+export const useSeatingPlan = async (
   eventId: number,
   options: UseSeatingPlanOptions = {},
-) {
-  const key = `seating-plan:event:${eventId}`;
-
-  const { data, pending, error, refresh } = useAsyncData<SeatingPlan>(
-    key,
-    () => seatingPlanService.getOrCreateByEvent(eventId),
-    { immediate: options.immediate ?? true },
+) => {
+  const seatingPlan = useState<SeatingPlan | null>(
+    `seating-plan-${eventId}`,
+    () => null,
   );
 
-  const setDeskLayoutLocal = (deskId: number, patch: Partial<DeskLayout>) => {
-    if (!data.value) return;
+  const nuxtApp = useNuxtApp();
+  const service = getSeatingPlanService(nuxtApp.$api);
 
-    const layouts = (data.value.deskLayouts ?? []) as DeskLayout[];
+  const key = `seating-plan-event-${eventId}`;
+  const cacheMinutes = options.cacheMinutes ?? 20;
+
+  const { data, refresh, status, error } = await useAsyncData(
+    key,
+    () => service.getOrCreateByEvent(eventId),
+    {
+      immediate: options.immediate ?? true,
+      default: () => null,
+      transform(input: SeatingPlan | null) {
+        if (!input) return null;
+        return {
+          ...input,
+          fetchedAt: new Date(),
+        };
+      },
+      getCachedData(key) {
+        const cached = nuxtApp.payload.data[key] || nuxtApp.static.data[key];
+        if (!cached) return;
+        if (!cached.fetchedAt || cacheExpired(cached.fetchedAt, cacheMinutes))
+          return;
+        return cached;
+      },
+    },
+  );
+
+  watchEffect(() => {
+    if (data.value) {
+      seatingPlan.value = data.value;
+    }
+  });
+
+  const setDeskLayoutLocal = (deskId: number, patch: Partial<DeskLayout>) => {
+    if (!seatingPlan.value) return;
+
+    const layouts = (seatingPlan.value.deskLayouts ?? []) as DeskLayout[];
     const existing = layouts.find((l) => l.deskId === deskId);
 
     if (existing) {
@@ -37,7 +70,29 @@ export function useSeatingPlan(
       } as DeskLayout);
     }
 
-    data.value.deskLayouts = layouts;
+    seatingPlan.value.deskLayouts = layouts;
+  };
+
+  const refreshSeatingPlan = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key);
+    }
+    await refresh();
+  };
+
+  const updateCanvas = async (
+    planId: number,
+    payload: UpdateSeatingPlanCanvas,
+  ) => {
+    if (!seatingPlan.value) return null;
+
+    // optimistic
+    seatingPlan.value.canvasWidth = payload.canvasWidth;
+    seatingPlan.value.canvasHeight = payload.canvasHeight;
+
+    const updated = await service.updateCanvas(planId, payload);
+    seatingPlan.value = { ...(seatingPlan.value as SeatingPlan), ...updated };
+    return updated;
   };
 
   const upsertDeskLayout = async (
@@ -45,36 +100,17 @@ export function useSeatingPlan(
     deskId: number,
     payload: UpsertDeskLayout,
   ) => {
-    // optimistic
-    setDeskLayoutLocal(deskId, payload);
-    const updated = await seatingPlanService.upsertDeskLayout(
-      planId,
-      deskId,
-      payload,
-    );
-
-    // normaliza com a resposta do backend
-    setDeskLayoutLocal(deskId, updated);
-    return updated;
-  };
-
-  const updateCanvas = async (
-    planId: number,
-    payload: UpdateSeatingPlanCanvas,
-  ) => {
-    if (!data.value) return null;
-    // optimistic
-    data.value.canvasWidth = payload.canvasWidth;
-    data.value.canvasHeight = payload.canvasHeight;
-
-    const updated = await seatingPlanService.updateCanvas(planId, payload);
-    data.value = { ...data.value, ...updated };
+    setDeskLayoutLocal(deskId, payload); // optimistic
+    const updated = await service.upsertDeskLayout(planId, deskId, payload);
+    setDeskLayoutLocal(deskId, updated); // normalize
     return updated;
   };
 
   const addItem = async (planId: number, payload: UpsertSeatingPlanItem) => {
-    const created = await seatingPlanService.addItem(planId, payload);
-    if (data.value) data.value.items = [...(data.value.items ?? []), created];
+    const created = await service.addItem(planId, payload);
+    if (seatingPlan.value) {
+      seatingPlan.value.items = [...(seatingPlan.value.items ?? []), created];
+    }
     return created;
   };
 
@@ -83,23 +119,19 @@ export function useSeatingPlan(
     itemId: number,
     payload: UpsertSeatingPlanItem,
   ) => {
-    const updated = await seatingPlanService.updateItem(
-      planId,
-      itemId,
-      payload,
-    );
-    if (!data.value) return updated;
+    const updated = await service.updateItem(planId, itemId, payload);
+    if (!seatingPlan.value) return updated;
 
-    data.value.items = (data.value.items ?? []).map((i) =>
+    seatingPlan.value.items = (seatingPlan.value.items ?? []).map((i) =>
       i.id === itemId ? updated : i,
     );
     return updated;
   };
 
   const deleteItem = async (planId: number, itemId: number) => {
-    const res = await seatingPlanService.deleteItem(planId, itemId);
-    if (res?.success && data.value) {
-      data.value.items = (data.value.items ?? []).filter(
+    const res = await service.deleteItem(planId, itemId);
+    if (res?.success && seatingPlan.value) {
+      seatingPlan.value.items = (seatingPlan.value.items ?? []).filter(
         (i) => i.id !== itemId,
       );
     }
@@ -107,10 +139,12 @@ export function useSeatingPlan(
   };
 
   return {
-    seatingPlan: data,
-    pending,
+    seatingPlan,
     error,
-    refresh,
+    isRefreshing: status.value === 'pending',
+    isError: status.value === 'error',
+
+    refreshSeatingPlan,
 
     updateCanvas,
     upsertDeskLayout,
@@ -118,4 +152,4 @@ export function useSeatingPlan(
     updateItem,
     deleteItem,
   };
-}
+};

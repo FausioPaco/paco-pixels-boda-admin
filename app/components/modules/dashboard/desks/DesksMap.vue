@@ -1,3 +1,8 @@
+<script setup lang="ts">
+const eventId = useEventStore().ensureSelected();
+const { desks } = await useDeskOptions();
+</script>
+
 <template>
-  <LazyFeatureNotImplemented />
+  <LazyDesksSeatingPlanEditor :event-id="eventId" :desks="desks" />
 </template>

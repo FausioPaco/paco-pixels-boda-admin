@@ -4,20 +4,22 @@ import jsPDF from 'jspdf';
 
 type Props = {
   eventId: number;
-  desks: Desk[];
+  desks: DeskOption[];
 };
 
 const props = defineProps<Props>();
 
 const {
   seatingPlan,
-  pending,
+  isRefreshing,
+  refreshSeatingPlan,
+  isError,
   upsertDeskLayout,
   addItem,
   updateItem,
   deleteItem,
   updateCanvas,
-} = useSeatingPlan(props.eventId, { immediate: true });
+} = await useSeatingPlan(props.eventId, { immediate: true });
 
 const isClient = computed(() => import.meta.client);
 const isMobile = ref(false);
@@ -76,6 +78,10 @@ function findItem(itemId: number): SeatingPlanItem | undefined {
 
 function onDeskPointerDown(evt: PointerEvent, deskId: number) {
   evt.preventDefault();
+
+  // mobile: só visualizar/exportar
+  if (isMobile.value) return;
+
   const layout = findDeskLayout(deskId);
   if (!layout || layout.locked) return;
 
@@ -93,6 +99,9 @@ function onDeskPointerDown(evt: PointerEvent, deskId: number) {
 
 function onItemPointerDown(evt: PointerEvent, itemId: number) {
   evt.preventDefault();
+
+  if (isMobile.value) return;
+
   const item = findItem(itemId);
   if (!item || item.locked) return;
 
@@ -131,7 +140,7 @@ function onPointerMove(evt: PointerEvent) {
 async function onPointerUp() {
   if (!active.value || !seatingPlan.value) return;
 
-  const planId = seatingPlan.value.id;
+  const id = seatingPlan.value.id;
 
   if (active.value.kind === 'desk') {
     const layout = findDeskLayout(active.value.deskId);
@@ -145,7 +154,7 @@ async function onPointerUp() {
         height: layout.height ?? 140,
         locked: !!layout.locked,
       };
-      await upsertDeskLayout(planId, active.value.deskId, payload);
+      await upsertDeskLayout(id, active.value.deskId, payload);
     }
   } else {
     const item = findItem(active.value.itemId);
@@ -161,7 +170,7 @@ async function onPointerUp() {
         zIndex: item.zIndex ?? 1,
         locked: !!item.locked,
       };
-      await updateItem(planId, item.id, payload);
+      await updateItem(id, item.id, payload);
     }
   }
 
@@ -170,7 +179,7 @@ async function onPointerUp() {
 
 async function quickAdd(type: SeatingPlanItemType) {
   if (!seatingPlan.value) return;
-  const planId = seatingPlan.value.id;
+  if (isMobile.value) return;
 
   const payload: UpsertSeatingPlanItem = {
     type,
@@ -184,7 +193,7 @@ async function quickAdd(type: SeatingPlanItemType) {
     locked: false,
   };
 
-  await addItem(planId, payload);
+  await addItem(seatingPlan.value.id, payload);
 }
 
 function deskLabel(deskId: number) {
@@ -194,29 +203,25 @@ function deskLabel(deskId: number) {
 
 async function setCanvasPreset(preset: 'small' | 'medium' | 'large') {
   if (!seatingPlan.value) return;
-  const planId = seatingPlan.value.id;
+  if (isMobile.value) return;
 
-  const next =
+  const next: UpdateSeatingPlanCanvas =
     preset === 'small'
       ? { canvasWidth: 1200, canvasHeight: 700 }
       : preset === 'medium'
         ? { canvasWidth: 1600, canvasHeight: 900 }
         : { canvasWidth: 2200, canvasHeight: 1200 };
 
-  await updateCanvas(planId, next);
+  await updateCanvas(seatingPlan.value.id, next);
 }
 
+// ------- export helpers
+
 function getSvgString(svgEl: SVGSVGElement) {
-  // garante xmlns
-  if (!svgEl.getAttribute('xmlns')) {
+  if (!svgEl.getAttribute('xmlns'))
     svgEl.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  }
-
-  // se usares xlink em algum momento:
-  if (!svgEl.getAttribute('xmlns:xlink')) {
+  if (!svgEl.getAttribute('xmlns:xlink'))
     svgEl.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-  }
-
   return new XMLSerializer().serializeToString(svgEl);
 }
 
@@ -229,7 +234,7 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-async function exportSvg(filename = 'seating-plan.svg') {
+async function exportSvg(filename = `seating-plan-${props.eventId}.svg`) {
   if (!import.meta.client) return;
   const svg = svgRef.value;
   if (!svg) return;
@@ -248,7 +253,6 @@ async function svgToPngBlob(
 
   const svgString = getSvgString(svg);
 
-  // dimensões do SVG
   const width =
     Number(svg.getAttribute('width')) || svg.viewBox.baseVal.width || 1600;
   const height =
@@ -261,12 +265,10 @@ async function svgToPngBlob(
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  // render SVG -> canvas
   const v = Canvg.fromString(ctx, svgString, {
     ignoreAnimation: true,
     ignoreMouse: true,
   });
-  // canvg desenha no tamanho do canvas
   await v.render();
 
   const blob = await new Promise<Blob | null>((resolve) =>
@@ -277,30 +279,33 @@ async function svgToPngBlob(
   return { blob, width, height };
 }
 
-async function exportPng(filename = 'seating-plan.png', scale = 2) {
+async function exportPng(
+  filename = `seating-plan-${props.eventId}.png`,
+  scale = 2,
+) {
   const res = await svgToPngBlob(scale);
   if (!res) return;
   downloadBlob(res.blob, filename);
 }
 
-async function exportPdf(filename = 'seating-plan.pdf', scale = 2) {
+async function exportPdf(
+  filename = `seating-plan-${props.eventId}.pdf`,
+  scale = 2,
+) {
   const res = await svgToPngBlob(scale);
   if (!res) return;
 
-  // A4 landscape (mm)
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
 
-  // converter blob -> dataURL
   const dataUrl = await new Promise<string>((resolve) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
     reader.readAsDataURL(res.blob);
   });
 
-  // manter aspect ratio e encaixar na página
   const imgW = pageW;
   const imgH = (res.height / res.width) * imgW;
 
@@ -322,13 +327,16 @@ async function exportPdf(filename = 'seating-plan.pdf', scale = 2) {
 
 <template>
   <div class="w-full">
-    <div v-if="pending" class="text-grey-500 p-4 text-sm">
-      A carregar mapa...
-    </div>
-
-    <div v-else-if="!seatingPlan" class="p-4 text-sm text-red-600">
+    <BaseLoading
+      v-if="isRefreshing"
+      size="lg"
+      orientation="vertical"
+      class="block md:hidden"
+      message="A carregar mapa..."
+    />
+    <BaseSearchNotFound v-if="isError" @fallback="refreshSeatingPlan">
       Não foi possível carregar o plano.
-    </div>
+    </BaseSearchNotFound>
 
     <div v-else>
       <div
@@ -419,9 +427,9 @@ async function exportPdf(filename = 'seating-plan.pdf', scale = 2) {
         <svg
           ref="svgRef"
           class="block"
-          :width="seatingPlan.canvasWidth"
-          :height="seatingPlan.canvasHeight"
-          :viewBox="`0 0 ${seatingPlan.canvasWidth} ${seatingPlan.canvasHeight}`"
+          :width="seatingPlan!.canvasWidth"
+          :height="seatingPlan!.canvasHeight"
+          :viewBox="`0 0 ${seatingPlan!.canvasWidth} ${seatingPlan!.canvasHeight}`"
           @pointermove="onPointerMove"
           @pointerup="onPointerUp"
           @pointercancel="onPointerUp"
@@ -445,13 +453,13 @@ async function exportPdf(filename = 'seating-plan.pdf', scale = 2) {
           <rect
             x="0"
             y="0"
-            :width="seatingPlan.canvasWidth"
-            :height="seatingPlan.canvasHeight"
+            :width="seatingPlan!.canvasWidth"
+            :height="seatingPlan!.canvasHeight"
             fill="url(#grid)"
           />
 
           <!-- Itens (palco, dj, etc.) -->
-          <g v-for="item in seatingPlan.items" :key="item.id">
+          <g v-for="item in seatingPlan!.items" :key="item.id">
             <g
               :transform="`translate(${item.x} ${item.y}) rotate(${item.rotation})`"
               style="cursor: grab"
@@ -477,7 +485,7 @@ async function exportPdf(filename = 'seating-plan.pdf', scale = 2) {
           </g>
 
           <!-- Mesas -->
-          <g v-for="layout in seatingPlan.deskLayouts" :key="layout.deskId">
+          <g v-for="layout in seatingPlan!.deskLayouts" :key="layout.deskId">
             <g
               :transform="`translate(${layout.x} ${layout.y}) rotate(${layout.rotation})`"
               style="cursor: grab"

@@ -1,6 +1,9 @@
+import type { NitroFetchRequest, $Fetch } from 'nitropack';
 const RESOURCE = '/SeatingPlans';
 
-export const seatingPlanService = {
+export const getSeatingPlanService = <T>(
+  $fetch: $Fetch<T, NitroFetchRequest>,
+) => ({
   async getOrCreateByEvent(eventId: number): Promise<SeatingPlan> {
     return await $fetch<SeatingPlan>(`${RESOURCE}/by-event/${eventId}`, {
       method: 'GET',
@@ -63,4 +66,4 @@ export const seatingPlanService = {
       },
     );
   },
-};
+});
