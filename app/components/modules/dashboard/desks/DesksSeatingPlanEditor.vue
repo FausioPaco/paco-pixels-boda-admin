@@ -2,6 +2,20 @@
 import { Canvg } from 'canvg';
 import jsPDF from 'jspdf';
 
+/**
+ * DesksSeatingPlanEditor
+ * Editor de mapa (SVG) para:
+ * - posicionar mesas (DeskLayouts) e itens (palco, DJ, etc.)
+ * - exportar PNG/PDF
+ *
+ * Nota:
+ * já existe aqui a lógica do Patch 1 (mostrar/ocultar mesas e adicionar por botão/modal).
+ * Algumas partes (showAddDesk/modal/botão) serão ligadas no template no passo seguinte.
+ */
+
+// ------------------------
+// Props
+// ------------------------
 type Props = {
   eventId: number;
   desks: DeskOption[];
@@ -9,6 +23,9 @@ type Props = {
 
 const props = defineProps<Props>();
 
+// ------------------------
+// Data (composable)
+// ------------------------
 const {
   seatingPlan,
   isRefreshing,
@@ -21,20 +38,31 @@ const {
   updateCanvas,
 } = await useSeatingPlan(props.eventId, { immediate: true });
 
+const planId = computed(() => seatingPlan.value?.id ?? null);
+
+// ------------------------
+// Responsividade / runtime
+// ------------------------
 const isClient = computed(() => import.meta.client);
 const isMobile = ref(false);
-const planId = computed(() => seatingPlan.value?.id ?? null);
 
 onMounted(() => {
   const mq = window.matchMedia('(max-width: 1024px)');
   const apply = () => (isMobile.value = mq.matches);
+
   apply();
   mq.addEventListener?.('change', apply);
 });
 
+// ------------------------
+// Referências DOM
+// ------------------------
 const svgRef = ref<SVGSVGElement | null>(null);
 
-const active = ref<
+// ------------------------
+// Estado de drag (mesa/item)
+// ------------------------
+type ActiveDrag =
   | null
   | {
       kind: 'desk';
@@ -51,9 +79,118 @@ const active = ref<
       startY: number;
       originX: number;
       originY: number;
-    }
->(null);
+    };
 
+const active = ref<ActiveDrag>(null);
+
+// ------------------------
+// Patch 1 (UX): controlar que mesas são visíveis no mapa
+// ------------------------
+const showAddDesk = ref(false); // será ligado ao modal no template
+const visibleDeskIds = ref<Set<number>>(new Set());
+
+/**
+ * Heurística:
+ * se existirem muitos layouts e quase todos tiverem o mesmo x/y,
+ * assumimos que foi auto-place e começamos com o mapa "vazio".
+ */
+const shouldStartEmpty = computed(() => {
+  const layouts = seatingPlan.value?.deskLayouts ?? [];
+  if (layouts.length < 6) return false;
+
+  const first = layouts[0];
+  if (!first) return false;
+
+  const samePosCount = layouts.filter(
+    (l) => Math.abs(l.x - first.x) < 1 && Math.abs(l.y - first.y) < 1,
+  ).length;
+
+  return samePosCount / layouts.length >= 0.9;
+});
+
+/**
+ * Inicialização do Set de mesas visíveis.
+ * Importante: só inicializa uma vez (para não resetar após adicionares mesas).
+ */
+watchEffect(() => {
+  if (!seatingPlan.value) return;
+  if (visibleDeskIds.value.size > 0) return;
+
+  if (shouldStartEmpty.value) {
+    visibleDeskIds.value = new Set();
+  } else {
+    const ids = (seatingPlan.value.deskLayouts ?? []).map((d) => d.deskId);
+    visibleDeskIds.value = new Set(ids);
+  }
+});
+
+const visibleDeskLayouts = computed(() => {
+  const layouts = seatingPlan.value?.deskLayouts ?? [];
+  const ids = visibleDeskIds.value;
+  return layouts.filter((l) => ids.has(l.deskId));
+});
+
+const availableDesks = computed(() => {
+  const placed = visibleDeskIds.value;
+  return props.desks.filter((d) => !placed.has(d.id));
+});
+
+/**
+ * Posição inicial para novas mesas adicionadas ao mapa.
+ * Grid simples para evitar sobreposição.
+ */
+function findNextDeskPosition() {
+  const existing = visibleDeskLayouts.value;
+
+  const startX = 80;
+  const startY = 80;
+  const stepX = 190;
+  const stepY = 190;
+  const cols = 5;
+
+  const i = existing.length;
+  const col = i % cols;
+  const row = Math.floor(i / cols);
+
+  return {
+    x: startX + col * stepX,
+    y: startY + row * stepY,
+  };
+}
+
+/**
+ * Adiciona uma mesa ao mapa (persistindo via upsert).
+ * Nota: a UI (botão/modal) que chama isto será ligada no template.
+ */
+async function addDeskToMap(deskId: number) {
+  if (!seatingPlan.value) return;
+  if (isMobile.value) return;
+
+  const id = seatingPlan.value.id;
+  const pos = findNextDeskPosition();
+
+  const payload: UpsertDeskLayout = {
+    x: pos.x,
+    y: pos.y,
+    rotation: 0,
+    shape: 'round',
+    width: 140,
+    height: 140,
+    locked: false,
+  };
+
+  await upsertDeskLayout(id, deskId, payload);
+
+  const next = new Set(visibleDeskIds.value);
+  next.add(deskId);
+  visibleDeskIds.value = next;
+
+  showAddDesk.value = false;
+}
+
+// ------------------------
+// SVG helpers
+// ------------------------
 function getSvgPoint(evt: PointerEvent) {
   const svg = svgRef.value;
   if (!svg) return { x: 0, y: 0 };
@@ -77,10 +214,11 @@ function findItem(itemId: number): SeatingPlanItem | undefined {
   return seatingPlan.value?.items?.find((i) => i.id === itemId);
 }
 
+// ------------------------
+// Drag handlers (mesas/itens)
+// ------------------------
 function onDeskPointerDown(evt: PointerEvent, deskId: number) {
   evt.preventDefault();
-
-  // mobile: só visualizar/exportar
   if (isMobile.value) return;
 
   const layout = findDeskLayout(deskId);
@@ -95,12 +233,12 @@ function onDeskPointerDown(evt: PointerEvent, deskId: number) {
     originX: layout.x,
     originY: layout.y,
   };
+
   (evt.target as Element).setPointerCapture?.(evt.pointerId);
 }
 
 function onItemPointerDown(evt: PointerEvent, itemId: number) {
   evt.preventDefault();
-
   if (isMobile.value) return;
 
   const item = findItem(itemId);
@@ -115,9 +253,14 @@ function onItemPointerDown(evt: PointerEvent, itemId: number) {
     originX: item.x,
     originY: item.y,
   };
+
   (evt.target as Element).setPointerCapture?.(evt.pointerId);
 }
 
+/**
+ * Movimento optimista: actualiza a posição no estado local.
+ * Persistência acontece apenas no pointerup.
+ */
 function onPointerMove(evt: PointerEvent) {
   if (!active.value || !seatingPlan.value) return;
 
@@ -128,16 +271,24 @@ function onPointerMove(evt: PointerEvent) {
   if (active.value.kind === 'desk') {
     const layout = findDeskLayout(active.value.deskId);
     if (!layout) return;
+
     layout.x = Math.max(0, active.value.originX + dx);
     layout.y = Math.max(0, active.value.originY + dy);
-  } else {
-    const item = findItem(active.value.itemId);
-    if (!item) return;
-    item.x = Math.max(0, active.value.originX + dx);
-    item.y = Math.max(0, active.value.originY + dy);
+    return;
   }
+
+  const item = findItem(active.value.itemId);
+  if (!item) return;
+
+  item.x = Math.max(0, active.value.originX + dx);
+  item.y = Math.max(0, active.value.originY + dy);
 }
 
+/**
+ * No fim do drag, persiste no backend.
+ * - Mesa: upsertDeskLayout(planId, deskId, payload)
+ * - Item: updateItem(planId, itemId, payload)
+ */
 async function onPointerUp() {
   if (!active.value || !seatingPlan.value) return;
 
@@ -155,29 +306,37 @@ async function onPointerUp() {
         height: layout.height ?? 140,
         locked: !!layout.locked,
       };
+
       await upsertDeskLayout(id, active.value.deskId, payload);
     }
-  } else {
-    const item = findItem(active.value.itemId);
-    if (item) {
-      const payload: UpsertSeatingPlanItem = {
-        type: item.type,
-        label: item.label ?? null,
-        x: item.x,
-        y: item.y,
-        rotation: item.rotation ?? 0,
-        width: item.width ?? 220,
-        height: item.height ?? 120,
-        zIndex: item.zIndex ?? 1,
-        locked: !!item.locked,
-      };
-      await updateItem(id, item.id, payload);
-    }
+
+    active.value = null;
+    return;
+  }
+
+  const item = findItem(active.value.itemId);
+  if (item) {
+    const payload: UpsertSeatingPlanItem = {
+      type: item.type,
+      label: item.label ?? null,
+      x: item.x,
+      y: item.y,
+      rotation: item.rotation ?? 0,
+      width: item.width ?? 220,
+      height: item.height ?? 120,
+      zIndex: item.zIndex ?? 1,
+      locked: !!item.locked,
+    };
+
+    await updateItem(id, item.id, payload);
   }
 
   active.value = null;
 }
 
+// ------------------------
+// Itens rápidos (palco, DJ, etc.)
+// ------------------------
 async function quickAdd(type: SeatingPlanItemType) {
   if (!seatingPlan.value) return;
   if (isMobile.value) return;
@@ -202,6 +361,9 @@ function deskLabel(deskId: number) {
   return d?.name ?? `Mesa ${deskId}`;
 }
 
+// ------------------------
+// Presets do canvas
+// ------------------------
 async function setCanvasPreset(preset: 'small' | 'medium' | 'large') {
   if (!seatingPlan.value) return;
   if (isMobile.value) return;
@@ -216,8 +378,9 @@ async function setCanvasPreset(preset: 'small' | 'medium' | 'large') {
   await updateCanvas(seatingPlan.value.id, next);
 }
 
-// ---- buttons management
-
+// ------------------------
+// Botões (estrutura de dados)
+// ------------------------
 type ActionBtn = {
   key: string;
   label: string;
@@ -272,10 +435,8 @@ const quickActions: ActionBtn[] = [
   },
 ];
 
-const getQuickActionByLabel = (name: string) => {
-  const action = quickActions.find((a) => a.name === name);
-  return action;
-};
+const getQuickActionByLabel = (name: string) =>
+  quickActions.find((a) => a.name === name);
 
 const canvasPresets: ActionBtn[] = [
   {
@@ -321,8 +482,9 @@ const exportActions: ActionBtn[] = [
   },
 ];
 
-// ------- export helpers
-
+// ------------------------
+// Export helpers (SVG -> PNG/PDF)
+// ------------------------
 function getSvgString(svgEl: SVGSVGElement) {
   if (!svgEl.getAttribute('xmlns'))
     svgEl.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
@@ -344,6 +506,7 @@ async function svgToPngBlob(
   scale = 2,
 ): Promise<{ blob: Blob; width: number; height: number } | null> {
   if (!import.meta.client) return null;
+
   const svg = svgRef.value;
   if (!svg) return null;
 
@@ -370,8 +533,8 @@ async function svgToPngBlob(
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob((b) => resolve(b), 'image/png'),
   );
-  if (!blob) return null;
 
+  if (!blob) return null;
   return { blob, width, height };
 }
 
@@ -430,6 +593,7 @@ async function exportPdf(
       class="block md:hidden"
       message="A carregar mapa..."
     />
+
     <BaseSearchNotFound v-if="isError" @fallback="refreshSeatingPlan">
       Não foi possível carregar o plano.
     </BaseSearchNotFound>
@@ -439,15 +603,14 @@ async function exportPdf(
         v-if="isClient && isMobile"
         type="informative"
         class="my-6"
-        message="Este editor está optimizado para desktop. No telemóvel vamos apenas
-          permitir visualizar e exportar."
+        message="Este editor está optimizado para desktop. Por favor, acede a partir de um computador para editar o mapa de mesas."
         show
       />
 
       <div v-else class="my-6 animate-fadeIn">
         <!-- Main Actions -->
         <div class="mb-3 flex flex-wrap items-center gap-2">
-          <!-- Quick add -->
+          <!-- Quick add (itens como palco/DJ/etc.) -->
           <div class="flex flex-wrap gap-2">
             <button
               v-for="a in quickActions"
@@ -463,6 +626,15 @@ async function exportPdf(
                 class="h-4 w-4"
               />
               <span class="whitespace-nowrap">{{ a.label }}</span>
+            </button>
+
+            <button
+              class="inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition disabled:cursor-not-allowed disabled:opacity-50"
+              title="Adicionar mesa"
+              @click="showAddDesk = true"
+            >
+              <IconMenuDesks :font-controlled="false" class="h-4 w-4" />
+              <span class="whitespace-nowrap">+ Mesa</span>
             </button>
           </div>
 
@@ -507,7 +679,7 @@ async function exportPdf(
           </div>
         </div>
 
-        <!-- Canvas management -->
+        <!-- Canvas -->
         <div class="w-full overflow-auto rounded-2xl border bg-white">
           <svg
             ref="svgRef"
@@ -535,6 +707,7 @@ async function exportPdf(
                 />
               </pattern>
             </defs>
+
             <rect
               x="0"
               y="0"
@@ -543,7 +716,7 @@ async function exportPdf(
               fill="url(#grid)"
             />
 
-            <!-- Itens (palco, dj, etc.) -->
+            <!-- Itens (palco, DJ, etc.) -->
             <g v-for="item in seatingPlan!.items" :key="item.id">
               <g
                 :transform="`translate(${item.x} ${item.y}) rotate(${item.rotation})`"
@@ -551,7 +724,6 @@ async function exportPdf(
                 @pointerdown="(e) => onItemPointerDown(e, item.id)"
                 @dblclick="() => planId && deleteItem(planId, item.id)"
               >
-                <!-- container -->
                 <rect
                   x="0"
                   y="0"
@@ -562,7 +734,6 @@ async function exportPdf(
                   stroke="rgba(0,0,0,0.25)"
                 />
 
-                <!-- icon -->
                 <component
                   :is="`icon-${getQuickActionByLabel(item.type)?.icon || 'item'}`"
                   :font-controlled="false"
@@ -574,12 +745,10 @@ async function exportPdf(
                   fill="rgba(0,0,0,0.45)"
                 />
 
-                <!-- label -->
                 <text x="70" y="60" font-size="14" fill="rgba(0,0,0,0.75)">
                   {{ item.label || item.type }}
                 </text>
 
-                <!-- helper -->
                 <text x="20" y="88" font-size="11" fill="rgba(0,0,0,0.45)">
                   duplo clique para remover
                 </text>
@@ -587,7 +756,7 @@ async function exportPdf(
             </g>
 
             <!-- Mesas -->
-            <g v-for="layout in seatingPlan!.deskLayouts" :key="layout.deskId">
+            <g v-for="layout in visibleDeskLayouts" :key="layout.deskId">
               <g
                 :transform="`translate(${layout.x} ${layout.y}) rotate(${layout.rotation})`"
                 style="cursor: grab"
@@ -634,5 +803,12 @@ async function exportPdf(
         </div>
       </div>
     </div>
+
+    <LazyDesksAddToMapModal
+      :show="showAddDesk"
+      :desks="availableDesks"
+      @close-modal="showAddDesk = false"
+      @select-desk="addDeskToMap"
+    />
   </div>
 </template>
