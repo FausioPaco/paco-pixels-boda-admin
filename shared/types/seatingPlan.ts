@@ -79,3 +79,14 @@ export type UpsertSeatingPlanItem = {
   zIndex: number;
   locked: boolean;
 };
+
+export type SeatOccupancy = {
+  kind: 'start' | 'cont';
+  guestId: number;
+  guestName: string;
+  peopleCount: number;
+  startSeat: number;
+  endSeat: number;
+};
+
+export type SeatPoint = { seat: number; x: number; y: number };

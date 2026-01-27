@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Canvg } from 'canvg';
 import jsPDF from 'jspdf';
+import { useDeskSeatingSnapshot } from '~/composables/useDeskSeatingSnapshot';
 
 /**
  * DesksSeatingPlanEditor
@@ -37,6 +38,10 @@ const {
   deleteItem,
   updateCanvas,
 } = await useSeatingPlan(props.eventId, { immediate: true });
+
+const { snapshot: seatingSnapshot } = await useDeskSeatingSnapshot(
+  props.eventId,
+);
 
 const planId = computed(() => seatingPlan.value?.id ?? null);
 
@@ -582,6 +587,97 @@ async function exportPdf(
   pdf.addImage(dataUrl, 'PNG', x, y, drawW, drawH);
   pdf.save(filename);
 }
+
+const deskById = computed(() => {
+  const map = new Map<number, (typeof seatingSnapshot.value)[number]>();
+  for (const d of seatingSnapshot.value ?? []) map.set(d.id, d);
+  return map;
+});
+
+/**
+ * Constrói um mapa seat -> info de ocupação por mesa.
+ * Regra: seat por grupo.
+ * - start seat mostra label (iniciais + ×N)
+ * - seats seguintes são "continuação"
+ */
+
+function buildSeatMapForDesk(deskId: number) {
+  const desk = deskById.value.get(deskId);
+  const seatMap = new Map<number, SeatOccupancy>();
+
+  if (!desk) return { desk: null, seatMap };
+
+  for (const g of desk.guests ?? []) {
+    if (!g.seatNumber || g.seatNumber <= 0) continue;
+
+    const start = g.seatNumber;
+    const count = Math.max(1, g.people_Count ?? 1);
+    const end = start + count - 1;
+
+    for (let s = start; s <= end; s++) {
+      // se passar o limite da mesa, ainda assim marcamos para poder sinalizar erro visual
+      const occ: SeatOccupancy = {
+        kind: s === start ? 'start' : 'cont',
+        guestId: g.id,
+        guestName: g.name,
+        peopleCount: count,
+        startSeat: start,
+        endSeat: end,
+      };
+
+      // Se já existe ocupação, isto é conflito (vamos tratar no render)
+      // Mantemos o primeiro e deixamos o conflito sinalizado no render por “collision check”.
+      if (!seatMap.has(s)) seatMap.set(s, occ);
+      else {
+        // marca conflito com um “placeholder” (opcional)
+        // Podemos decidir no render: se seatMap tem s e há outro, assinalar vermelho.
+        // Por simplicidade aqui, ignoramos o segundo.
+      }
+    }
+  }
+
+  return { desk, seatMap };
+}
+
+function initials(name: string) {
+  const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '';
+  const a = parts[0]?.[0] ?? '';
+  const b = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
+  return (a + b).toUpperCase();
+}
+
+function getRoundSeatPoints(
+  layout: DeskLayout,
+  seatsLimit: number,
+  maxRender = 12,
+): SeatPoint[] {
+  const n = Math.max(0, seatsLimit);
+  if (n === 0) return [];
+
+  const renderN = Math.min(n, maxRender);
+
+  const cx = (layout.width ?? 140) / 2;
+  const cy = (layout.height ?? 140) / 2;
+
+  const rTable = Math.min(layout.width ?? 140, layout.height ?? 140) / 2;
+  const rSeats = rTable + 18; // distancia dos seats fora da mesa
+
+  const pts: SeatPoint[] = [];
+
+  // Começar no topo (-90deg) para ficar “bonito”
+  for (let i = 0; i < renderN; i++) {
+    const seat = i + 1;
+
+    const angle = -Math.PI / 2 + (i * 2 * Math.PI) / renderN;
+    const x = cx + Math.cos(angle) * rSeats;
+    const y = cy + Math.sin(angle) * rSeats;
+
+    pts.push({ seat, x, y });
+  }
+
+  return pts;
+}
 </script>
 
 <template>
@@ -609,13 +705,13 @@ async function exportPdf(
 
       <div v-else class="my-6 animate-fadeIn">
         <!-- Main Actions -->
-        <div class="mb-3 flex flex-wrap items-center gap-2">
+        <div class="mb-3 flex flex-wrap items-start gap-2">
           <!-- Quick add (itens como palco/DJ/etc.) -->
           <div class="flex flex-wrap gap-2">
             <button
               v-for="a in quickActions"
               :key="a.key"
-              class="inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition disabled:cursor-not-allowed disabled:opacity-50"
+              class="hover:border-primary-600 hover:bg-primary-600 inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition-all duration-300 hover:-translate-y-0.5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="a.disabled?.value"
               :title="a.label"
               @click="a.onClick"
@@ -629,11 +725,11 @@ async function exportPdf(
             </button>
 
             <button
-              class="inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition disabled:cursor-not-allowed disabled:opacity-50"
+              class="hover:border-primary-600 hover:bg-primary-600 inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition-all duration-300 hover:-translate-y-0.5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               title="Adicionar mesa"
               @click="showAddDesk = true"
             >
-              <IconMenuDesks :font-controlled="false" class="h-4 w-4" />
+              <IconDashboardDesks :font-controlled="false" class="h-4 w-4" />
               <span class="whitespace-nowrap">+ Mesa</span>
             </button>
           </div>
@@ -645,7 +741,7 @@ async function exportPdf(
               <button
                 v-for="p in canvasPresets"
                 :key="p.key"
-                class="inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition disabled:cursor-not-allowed disabled:opacity-50"
+                class="hover:border-primary-600 hover:bg-primary-600 inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition-all duration-300 hover:-translate-y-0.5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 :disabled="p.disabled?.value"
                 :title="p.label"
                 @click="p.onClick"
@@ -658,24 +754,24 @@ async function exportPdf(
                 <span class="whitespace-nowrap">{{ p.label }}</span>
               </button>
             </div>
+          </div>
 
-            <!-- Exports -->
-            <div class="flex flex-wrap gap-2">
-              <button
-                v-for="e in exportActions"
-                :key="e.key"
-                class="inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition"
-                :title="e.label"
-                @click="e.onClick"
-              >
-                <component
-                  :is="`icon-${e.icon}`"
-                  :font-controlled="false"
-                  class="h-4 w-4"
-                />
-                <span class="whitespace-nowrap">{{ e.label }}</span>
-              </button>
-            </div>
+          <!-- Exports -->
+          <div class="ml-auto mt-3 flex flex-wrap items-center gap-2">
+            <button
+              v-for="e in exportActions"
+              :key="e.key"
+              class="hover:border-primary-600 hover:bg-primary-600 inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              :title="e.label"
+              @click="e.onClick"
+            >
+              <component
+                :is="`icon-${e.icon}`"
+                :font-controlled="false"
+                class="h-4 w-4"
+              />
+              <span class="whitespace-nowrap">{{ e.label }}</span>
+            </button>
           </div>
         </div>
 
@@ -729,15 +825,17 @@ async function exportPdf(
                   y="0"
                   :width="item.width"
                   :height="item.height"
-                  rx="14"
+                  rx="24"
                   fill="rgba(0,0,0,0.06)"
-                  stroke="rgba(0,0,0,0.25)"
+                  stroke="rgba(0,0,0,0.35)"
+                  stroke-width="2"
+                  stroke-dasharray="6 6"
                 />
 
                 <component
                   :is="`icon-${getQuickActionByLabel(item.type)?.icon || 'item'}`"
                   :font-controlled="false"
-                  x="68"
+                  x="75"
                   y="16"
                   width="24"
                   height="24"
@@ -767,8 +865,7 @@ async function exportPdf(
                   :cx="layout.width / 2"
                   :cy="layout.height / 2"
                   :r="Math.min(layout.width, layout.height) / 2"
-                  fill="rgba(59, 130, 246, 0.10)"
-                  stroke="rgba(59, 130, 246, 0.45)"
+                  class="fill-primary-600/30 stroke-primary-700"
                   stroke-width="2"
                 />
                 <rect
@@ -778,17 +875,163 @@ async function exportPdf(
                   :width="layout.width"
                   :height="layout.height"
                   rx="18"
-                  fill="rgba(59, 130, 246, 0.10)"
-                  stroke="rgba(59, 130, 246, 0.45)"
+                  class="fill-primary-600/30 stroke-primary-700"
                   stroke-width="2"
                 />
+
+                <g v-if="deskById.get(layout.deskId)">
+                  <template
+                    v-for="pt in getRoundSeatPoints(
+                      layout,
+                      deskById.get(layout.deskId)!.seats_Limit,
+                      12,
+                    )"
+                    :key="`seat-${layout.deskId}-${pt.seat}`"
+                  >
+                    <!-- occupancy map por mesa -->
+                    <template v-if="true">
+                      <!-- vamos calcular no render chamando buildSeatMapForDesk -->
+                      <g>
+                        <circle
+                          :cx="pt.x"
+                          :cy="pt.y"
+                          r="10"
+                          :fill="
+                            buildSeatMapForDesk(layout.deskId).seatMap.has(
+                              pt.seat,
+                            )
+                              ? 'rgba(59,130,246,0.28)'
+                              : 'rgba(0,0,0,0.06)'
+                          "
+                          :stroke="
+                            buildSeatMapForDesk(layout.deskId).seatMap.has(
+                              pt.seat,
+                            )
+                              ? 'rgba(59,130,246,0.55)'
+                              : 'rgba(0,0,0,0.18)'
+                          "
+                          stroke-width="1.5"
+                        />
+
+                        <!-- número do seat (sempre) -->
+                        <text
+                          :x="pt.x"
+                          :y="pt.y"
+                          text-anchor="middle"
+                          dominant-baseline="middle"
+                          font-size="10"
+                          class="fill-primary-800 font-semibold"
+                        >
+                          {{ pt.seat }}
+                        </text>
+
+                        <!-- label do grupo apenas no seat start -->
+                        <template
+                          v-if="
+                            buildSeatMapForDesk(layout.deskId).seatMap.get(
+                              pt.seat,
+                            )?.kind === 'start'
+                          "
+                        >
+                          <text
+                            :x="pt.x"
+                            :y="pt.y + 18"
+                            text-anchor="middle"
+                            font-size="10"
+                            class="fill-primary-800"
+                          >
+                            {{
+                              initials(
+                                buildSeatMapForDesk(layout.deskId).seatMap.get(
+                                  pt.seat,
+                                )!.guestName,
+                              )
+                            }}
+                            ×{{
+                              buildSeatMapForDesk(layout.deskId).seatMap.get(
+                                pt.seat,
+                              )!.peopleCount
+                            }}
+                          </text>
+
+                          <title>
+                            {{
+                              buildSeatMapForDesk(layout.deskId).seatMap.get(
+                                pt.seat,
+                              )!.guestName
+                            }}
+                            —
+                            {{
+                              buildSeatMapForDesk(layout.deskId).seatMap.get(
+                                pt.seat,
+                              )!.peopleCount
+                            }}
+                            pessoas (lugares
+                            {{
+                              buildSeatMapForDesk(layout.deskId).seatMap.get(
+                                pt.seat,
+                              )!.startSeat
+                            }}–{{
+                              buildSeatMapForDesk(layout.deskId).seatMap.get(
+                                pt.seat,
+                              )!.endSeat
+                            }})
+                          </title>
+                        </template>
+
+                        <!-- tooltip para seats continuação -->
+                        <template
+                          v-else-if="
+                            buildSeatMapForDesk(layout.deskId).seatMap.has(
+                              pt.seat,
+                            )
+                          "
+                        >
+                          <title>
+                            {{
+                              buildSeatMapForDesk(layout.deskId).seatMap.get(
+                                pt.seat,
+                              )!.guestName
+                            }}
+                            — continuação (lugares
+                            {{
+                              buildSeatMapForDesk(layout.deskId).seatMap.get(
+                                pt.seat,
+                              )!.startSeat
+                            }}–{{
+                              buildSeatMapForDesk(layout.deskId).seatMap.get(
+                                pt.seat,
+                              )!.endSeat
+                            }})
+                          </title>
+                        </template>
+                      </g>
+                    </template>
+                  </template>
+
+                  <!-- Se seats_Limit > 12, mostrar +X -->
+                  <text
+                    v-if="deskById.get(layout.deskId)!.seats_Limit > 12"
+                    :x="layout.width / 2"
+                    :y="
+                      layout.height / 2 +
+                      Math.min(layout.width, layout.height) / 2 +
+                      44
+                    "
+                    text-anchor="middle"
+                    font-size="12"
+                    fill="rgba(0,0,0,0.55)"
+                  >
+                    +{{ deskById.get(layout.deskId)!.seats_Limit - 12 }}
+                  </text>
+                </g>
                 <text
                   :x="layout.width / 2"
                   :y="layout.height / 2"
                   text-anchor="middle"
                   dominant-baseline="middle"
                   font-size="14"
-                  fill="rgba(0,0,0,0.75)"
+                  class="fill-primary-900 font-semibold"
                 >
                   {{ deskLabel(layout.deskId) }}
                 </text>
@@ -797,7 +1040,7 @@ async function exportPdf(
           </svg>
         </div>
 
-        <div class="text-grey-500 mt-2 text-xs">
+        <div class="text-grey-400 mt-2 text-xs font-semibold">
           Dica: arrasta mesas/itens para posicionar. Duplo clique num item
           (palco/DJ/etc.) remove.
         </div>

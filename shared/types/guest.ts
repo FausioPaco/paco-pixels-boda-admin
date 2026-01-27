@@ -14,6 +14,7 @@ export interface Guest {
   categoryName: string;
   people_Confirmed?: number;
   additional_Comments?: string;
+  seatNumber?: number;
   created_At: Date;
 }
 
