@@ -1,18 +1,6 @@
 <script setup lang="ts">
 import { Canvg } from 'canvg';
 import jsPDF from 'jspdf';
-import { useDeskSeatingSnapshot } from '~/composables/useDeskSeatingSnapshot';
-
-/**
- * DesksSeatingPlanEditor
- * Editor de mapa (SVG) para:
- * - posicionar mesas (DeskLayouts) e itens (palco, DJ, etc.)
- * - exportar PNG/PDF
- *
- * Nota:
- * já existe aqui a lógica do Patch 1 (mostrar/ocultar mesas e adicionar por botão/modal).
- * Algumas partes (showAddDesk/modal/botão) serão ligadas no template no passo seguinte.
- */
 
 // ------------------------
 // Props
@@ -39,24 +27,40 @@ const {
   updateCanvas,
 } = await useSeatingPlan(props.eventId, { immediate: true });
 
-const { snapshot: seatingSnapshot } = await useDeskSeatingSnapshot(
-  props.eventId,
-);
-
 const planId = computed(() => seatingPlan.value?.id ?? null);
 
 // ------------------------
-// Responsividade / runtime
+// Snapshot (seats/ocupação) — fonte única para seatsLimit
+// ------------------------
+const { snapshot: seatingSnapshot, refreshSnapshot } =
+  await useDeskSeatingSnapshot(props.eventId);
+
+const deskById = computed(() => {
+  const map = new Map<number, (typeof seatingSnapshot.value)[number]>();
+  for (const d of seatingSnapshot.value ?? []) map.set(d.id, d);
+  return map;
+});
+
+// ------------------------
+// Runtime / responsividade
 // ------------------------
 const isClient = computed(() => import.meta.client);
 const isMobile = ref(false);
 
-onMounted(() => {
-  const mq = window.matchMedia('(max-width: 1024px)');
-  const apply = () => (isMobile.value = mq.matches);
+let mq: MediaQueryList | null = null;
+let onMqChange: ((e: MediaQueryListEvent) => void) | null = null;
 
+onMounted(() => {
+  mq = window.matchMedia('(max-width: 1024px)');
+  const apply = () => (isMobile.value = !!mq?.matches);
   apply();
-  mq.addEventListener?.('change', apply);
+
+  onMqChange = () => apply();
+  mq.addEventListener?.('change', onMqChange);
+});
+
+onBeforeUnmount(() => {
+  if (mq && onMqChange) mq.removeEventListener?.('change', onMqChange);
 });
 
 // ------------------------
@@ -91,14 +95,9 @@ const active = ref<ActiveDrag>(null);
 // ------------------------
 // Patch 1 (UX): controlar que mesas são visíveis no mapa
 // ------------------------
-const showAddDesk = ref(false); // será ligado ao modal no template
+const showAddDesk = ref(false);
 const visibleDeskIds = ref<Set<number>>(new Set());
 
-/**
- * Heurística:
- * se existirem muitos layouts e quase todos tiverem o mesmo x/y,
- * assumimos que foi auto-place e começamos com o mapa "vazio".
- */
 const shouldStartEmpty = computed(() => {
   const layouts = seatingPlan.value?.deskLayouts ?? [];
   if (layouts.length < 6) return false;
@@ -113,10 +112,12 @@ const shouldStartEmpty = computed(() => {
   return samePosCount / layouts.length >= 0.9;
 });
 
-/**
- * Inicialização do Set de mesas visíveis.
- * Importante: só inicializa uma vez (para não resetar após adicionares mesas).
- */
+function removeDeskFromMap(deskId: number) {
+  const next = new Set(visibleDeskIds.value);
+  next.delete(deskId);
+  visibleDeskIds.value = next;
+}
+
 watchEffect(() => {
   if (!seatingPlan.value) return;
   if (visibleDeskIds.value.size > 0) return;
@@ -140,10 +141,6 @@ const availableDesks = computed(() => {
   return props.desks.filter((d) => !placed.has(d.id));
 });
 
-/**
- * Posição inicial para novas mesas adicionadas ao mapa.
- * Grid simples para evitar sobreposição.
- */
 function findNextDeskPosition() {
   const existing = visibleDeskLayouts.value;
 
@@ -163,13 +160,14 @@ function findNextDeskPosition() {
   };
 }
 
-/**
- * Adiciona uma mesa ao mapa (persistindo via upsert).
- * Nota: a UI (botão/modal) que chama isto será ligada no template.
- */
-async function addDeskToMap(deskId: number) {
+async function addDeskToMap(deskMap: {
+  deskId: number;
+  shape: 'round' | 'rect';
+}) {
   if (!seatingPlan.value) return;
   if (isMobile.value) return;
+
+  const { deskId, shape } = deskMap;
 
   const id = seatingPlan.value.id;
   const pos = findNextDeskPosition();
@@ -178,7 +176,7 @@ async function addDeskToMap(deskId: number) {
     x: pos.x,
     y: pos.y,
     rotation: 0,
-    shape: 'round',
+    shape: shape ?? 'round',
     width: 140,
     height: 140,
     locked: false,
@@ -262,10 +260,6 @@ function onItemPointerDown(evt: PointerEvent, itemId: number) {
   (evt.target as Element).setPointerCapture?.(evt.pointerId);
 }
 
-/**
- * Movimento optimista: actualiza a posição no estado local.
- * Persistência acontece apenas no pointerup.
- */
 function onPointerMove(evt: PointerEvent) {
   if (!active.value || !seatingPlan.value) return;
 
@@ -289,19 +283,16 @@ function onPointerMove(evt: PointerEvent) {
   item.y = Math.max(0, active.value.originY + dy);
 }
 
-/**
- * No fim do drag, persiste no backend.
- * - Mesa: upsertDeskLayout(planId, deskId, payload)
- * - Item: updateItem(planId, itemId, payload)
- */
 async function onPointerUp() {
   if (!active.value || !seatingPlan.value) return;
 
   const id = seatingPlan.value.id;
 
-  if (active.value.kind === 'desk') {
-    const layout = findDeskLayout(active.value.deskId);
-    if (layout) {
+  try {
+    if (active.value.kind === 'desk') {
+      const layout = findDeskLayout(active.value.deskId);
+      if (!layout) return;
+
       const payload: UpsertDeskLayout = {
         x: layout.x,
         y: layout.y,
@@ -313,14 +304,12 @@ async function onPointerUp() {
       };
 
       await upsertDeskLayout(id, active.value.deskId, payload);
+      return;
     }
 
-    active.value = null;
-    return;
-  }
+    const item = findItem(active.value.itemId);
+    if (!item) return;
 
-  const item = findItem(active.value.itemId);
-  if (item) {
     const payload: UpsertSeatingPlanItem = {
       type: item.type,
       label: item.label ?? null,
@@ -334,57 +323,13 @@ async function onPointerUp() {
     };
 
     await updateItem(id, item.id, payload);
+  } finally {
+    active.value = null;
   }
-
-  active.value = null;
 }
 
 // ------------------------
 // Itens rápidos (palco, DJ, etc.)
-// ------------------------
-async function quickAdd(type: SeatingPlanItemType) {
-  if (!seatingPlan.value) return;
-  if (isMobile.value) return;
-
-  const payload: UpsertSeatingPlanItem = {
-    type,
-    label: type,
-    x: 80,
-    y: 80,
-    rotation: 0,
-    width: type === 'Palco' ? 260 : 180,
-    height: 120,
-    zIndex: 5,
-    locked: false,
-  };
-
-  await addItem(seatingPlan.value.id, payload);
-}
-
-function deskLabel(deskId: number) {
-  const d = props.desks.find((x) => x.id === deskId);
-  return d?.name ?? `Mesa ${deskId}`;
-}
-
-// ------------------------
-// Presets do canvas
-// ------------------------
-async function setCanvasPreset(preset: 'small' | 'medium' | 'large') {
-  if (!seatingPlan.value) return;
-  if (isMobile.value) return;
-
-  const next: UpdateSeatingPlanCanvas =
-    preset === 'small'
-      ? { canvasWidth: 1200, canvasHeight: 700 }
-      : preset === 'medium'
-        ? { canvasWidth: 1600, canvasHeight: 900 }
-        : { canvasWidth: 2200, canvasHeight: 1200 };
-
-  await updateCanvas(seatingPlan.value.id, next);
-}
-
-// ------------------------
-// Botões (estrutura de dados)
 // ------------------------
 type ActionBtn = {
   key: string;
@@ -396,6 +341,25 @@ type ActionBtn = {
 };
 
 const isDesktopOnlyDisabled = computed(() => isMobile.value);
+
+async function quickAdd(type: SeatingPlanItemType) {
+  if (!seatingPlan.value) return;
+  if (isMobile.value) return;
+
+  const payload: UpsertSeatingPlanItem = {
+    type,
+    label: type,
+    x: 80,
+    y: 80,
+    rotation: 0,
+    width: 180,
+    height: 120,
+    zIndex: 5,
+    locked: false,
+  };
+
+  await addItem(seatingPlan.value.id, payload);
+}
 
 const quickActions: ActionBtn[] = [
   {
@@ -442,6 +406,28 @@ const quickActions: ActionBtn[] = [
 
 const getQuickActionByLabel = (name: string) =>
   quickActions.find((a) => a.name === name);
+
+function deskLabel(deskId: number) {
+  const d = props.desks.find((x) => x.id === deskId);
+  return d?.name ?? `Mesa ${deskId}`;
+}
+
+// ------------------------
+// Presets do canvas
+// ------------------------
+async function setCanvasPreset(preset: 'small' | 'medium' | 'large') {
+  if (!seatingPlan.value) return;
+  if (isMobile.value) return;
+
+  const next: UpdateSeatingPlanCanvas =
+    preset === 'small'
+      ? { canvasWidth: 1200, canvasHeight: 700 }
+      : preset === 'medium'
+        ? { canvasWidth: 1600, canvasHeight: 900 }
+        : { canvasWidth: 2200, canvasHeight: 1200 };
+
+  await updateCanvas(seatingPlan.value.id, next);
+}
 
 const canvasPresets: ActionBtn[] = [
   {
@@ -490,12 +476,69 @@ const exportActions: ActionBtn[] = [
 // ------------------------
 // Export helpers (SVG -> PNG/PDF)
 // ------------------------
-function getSvgString(svgEl: SVGSVGElement) {
-  if (!svgEl.getAttribute('xmlns'))
-    svgEl.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  if (!svgEl.getAttribute('xmlns:xlink'))
-    svgEl.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-  return new XMLSerializer().serializeToString(svgEl);
+function exportReadySvgString(svgEl: SVGSVGElement) {
+  // clone do SVG
+  const clone = svgEl.cloneNode(true) as SVGSVGElement;
+
+  if (!clone.getAttribute('xmlns')) {
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  }
+
+  // width/height confiáveis
+  const width =
+    Number(svgEl.getAttribute('width')) || svgEl.viewBox.baseVal.width || 1600;
+  const height =
+    Number(svgEl.getAttribute('height')) || svgEl.viewBox.baseVal.height || 900;
+
+  // fundo branco real
+  const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  bg.setAttribute('x', '0');
+  bg.setAttribute('y', '0');
+  bg.setAttribute('width', String(width));
+  bg.setAttribute('height', String(height));
+  bg.setAttribute('fill', '#ffffff');
+  clone.insertBefore(bg, clone.firstChild);
+
+  // IMPORTANTE: computed styles do ORIGINAL (no DOM), aplicados ao CLONE
+  const srcNodes = svgEl.querySelectorAll<SVGElement>('*');
+  const dstNodes = clone.querySelectorAll<SVGElement>('*');
+
+  const len = Math.min(srcNodes.length, dstNodes.length);
+
+  for (let i = 0; i < len; i++) {
+    const src = srcNodes[i];
+    const dst = dstNodes[i];
+
+    if (!src || !dst) continue;
+
+    const cs = getComputedStyle(src);
+
+    const fill = cs.getPropertyValue('fill');
+    const stroke = cs.getPropertyValue('stroke');
+    const strokeWidth = cs.getPropertyValue('stroke-width');
+    const opacity = cs.getPropertyValue('opacity');
+
+    if (fill && fill !== 'none') dst.setAttribute('fill', fill);
+    if (stroke && stroke !== 'none') dst.setAttribute('stroke', stroke);
+    if (strokeWidth) dst.setAttribute('stroke-width', strokeWidth);
+    if (opacity) dst.setAttribute('opacity', opacity);
+
+    if (dst.tagName.toLowerCase() === 'text') {
+      const fontSize = cs.getPropertyValue('font-size');
+      const fontWeight = cs.getPropertyValue('font-weight');
+      const fontFamily = cs.getPropertyValue('font-family');
+      const color = cs.getPropertyValue('fill');
+
+      if (fontSize) dst.setAttribute('font-size', fontSize);
+      if (fontWeight) dst.setAttribute('font-weight', fontWeight);
+      if (fontFamily) dst.setAttribute('font-family', fontFamily);
+      if (color && color !== 'none') dst.setAttribute('fill', color);
+    }
+
+    dst.removeAttribute('class');
+  }
+
+  return new XMLSerializer().serializeToString(clone);
 }
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -515,7 +558,7 @@ async function svgToPngBlob(
   const svg = svgRef.value;
   if (!svg) return null;
 
-  const svgString = getSvgString(svg);
+  const svgString = exportReadySvgString(svg);
 
   const width =
     Number(svg.getAttribute('width')) || svg.viewBox.baseVal.width || 1600;
@@ -588,55 +631,59 @@ async function exportPdf(
   pdf.save(filename);
 }
 
-const deskById = computed(() => {
-  const map = new Map<number, (typeof seatingSnapshot.value)[number]>();
-  for (const d of seatingSnapshot.value ?? []) map.set(d.id, d);
+// ------------------------
+// Seats (ocupação + pontos)
+// ------------------------
+type SeatOccupancy = {
+  kind: 'start' | 'cont';
+  guestId: number;
+  guestName: string;
+  peopleCount: number;
+  startSeat: number;
+  endSeat: number;
+};
+
+type SeatPoint = { seat: number; x: number; y: number };
+
+const seatMapsByDeskId = computed(() => {
+  const map = new Map<number, Map<number, SeatOccupancy>>();
+
+  for (const d of seatingSnapshot.value ?? []) {
+    const seatMap = new Map<number, SeatOccupancy>();
+
+    for (const g of d.guests ?? []) {
+      if (!g.seatNumber || g.seatNumber <= 0) continue;
+
+      const start = g.seatNumber;
+      const count = Math.max(1, g.people_Count ?? 1);
+      const end = start + count - 1;
+
+      for (let s = start; s <= end; s++) {
+        if (!seatMap.has(s)) {
+          seatMap.set(s, {
+            kind: s === start ? 'start' : 'cont',
+            guestId: g.id,
+            guestName: g.name,
+            peopleCount: count,
+            startSeat: start,
+            endSeat: end,
+          });
+        }
+      }
+    }
+
+    map.set(d.id, seatMap);
+  }
+
   return map;
 });
 
-/**
- * Constrói um mapa seat -> info de ocupação por mesa.
- * Regra: seat por grupo.
- * - start seat mostra label (iniciais + ×N)
- * - seats seguintes são "continuação"
- */
+function seatOcc(deskId: number, seat: number) {
+  return seatMapsByDeskId.value.get(deskId)?.get(seat) ?? null;
+}
 
-function buildSeatMapForDesk(deskId: number) {
-  const desk = deskById.value.get(deskId);
-  const seatMap = new Map<number, SeatOccupancy>();
-
-  if (!desk) return { desk: null, seatMap };
-
-  for (const g of desk.guests ?? []) {
-    if (!g.seatNumber || g.seatNumber <= 0) continue;
-
-    const start = g.seatNumber;
-    const count = Math.max(1, g.people_Count ?? 1);
-    const end = start + count - 1;
-
-    for (let s = start; s <= end; s++) {
-      // se passar o limite da mesa, ainda assim marcamos para poder sinalizar erro visual
-      const occ: SeatOccupancy = {
-        kind: s === start ? 'start' : 'cont',
-        guestId: g.id,
-        guestName: g.name,
-        peopleCount: count,
-        startSeat: start,
-        endSeat: end,
-      };
-
-      // Se já existe ocupação, isto é conflito (vamos tratar no render)
-      // Mantemos o primeiro e deixamos o conflito sinalizado no render por “collision check”.
-      if (!seatMap.has(s)) seatMap.set(s, occ);
-      else {
-        // marca conflito com um “placeholder” (opcional)
-        // Podemos decidir no render: se seatMap tem s e há outro, assinalar vermelho.
-        // Por simplicidade aqui, ignoramos o segundo.
-      }
-    }
-  }
-
-  return { desk, seatMap };
+function seatOccupied(deskId: number, seat: number) {
+  return seatMapsByDeskId.value.get(deskId)?.has(seat) ?? false;
 }
 
 function initials(name: string) {
@@ -661,25 +708,91 @@ function getRoundSeatPoints(
   const cy = (layout.height ?? 140) / 2;
 
   const rTable = Math.min(layout.width ?? 140, layout.height ?? 140) / 2;
-  const rSeats = rTable + 18; // distancia dos seats fora da mesa
+  const rSeats = rTable + 18;
 
   const pts: SeatPoint[] = [];
 
-  // Começar no topo (-90deg) para ficar “bonito”
   for (let i = 0; i < renderN; i++) {
     const seat = i + 1;
-
     const angle = -Math.PI / 2 + (i * 2 * Math.PI) / renderN;
     const x = cx + Math.cos(angle) * rSeats;
     const y = cy + Math.sin(angle) * rSeats;
-
     pts.push({ seat, x, y });
   }
 
   return pts;
 }
-</script>
 
+function getRectSeatPoints(
+  layout: DeskLayout,
+  seatsLimit: number,
+  maxRender = 12,
+): SeatPoint[] {
+  const n = Math.max(0, seatsLimit);
+  if (n === 0) return [];
+
+  const renderN = Math.min(n, maxRender);
+
+  const w = layout.width ?? 140;
+  const h = layout.height ?? 140;
+
+  const pad = 18;
+  const left = -pad;
+  const top = -pad;
+  const right = w + pad;
+  const bottom = h + pad;
+
+  const perim = 2 * (w + h) + 8 * pad;
+  const pts: SeatPoint[] = [];
+
+  for (let i = 0; i < renderN; i++) {
+    const seat = i + 1;
+    const t = (i / renderN) * perim;
+
+    let x = 0;
+    let y = 0;
+
+    const topLen = right - left;
+    const rightLen = bottom - top;
+    const bottomLen = topLen;
+
+    if (t < topLen) {
+      x = left + t;
+      y = top;
+    } else if (t < topLen + rightLen) {
+      x = right;
+      y = top + (t - topLen);
+    } else if (t < topLen + rightLen + bottomLen) {
+      x = right - (t - (topLen + rightLen));
+      y = bottom;
+    } else {
+      x = left;
+      y = bottom - (t - (topLen + rightLen + bottomLen));
+    }
+
+    pts.push({ seat, x: Math.max(-40, x), y: Math.max(-40, y) });
+  }
+
+  return pts;
+}
+
+function getSeatPoints(layout: DeskLayout, seatsLimit: number, maxRender = 12) {
+  return layout.shape === 'rect'
+    ? getRectSeatPoints(layout, seatsLimit, maxRender)
+    : getRoundSeatPoints(layout, seatsLimit, maxRender);
+}
+
+// ------------------------
+// Seat modal (assign)
+// ------------------------
+const showAddGuestToSeat = ref(false);
+const selectedSeat = ref<{ deskId: number; seatNumber: number } | null>(null);
+
+function openSeat(deskId: number, seatNumber: number) {
+  selectedSeat.value = { deskId, seatNumber };
+  showAddGuestToSeat.value = true;
+}
+</script>
 <template>
   <div class="w-full">
     <BaseLoading
@@ -859,6 +972,7 @@ function getRoundSeatPoints(
                 :transform="`translate(${layout.x} ${layout.y}) rotate(${layout.rotation})`"
                 style="cursor: grab"
                 @pointerdown="(e) => onDeskPointerDown(e, layout.deskId)"
+                @dblclick.stop="removeDeskFromMap(layout.deskId)"
               >
                 <circle
                   v-if="layout.shape === 'round'"
@@ -879,152 +993,85 @@ function getRoundSeatPoints(
                   stroke-width="2"
                 />
 
-                <g v-if="deskById.get(layout.deskId)">
-                  <template
-                    v-for="pt in getRoundSeatPoints(
-                      layout,
-                      deskById.get(layout.deskId)!.seats_Limit,
-                      12,
-                    )"
-                    :key="`seat-${layout.deskId}-${pt.seat}`"
+                <!-- Seats -->
+                <template
+                  v-for="pt in getSeatPoints(
+                    layout,
+                    deskById.get(layout.deskId)?.seats_Limit ?? 0,
+                    12,
+                  )"
+                  :key="`seat-${layout.deskId}-${pt.seat}`"
+                >
+                  <g
+                    v-if="(deskById.get(layout.deskId)?.seats_Limit ?? 0) > 0"
+                    style="cursor: pointer"
+                    @click.stop="openSeat(layout.deskId, pt.seat)"
                   >
-                    <!-- occupancy map por mesa -->
-                    <template v-if="true">
-                      <!-- vamos calcular no render chamando buildSeatMapForDesk -->
-                      <g>
-                        <circle
-                          :cx="pt.x"
-                          :cy="pt.y"
-                          r="10"
-                          :fill="
-                            buildSeatMapForDesk(layout.deskId).seatMap.has(
-                              pt.seat,
-                            )
-                              ? 'rgba(59,130,246,0.28)'
-                              : 'rgba(0,0,0,0.06)'
-                          "
-                          :stroke="
-                            buildSeatMapForDesk(layout.deskId).seatMap.has(
-                              pt.seat,
-                            )
-                              ? 'rgba(59,130,246,0.55)'
-                              : 'rgba(0,0,0,0.18)'
-                          "
-                          stroke-width="1.5"
-                        />
+                    <circle
+                      :cx="pt.x"
+                      :cy="pt.y"
+                      r="11"
+                      :fill="
+                        seatOccupied(layout.deskId, pt.seat)
+                          ? 'rgb(116,102,33, 0.3)'
+                          : 'rgba(0,0,0,0.06)'
+                      "
+                      :stroke="
+                        seatOccupied(layout.deskId, pt.seat)
+                          ? 'rgb(116,102,33, 0.55)'
+                          : 'rgba(0,0,0,0.18)'
+                      "
+                      stroke-width="1.5"
+                    />
+                    <text
+                      :x="pt.x"
+                      :y="pt.y"
+                      text-anchor="middle"
+                      dominant-baseline="middle"
+                      font-size="10"
+                      class="fill-primary-800 font-semibold"
+                    >
+                      {{ pt.seat }}
+                    </text>
 
-                        <!-- número do seat (sempre) -->
-                        <text
-                          :x="pt.x"
-                          :y="pt.y"
-                          text-anchor="middle"
-                          dominant-baseline="middle"
-                          font-size="10"
-                          class="fill-primary-800 font-semibold"
-                        >
-                          {{ pt.seat }}
-                        </text>
+                    <template
+                      v-if="seatOcc(layout.deskId, pt.seat)?.kind === 'start'"
+                    >
+                      <text
+                        :x="pt.x"
+                        :y="pt.y + 20"
+                        text-anchor="middle"
+                        font-size="10"
+                        class="fill-primary-800 font-semibold"
+                      >
+                        {{
+                          initials(seatOcc(layout.deskId, pt.seat)!.guestName)
+                        }}
+                        ×{{ seatOcc(layout.deskId, pt.seat)!.peopleCount }}
+                      </text>
 
-                        <!-- label do grupo apenas no seat start -->
-                        <template
-                          v-if="
-                            buildSeatMapForDesk(layout.deskId).seatMap.get(
-                              pt.seat,
-                            )?.kind === 'start'
-                          "
-                        >
-                          <text
-                            :x="pt.x"
-                            :y="pt.y + 18"
-                            text-anchor="middle"
-                            font-size="10"
-                            class="fill-primary-800"
-                          >
-                            {{
-                              initials(
-                                buildSeatMapForDesk(layout.deskId).seatMap.get(
-                                  pt.seat,
-                                )!.guestName,
-                              )
-                            }}
-                            ×{{
-                              buildSeatMapForDesk(layout.deskId).seatMap.get(
-                                pt.seat,
-                              )!.peopleCount
-                            }}
-                          </text>
-
-                          <title>
-                            {{
-                              buildSeatMapForDesk(layout.deskId).seatMap.get(
-                                pt.seat,
-                              )!.guestName
-                            }}
-                            —
-                            {{
-                              buildSeatMapForDesk(layout.deskId).seatMap.get(
-                                pt.seat,
-                              )!.peopleCount
-                            }}
-                            pessoas (lugares
-                            {{
-                              buildSeatMapForDesk(layout.deskId).seatMap.get(
-                                pt.seat,
-                              )!.startSeat
-                            }}–{{
-                              buildSeatMapForDesk(layout.deskId).seatMap.get(
-                                pt.seat,
-                              )!.endSeat
-                            }})
-                          </title>
-                        </template>
-
-                        <!-- tooltip para seats continuação -->
-                        <template
-                          v-else-if="
-                            buildSeatMapForDesk(layout.deskId).seatMap.has(
-                              pt.seat,
-                            )
-                          "
-                        >
-                          <title>
-                            {{
-                              buildSeatMapForDesk(layout.deskId).seatMap.get(
-                                pt.seat,
-                              )!.guestName
-                            }}
-                            — continuação (lugares
-                            {{
-                              buildSeatMapForDesk(layout.deskId).seatMap.get(
-                                pt.seat,
-                              )!.startSeat
-                            }}–{{
-                              buildSeatMapForDesk(layout.deskId).seatMap.get(
-                                pt.seat,
-                              )!.endSeat
-                            }})
-                          </title>
-                        </template>
-                      </g>
+                      <title>
+                        {{ seatOcc(layout.deskId, pt.seat)!.guestName }} —
+                        {{ seatOcc(layout.deskId, pt.seat)!.peopleCount }}
+                        pessoas (lugares
+                        {{ seatOcc(layout.deskId, pt.seat)!.startSeat }}–{{
+                          seatOcc(layout.deskId, pt.seat)!.endSeat
+                        }})
+                      </title>
                     </template>
-                  </template>
 
-                  <!-- Se seats_Limit > 12, mostrar +X -->
-                  <text
-                    v-if="deskById.get(layout.deskId)!.seats_Limit > 12"
-                    :x="layout.width / 2"
-                    :y="
-                      layout.height / 2 +
-                      Math.min(layout.width, layout.height) / 2 +
-                      44
-                    "
-                    text-anchor="middle"
-                    font-size="12"
-                    fill="rgba(0,0,0,0.55)"
-                  >
-                    +{{ deskById.get(layout.deskId)!.seats_Limit - 12 }}
-                  </text>
-                </g>
+                    <template v-else-if="seatOccupied(layout.deskId, pt.seat)">
+                      <title>
+                        {{ seatOcc(layout.deskId, pt.seat)!.guestName }} —
+                        continuação (lugares
+                        {{ seatOcc(layout.deskId, pt.seat)!.startSeat }}–{{
+                          seatOcc(layout.deskId, pt.seat)!.endSeat
+                        }})
+                      </title>
+                    </template>
+                  </g>
+                </template>
+
                 <text
                   :x="layout.width / 2"
                   :y="layout.height / 2"
@@ -1039,19 +1086,46 @@ function getRoundSeatPoints(
             </g>
           </svg>
         </div>
-
-        <div class="text-grey-400 mt-2 text-xs font-semibold">
-          Dica: arrasta mesas/itens para posicionar. Duplo clique num item
-          (palco/DJ/etc.) remove.
+        <!-- Dicas -->
+        <div class="text-grey-400 mt-2 flex gap-2 text-xs font-semibold">
+          <IconInformation
+            :font-controlled="false"
+            class="text-grey-400 h-4 w-4 flex-shrink-0"
+          />
+          <span
+            >Dica: arrasta mesas/itens para posicionar. Duplo clique num item
+            (palco/DJ/etc.) remove. Duplo clique numa mesa remove do mapa (não
+            apaga a mesa).</span
+          >
         </div>
       </div>
     </div>
 
+    <!-- Modais -->
     <LazyDesksAddToMapModal
       :show="showAddDesk"
       :desks="availableDesks"
       @close-modal="showAddDesk = false"
       @select-desk="addDeskToMap"
+    />
+
+    <LazyDesksAddGuestToSeatModal
+      :show="showAddGuestToSeat"
+      :event-id="props.eventId"
+      :desk-id="selectedSeat?.deskId ?? null"
+      :desk-name="
+        selectedSeat ? (deskById.get(selectedSeat.deskId)?.name ?? null) : null
+      "
+      :seat-number="selectedSeat?.seatNumber ?? null"
+      :current-guest-name="
+        seatOcc(selectedSeat?.deskId ?? 0, selectedSeat?.seatNumber ?? 0)
+          ?.guestName ?? null
+      "
+      :desk-guests="
+        selectedSeat ? (deskById.get(selectedSeat.deskId)?.guests ?? []) : []
+      "
+      @close-modal="showAddGuestToSeat = false"
+      @assigned="refreshSnapshot()"
     />
   </div>
 </template>

@@ -14,9 +14,11 @@ const props = withDefaults(defineProps<Props>(), {
   desks: () => [],
 });
 
+const shape = ref<'round' | 'rect'>('round');
+
 const emit = defineEmits<{
   (e: 'closeModal'): void;
-  (e: 'selectDesk', deskId: number): void;
+  (e: 'selectDesk', payload: { deskId: number; shape: 'round' | 'rect' }): void;
 }>();
 
 const deskSearch = ref('');
@@ -50,6 +52,35 @@ watch(
       />
 
       <div class="rounded-lg border p-2">
+        <!-- Shape da mesa -->
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="rounded-lg border px-3 py-2 text-sm transition"
+            :class="
+              shape === 'round'
+                ? 'bg-primary-600 border-primary-600 text-white'
+                : 'hover:bg-grey-50'
+            "
+            @click="shape = 'round'"
+          >
+            Redonda
+          </button>
+
+          <button
+            type="button"
+            class="rounded-lg border px-3 py-2 text-sm transition"
+            :class="
+              shape === 'rect'
+                ? 'bg-primary-600 border-primary-600 text-white'
+                : 'hover:bg-grey-50'
+            "
+            @click="shape = 'rect'"
+          >
+            Rectangular
+          </button>
+        </div>
+
         <BaseSearchNotFound v-if="filteredDesks.length === 0">
           Não há mesas disponíveis para adicionar.
         </BaseSearchNotFound>
@@ -60,7 +91,7 @@ watch(
             :key="d.id"
             type="button"
             class="hover:bg-grey-50 w-full rounded-lg px-3 py-2 text-left text-sm transition"
-            @click="emit('selectDesk', d.id)"
+            @click="emit('selectDesk', { deskId: d.id, shape })"
           >
             {{ d.name }}
           </button>
