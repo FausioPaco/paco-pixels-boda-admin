@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Canvg } from 'canvg';
 import jsPDF from 'jspdf';
+import { getSeatingPlanService } from '~/services/seatingPlanService';
 
 // ------------------------
 // Props
@@ -112,10 +113,23 @@ const shouldStartEmpty = computed(() => {
   return samePosCount / layouts.length >= 0.9;
 });
 
-function removeDeskFromMap(deskId: number) {
+const nuxtApp = useNuxtApp();
+const seatingPlanService = getSeatingPlanService(nuxtApp.$api);
+
+async function removeDeskFromMap(deskId: number) {
+  if (!seatingPlan.value) return;
+
+  const planId = seatingPlan.value.id;
+
+  await seatingPlanService.removeDeskFromMap(planId, deskId);
+
+  // sincronizar frontend
   const next = new Set(visibleDeskIds.value);
   next.delete(deskId);
   visibleDeskIds.value = next;
+
+  // opcional mas recomendado
+  await refreshSeatingPlan();
 }
 
 watchEffect(() => {
@@ -177,8 +191,8 @@ async function addDeskToMap(deskMap: {
     y: pos.y,
     rotation: 0,
     shape: shape ?? 'round',
-    width: 140,
-    height: 140,
+    width: shape === 'rect' ? 220 : 140,
+    height: shape === 'rect' ? 120 : 140,
     locked: false,
   };
 
@@ -476,6 +490,30 @@ const exportActions: ActionBtn[] = [
 // ------------------------
 // Export helpers (SVG -> PNG/PDF)
 // ------------------------
+function normalizeSvgColor(value: string) {
+  const v = (value ?? '').trim();
+
+  // Ex: "rgb(116 102 33 / 0.3)"
+  const modernRgb = v.match(
+    /^rgb\(\s*(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})\s*\/\s*([0-9.]+)\s*\)$/i,
+  );
+  if (modernRgb) {
+    const [, r, g, b, a] = modernRgb;
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  // Ex: "rgb(116 102 33)" (sem /alpha)
+  const spacedRgb = v.match(
+    /^rgb\(\s*(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})\s*\)$/i,
+  );
+  if (spacedRgb) {
+    const [, r, g, b] = spacedRgb;
+    return `rgb(${r},${g},${b})`;
+  }
+
+  return v;
+}
+
 function exportReadySvgString(svgEl: SVGSVGElement) {
   // clone do SVG
   const clone = svgEl.cloneNode(true) as SVGSVGElement;
@@ -513,8 +551,8 @@ function exportReadySvgString(svgEl: SVGSVGElement) {
 
     const cs = getComputedStyle(src);
 
-    const fill = cs.getPropertyValue('fill');
-    const stroke = cs.getPropertyValue('stroke');
+    const fill = normalizeSvgColor(cs.getPropertyValue('fill'));
+    const stroke = normalizeSvgColor(cs.getPropertyValue('stroke'));
     const strokeWidth = cs.getPropertyValue('stroke-width');
     const opacity = cs.getPropertyValue('opacity');
 
@@ -1013,7 +1051,7 @@ function openSeat(deskId: number, seatNumber: number) {
                       r="11"
                       :fill="
                         seatOccupied(layout.deskId, pt.seat)
-                          ? 'rgb(116,102,33, 0.3)'
+                          ? 'rgb(116,102,33)'
                           : 'rgba(0,0,0,0.06)'
                       "
                       :stroke="

@@ -126,19 +126,19 @@ async function assign() {
     <div class="my-2 animate-fadeIn space-y-4">
       <!-- Contexto -->
       <div class="rounded-xl border bg-white p-3">
-        <div class="text-grey-700 text-sm">
+        <div class="text-grey-300 text-sm">
           Mesa:
-          <span class="text-grey-900 font-semibold">
+          <span class="text-primary-800 font-semibold">
             {{ deskName ?? '-' }}
           </span>
-          <span class="text-grey-300 mx-2">•</span>
+          <span class="text-grey-300 mx-3">•</span>
           Lugar:
-          <span class="text-grey-900 font-semibold">
+          <span class="text-primary-800 font-semibold">
             {{ seatNumber ?? '-' }}
           </span>
         </div>
 
-        <div class="text-grey-400 mt-1 text-xs">
+        <div class="text-grey-400 my-2 text-xs">
           Estamos a mostrar apenas convidados desta mesa para evitar enganos.
         </div>
 
@@ -167,7 +167,7 @@ async function assign() {
           @select="onSelectGuest"
         />
 
-        <div v-if="selectedGuest" class="text-grey-500 text-xs">
+        <div v-if="selectedGuest" class="text-grey-400 text-xs">
           Grupo: {{ selectedGuest.people_Count ?? 1 }} pessoa(s)
           <span v-if="selectedGuest.seatNumber">
             • já tinha lugar: {{ selectedGuest.seatNumber }}
@@ -179,7 +179,9 @@ async function assign() {
 
       <!-- Actions -->
       <div class="flex items-center justify-end gap-2">
-        <BaseButton variant="ghost" @click="close"> Cancelar </BaseButton>
+        <BaseButton btn-type="outline-primary" @click="close">
+          Cancelar
+        </BaseButton>
 
         <BaseButton
           :loading="isSaving"

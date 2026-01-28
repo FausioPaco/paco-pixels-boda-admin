@@ -31,6 +31,12 @@ export const getSeatingPlanService = <T>(
     });
   },
 
+  async removeDeskFromMap(planId: number, deskId: number) {
+    return $fetch<unknown>(`${RESOURCE}/${planId}/desks/${deskId}`, {
+      method: 'DELETE',
+    });
+  },
+
   async addItem(
     planId: number,
     payload: UpsertSeatingPlanItem,
