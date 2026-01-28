@@ -128,8 +128,8 @@ async function removeDeskFromMap(deskId: number) {
   next.delete(deskId);
   visibleDeskIds.value = next;
 
-  // opcional mas recomendado
   await refreshSeatingPlan();
+  await refreshSnapshot();
 }
 
 watchEffect(() => {
@@ -518,6 +518,17 @@ function exportReadySvgString(svgEl: SVGSVGElement) {
   // clone do SVG
   const clone = svgEl.cloneNode(true) as SVGSVGElement;
 
+  // remove o grid pattern no export (canvg pode falhar e pintar tudo de preto)
+  clone.querySelector('#grid')?.closest('defs')?.remove();
+
+  const gridRect = clone.querySelector<SVGRectElement>(
+    'rect[fill="url(#grid)"]',
+  );
+  if (gridRect) {
+    // substitui por branco ou cinza muito leve
+    gridRect.setAttribute('fill', '#ffffff');
+  }
+
   if (!clone.getAttribute('xmlns')) {
     clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
   }
@@ -555,6 +566,12 @@ function exportReadySvgString(svgEl: SVGSVGElement) {
     const stroke = normalizeSvgColor(cs.getPropertyValue('stroke'));
     const strokeWidth = cs.getPropertyValue('stroke-width');
     const opacity = cs.getPropertyValue('opacity');
+
+    const fillOpacity = cs.getPropertyValue('fill-opacity');
+    const strokeOpacity = cs.getPropertyValue('stroke-opacity');
+
+    if (fillOpacity) dst.setAttribute('fill-opacity', fillOpacity);
+    if (strokeOpacity) dst.setAttribute('stroke-opacity', strokeOpacity);
 
     if (fill && fill !== 'none') dst.setAttribute('fill', fill);
     if (stroke && stroke !== 'none') dst.setAttribute('stroke', stroke);
@@ -608,13 +625,25 @@ async function svgToPngBlob(
   canvas.height = Math.round(height * scale);
 
   const ctx = canvas.getContext('2d');
+
   if (!ctx) return null;
+
+  ctx.save();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.restore();
 
   const v = Canvg.fromString(ctx, svgString, {
     ignoreAnimation: true,
     ignoreMouse: true,
   });
+
   await v.render();
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-over';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.restore();
 
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob((b) => resolve(b), 'image/png'),
