@@ -132,7 +132,7 @@ async function assign() {
             {{ deskName ?? '-' }}
           </span>
           <span class="text-grey-300 mx-3">•</span>
-          Lugar:
+          Lugar nº:
           <span class="text-primary-800 font-semibold">
             {{ seatNumber ?? '-' }}
           </span>
