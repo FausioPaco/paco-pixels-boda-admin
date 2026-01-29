@@ -1185,7 +1185,6 @@ const TEXT_PRIMARY_OP = '0.90';
                 :transform="`translate(${layout.x} ${layout.y}) rotate(${layout.rotation})`"
                 style="cursor: grab"
                 @pointerdown="(e) => onDeskPointerDown(e, layout.deskId)"
-                @dblclick.stop="removeDeskFromMap(layout.deskId)"
               >
                 <circle
                   v-if="layout.shape === 'round'"
@@ -1197,6 +1196,7 @@ const TEXT_PRIMARY_OP = '0.90';
                   :stroke="TABLE_COLOR"
                   :stroke-opacity="TABLE_STROKE_OP"
                   stroke-width="2"
+                  @dblclick.stop="removeDeskFromMap(layout.deskId)"
                 />
                 <rect
                   v-else
@@ -1210,6 +1210,7 @@ const TEXT_PRIMARY_OP = '0.90';
                   :stroke="TABLE_COLOR"
                   :stroke-opacity="TABLE_STROKE_OP"
                   stroke-width="2"
+                  @dblclick.stop="removeDeskFromMap(layout.deskId)"
                 />
 
                 <!-- Seats -->
