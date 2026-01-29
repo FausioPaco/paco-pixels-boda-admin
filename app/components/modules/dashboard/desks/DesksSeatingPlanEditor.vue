@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Canvg } from 'canvg';
 import jsPDF from 'jspdf';
 import { getSeatingPlanService } from '~/services/seatingPlanService';
 
@@ -490,108 +489,63 @@ const exportActions: ActionBtn[] = [
 // ------------------------
 // Export helpers (SVG -> PNG/PDF)
 // ------------------------
-function normalizeSvgColor(value: string) {
-  const v = (value ?? '').trim();
+const EXPORT_FONT_FAMILY = `"Plus Jakarta Sans", sans-serif`;
+async function ensureExportFontLoaded() {
+  if (!import.meta.client) return;
 
-  // Ex: "rgb(116 102 33 / 0.3)"
-  const modernRgb = v.match(
-    /^rgb\(\s*(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})\s*\/\s*([0-9.]+)\s*\)$/i,
-  );
-  if (modernRgb) {
-    const [, r, g, b, a] = modernRgb;
-    return `rgba(${r},${g},${b},${a})`;
-  }
+  // Nem todos os browsers suportam, mas Chrome/Edge sim
+  const fonts = document.fonts as FontFaceSet | undefined;
+  if (!fonts?.load) return;
 
-  // Ex: "rgb(116 102 33)" (sem /alpha)
-  const spacedRgb = v.match(
-    /^rgb\(\s*(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})\s*\)$/i,
-  );
-  if (spacedRgb) {
-    const [, r, g, b] = spacedRgb;
-    return `rgb(${r},${g},${b})`;
-  }
+  // Carrega pesos que usas (normal e bold)
+  await fonts.load(`400 16px ${EXPORT_FONT_FAMILY}`);
+  await fonts.load(`700 16px ${EXPORT_FONT_FAMILY}`);
 
-  return v;
+  // Garante que terminou
+  await fonts.ready;
 }
 
 function exportReadySvgString(svgEl: SVGSVGElement) {
-  // clone do SVG
   const clone = svgEl.cloneNode(true) as SVGSVGElement;
+  clone.setAttribute('style', `font-family: ${EXPORT_FONT_FAMILY};`);
 
-  // remove o grid pattern no export (canvg pode falhar e pintar tudo de preto)
-  clone.querySelector('#grid')?.closest('defs')?.remove();
+  clone.querySelectorAll('text').forEach((t) => {
+    t.setAttribute('font-family', EXPORT_FONT_FAMILY);
+  });
 
-  const gridRect = clone.querySelector<SVGRectElement>(
-    'rect[fill="url(#grid)"]',
-  );
-  if (gridRect) {
-    // substitui por branco ou cinza muito leve
-    gridRect.setAttribute('fill', '#ffffff');
-  }
-
+  // xmlns + size
   if (!clone.getAttribute('xmlns')) {
     clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
   }
 
-  // width/height confiáveis
   const width =
     Number(svgEl.getAttribute('width')) || svgEl.viewBox.baseVal.width || 1600;
   const height =
     Number(svgEl.getAttribute('height')) || svgEl.viewBox.baseVal.height || 900;
 
-  // fundo branco real
+  clone.setAttribute('width', String(width));
+  clone.setAttribute('height', String(height));
+  clone.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+  // fundo branco garantido
   const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
   bg.setAttribute('x', '0');
   bg.setAttribute('y', '0');
   bg.setAttribute('width', String(width));
   bg.setAttribute('height', String(height));
   bg.setAttribute('fill', '#ffffff');
-  clone.insertBefore(bg, clone.firstChild);
 
-  // IMPORTANTE: computed styles do ORIGINAL (no DOM), aplicados ao CLONE
-  const srcNodes = svgEl.querySelectorAll<SVGElement>('*');
-  const dstNodes = clone.querySelectorAll<SVGElement>('*');
+  // mete mesmo como 1º elemento “real”
+  const firstEl =
+    Array.from(clone.childNodes).find((n) => n.nodeType === 1) ?? null;
+  clone.insertBefore(bg, firstEl);
 
-  const len = Math.min(srcNodes.length, dstNodes.length);
-
-  for (let i = 0; i < len; i++) {
-    const src = srcNodes[i];
-    const dst = dstNodes[i];
-
-    if (!src || !dst) continue;
-
-    const cs = getComputedStyle(src);
-
-    const fill = normalizeSvgColor(cs.getPropertyValue('fill'));
-    const stroke = normalizeSvgColor(cs.getPropertyValue('stroke'));
-    const strokeWidth = cs.getPropertyValue('stroke-width');
-    const opacity = cs.getPropertyValue('opacity');
-
-    const fillOpacity = cs.getPropertyValue('fill-opacity');
-    const strokeOpacity = cs.getPropertyValue('stroke-opacity');
-
-    if (fillOpacity) dst.setAttribute('fill-opacity', fillOpacity);
-    if (strokeOpacity) dst.setAttribute('stroke-opacity', strokeOpacity);
-
-    if (fill && fill !== 'none') dst.setAttribute('fill', fill);
-    if (stroke && stroke !== 'none') dst.setAttribute('stroke', stroke);
-    if (strokeWidth) dst.setAttribute('stroke-width', strokeWidth);
-    if (opacity) dst.setAttribute('opacity', opacity);
-
-    if (dst.tagName.toLowerCase() === 'text') {
-      const fontSize = cs.getPropertyValue('font-size');
-      const fontWeight = cs.getPropertyValue('font-weight');
-      const fontFamily = cs.getPropertyValue('font-family');
-      const color = cs.getPropertyValue('fill');
-
-      if (fontSize) dst.setAttribute('font-size', fontSize);
-      if (fontWeight) dst.setAttribute('font-weight', fontWeight);
-      if (fontFamily) dst.setAttribute('font-family', fontFamily);
-      if (color && color !== 'none') dst.setAttribute('fill', color);
-    }
-
-    dst.removeAttribute('class');
-  }
+  // grid: evita pattern no export (opcional, mas recomendado)
+  const gridRect = clone.querySelector<SVGRectElement>(
+    'rect[fill="url(#grid)"]',
+  );
+  if (gridRect) gridRect.setAttribute('fill', '#ffffff');
+  clone.querySelector('#grid')?.closest('defs')?.remove();
 
   return new XMLSerializer().serializeToString(clone);
 }
@@ -613,50 +567,60 @@ async function svgToPngBlob(
   const svg = svgRef.value;
   if (!svg) return null;
 
-  const svgString = exportReadySvgString(svg);
-
   const width =
     Number(svg.getAttribute('width')) || svg.viewBox.baseVal.width || 1600;
   const height =
     Number(svg.getAttribute('height')) || svg.viewBox.baseVal.height || 900;
 
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(width * scale);
-  canvas.height = Math.round(height * scale);
+  const svgString = exportReadySvgString(svg);
 
-  const ctx = canvas.getContext('2d');
-
-  if (!ctx) return null;
-
-  ctx.save();
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.restore();
-
-  const v = Canvg.fromString(ctx, svgString, {
-    ignoreAnimation: true,
-    ignoreMouse: true,
+  const svgBlob = new Blob([svgString], {
+    type: 'image/svg+xml;charset=utf-8',
   });
+  const url = URL.createObjectURL(svgBlob);
 
-  await v.render();
-  ctx.save();
-  ctx.globalCompositeOperation = 'destination-over';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.restore();
+  try {
+    const img = new Image();
+    // importante: evita canvas “tainted” se houver assets externos (se não houver, não faz mal)
+    img.crossOrigin = 'anonymous';
 
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob((b) => resolve(b), 'image/png'),
-  );
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('Falha ao carregar SVG no <img>'));
+      img.src = url;
+    });
 
-  if (!blob) return null;
-  return { blob, width, height };
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(width * scale);
+    canvas.height = Math.round(height * scale);
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    // fundo branco
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // desenhar
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob((b) => resolve(b), 'image/png'),
+    );
+
+    if (!blob) return null;
+    return { blob, width, height };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 async function exportPng(
   filename = `seating-plan-${props.eventId}.png`,
   scale = 2,
 ) {
+  await ensureExportFontLoaded();
+
   const res = await svgToPngBlob(scale);
   if (!res) return;
   downloadBlob(res.blob, filename);
@@ -666,6 +630,7 @@ async function exportPdf(
   filename = `seating-plan-${props.eventId}.pdf`,
   scale = 2,
 ) {
+  await ensureExportFontLoaded();
   const res = await svgToPngBlob(scale);
   if (!res) return;
 
@@ -859,6 +824,24 @@ function openSeat(deskId: number, seatNumber: number) {
   selectedSeat.value = { deskId, seatNumber };
   showAddGuestToSeat.value = true;
 }
+
+// ------------------------
+// Cores
+// ------------------------
+const TABLE_COLOR = 'rgb(116,102,33)';
+const TABLE_FILL_OP = '0.30';
+const TABLE_STROKE_OP = '0.75';
+
+const SEAT_FREE_COLOR = 'rgb(0,0,0)';
+const SEAT_FREE_FILL_OP = '0.06';
+const SEAT_FREE_STROKE_OP = '0.18';
+
+const SEAT_OCC_COLOR = 'rgb(116,102,33)';
+const SEAT_OCC_FILL_OP = '0.30';
+const SEAT_OCC_STROKE_OP = '0.55';
+
+const TEXT_PRIMARY = 'rgb(20,20,20)';
+const TEXT_PRIMARY_OP = '0.90';
 </script>
 <template>
   <div class="w-full">
@@ -1046,7 +1029,10 @@ function openSeat(deskId: number, seatNumber: number) {
                   :cx="layout.width / 2"
                   :cy="layout.height / 2"
                   :r="Math.min(layout.width, layout.height) / 2"
-                  class="fill-primary-600/30 stroke-primary-700"
+                  :fill="TABLE_COLOR"
+                  :fill-opacity="TABLE_FILL_OP"
+                  :stroke="TABLE_COLOR"
+                  :stroke-opacity="TABLE_STROKE_OP"
                   stroke-width="2"
                 />
                 <rect
@@ -1056,7 +1042,10 @@ function openSeat(deskId: number, seatNumber: number) {
                   :width="layout.width"
                   :height="layout.height"
                   rx="18"
-                  class="fill-primary-600/30 stroke-primary-700"
+                  :fill="TABLE_COLOR"
+                  :fill-opacity="TABLE_FILL_OP"
+                  :stroke="TABLE_COLOR"
+                  :stroke-opacity="TABLE_STROKE_OP"
                   stroke-width="2"
                 />
 
@@ -1080,13 +1069,23 @@ function openSeat(deskId: number, seatNumber: number) {
                       r="11"
                       :fill="
                         seatOccupied(layout.deskId, pt.seat)
-                          ? 'rgb(116,102,33)'
-                          : 'rgba(0,0,0,0.06)'
+                          ? SEAT_OCC_COLOR
+                          : SEAT_FREE_COLOR
+                      "
+                      :fill-opacity="
+                        seatOccupied(layout.deskId, pt.seat)
+                          ? SEAT_OCC_FILL_OP
+                          : SEAT_FREE_FILL_OP
                       "
                       :stroke="
                         seatOccupied(layout.deskId, pt.seat)
-                          ? 'rgb(116,102,33, 0.55)'
-                          : 'rgba(0,0,0,0.18)'
+                          ? SEAT_OCC_COLOR
+                          : SEAT_FREE_COLOR
+                      "
+                      :stroke-opacity="
+                        seatOccupied(layout.deskId, pt.seat)
+                          ? SEAT_OCC_STROKE_OP
+                          : SEAT_FREE_STROKE_OP
                       "
                       stroke-width="1.5"
                     />
@@ -1096,7 +1095,8 @@ function openSeat(deskId: number, seatNumber: number) {
                       text-anchor="middle"
                       dominant-baseline="middle"
                       font-size="10"
-                      class="fill-primary-800 font-semibold"
+                      :fill="TEXT_PRIMARY"
+                      font-weight="700"
                     >
                       {{ pt.seat }}
                     </text>
@@ -1109,7 +1109,8 @@ function openSeat(deskId: number, seatNumber: number) {
                         :y="pt.y + 20"
                         text-anchor="middle"
                         font-size="10"
-                        class="fill-primary-800 font-semibold"
+                        :fill="TEXT_PRIMARY"
+                        font-weight="700"
                       >
                         {{
                           initials(seatOcc(layout.deskId, pt.seat)!.guestName)
@@ -1145,7 +1146,9 @@ function openSeat(deskId: number, seatNumber: number) {
                   text-anchor="middle"
                   dominant-baseline="middle"
                   font-size="14"
-                  class="fill-primary-900 font-semibold"
+                  :fill="TEXT_PRIMARY"
+                  :fill-opacity="TEXT_PRIMARY_OP"
+                  font-weight="700"
                 >
                   {{ deskLabel(layout.deskId) }}
                 </text>
