@@ -43,4 +43,13 @@ export const getDeskService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
       method: 'delete',
     });
   },
+
+  async getSeatingSnapshot(eventId: number): Promise<DeskSeatingSnapshot> {
+    return await $fetch<DeskSeatingSnapshot>(
+      `${RESOURCE}/SeatingSnapshot/${eventId}`,
+      {
+        method: 'GET',
+      },
+    );
+  },
 });

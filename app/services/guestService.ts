@@ -10,6 +10,33 @@ export const getGuestService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
     });
   },
 
+  async searchGuestsLite(eventId: number, q: string): Promise<Guest[]> {
+    const res = await fetchWithPagination<Guest>($fetch, RESOURCE, {
+      params: {
+        eventId,
+        searchQuery: q,
+        pageNumber: 1,
+        pageSize: 10,
+        availability_Type: '',
+        startDate: '',
+        endDate: '',
+        categoryId: null,
+      },
+    });
+
+    return res.data as Guest[];
+  },
+
+  async assignSeat(
+    guestId: number,
+    payload: { deskId: number; seatNumber: number },
+  ) {
+    return $fetch<unknown>(`${RESOURCE}/${guestId}/seat`, {
+      body: payload,
+      method: 'put',
+    });
+  },
+
   async exportGuests(parameters: GuestParameters): Promise<Blob> {
     return $fetch<Blob>(`${RESOURCE}/ExportByLocalId`, {
       params: parameters,

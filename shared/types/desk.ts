@@ -30,3 +30,20 @@ export interface DeskOption {
   id: number;
   name: string;
 }
+
+export type DeskSeatingSnapshotGuest = {
+  id: number;
+  name: string;
+  people_Count: number;
+  seatNumber: number | null;
+};
+
+export type DeskSeatingSnapshotDesk = {
+  id: number;
+  name: string;
+  seats_Limit: number;
+  seats_Filled: number;
+  guests: DeskSeatingSnapshotGuest[];
+};
+
+export type DeskSeatingSnapshot = DeskSeatingSnapshotDesk[];

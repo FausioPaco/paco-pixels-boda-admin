@@ -88,7 +88,7 @@ const { errors, handleSubmit, defineField, resetForm } = useForm<EventInput>({
             return value >= getTodayInMaputo();
           },
         ),
-      autoCreateChecklist: boolean().default(false),
+      autoCreateChecklist: boolean().default(true),
     }),
   ),
 });
