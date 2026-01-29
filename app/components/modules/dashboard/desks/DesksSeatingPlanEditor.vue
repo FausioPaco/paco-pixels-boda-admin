@@ -309,6 +309,51 @@ function findItem(itemId: number): SeatingPlanItem | undefined {
 /* -------------------------------------------------------------------------- */
 /* Drag handlers (mesas/itens)                                                 */
 /* -------------------------------------------------------------------------- */
+type PersistKey = `desk:${number}` | `item:${number}`;
+
+const persistingKeys = ref(new Set<PersistKey>());
+const pendingPayload = new Map<PersistKey, unknown>();
+
+function keyForDrag(d: Exclude<ActiveDrag, null>): PersistKey {
+  return d.kind === 'desk' ? `desk:${d.deskId}` : `item:${d.itemId}`;
+}
+
+function isKeyPersisting(key: PersistKey) {
+  return persistingKeys.value.has(key);
+}
+
+async function persistLatest(key: PersistKey, planDbId: number) {
+  // se já está a persistir, não faz nada agora — vai correr no "finally"
+  if (persistingKeys.value.has(key)) return;
+
+  const payload = pendingPayload.get(key);
+  if (!payload) return;
+
+  persistingKeys.value.add(key);
+
+  try {
+    if (key.startsWith('desk:')) {
+      const deskId = Number(key.split(':')[1]);
+      await upsertDeskLayout(planDbId, deskId, payload as UpsertDeskLayout);
+    } else {
+      const itemId = Number(key.split(':')[1]);
+      await updateItem(planDbId, itemId, payload as UpsertSeatingPlanItem);
+    }
+  } finally {
+    persistingKeys.value.delete(key);
+
+    // se durante o await apareceu um payload novo, persiste de novo (latest-wins)
+    const stillPending = pendingPayload.get(key);
+    if (stillPending && stillPending !== payload) {
+      // chama de novo em microtask para não bloquear stack
+      queueMicrotask(() => persistLatest(key, planDbId));
+    } else {
+      // limpa se já estava "em dia"
+      pendingPayload.delete(key);
+    }
+  }
+}
+
 function onDeskPointerDown(evt: PointerEvent, deskId: number) {
   evt.preventDefault();
   if (isMobile.value) return;
@@ -316,7 +361,8 @@ function onDeskPointerDown(evt: PointerEvent, deskId: number) {
   const layout = findDeskLayout(deskId);
   if (!layout || layout.locked) return;
 
-  if (isPersisting.value) return;
+  const key: PersistKey = `desk:${deskId}`;
+  if (isKeyPersisting(key)) return;
 
   const p = getSvgPoint(evt);
   active.value = {
@@ -335,7 +381,8 @@ function onDeskPointerDown(evt: PointerEvent, deskId: number) {
 function onItemPointerDown(evt: PointerEvent, itemId: number) {
   evt.preventDefault();
   if (isMobile.value) return;
-  if (isPersisting.value) return;
+  const key: PersistKey = `item:${itemId}`;
+  if (isKeyPersisting(key)) return;
 
   const item = findItem(itemId);
   if (!item || item.locked) return;
@@ -377,57 +424,52 @@ function onPointerMove(evt: PointerEvent) {
   item.y = Math.max(0, active.value.originY + dy);
 }
 
-const isPersisting = ref(false);
-
 async function onPointerUp() {
   if (!active.value || !seatingPlan.value) return;
 
-  const drag = active.value; // snapshot
+  const drag = active.value;
   const planDbId = seatingPlan.value.id;
 
-  // termina drag imediatamente (UX)
   active.value = null;
   unbindDragGuards();
 
-  // evita saves paralelos
-  if (isPersisting.value) return;
-  isPersisting.value = true;
+  const key = keyForDrag(drag);
 
-  try {
-    if (drag.kind === 'desk') {
-      const layout = findDeskLayout(drag.deskId);
-      if (!layout) return;
+  if (drag.kind === 'desk') {
+    const layout = findDeskLayout(drag.deskId);
+    if (!layout) return;
 
-      await upsertDeskLayout(planDbId, drag.deskId, {
-        x: layout.x,
-        y: layout.y,
-        rotation: layout.rotation ?? 0,
-        shape: layout.shape ?? 'round',
-        width: layout.width ?? 140,
-        height: layout.height ?? 140,
-        locked: !!layout.locked,
-      });
-
-      return;
-    }
-
-    const item = findItem(drag.itemId);
-    if (!item) return;
-
-    await updateItem(planDbId, item.id, {
-      type: item.type,
-      label: item.label ?? null,
-      x: item.x,
-      y: item.y,
-      rotation: item.rotation ?? 0,
-      width: item.width ?? 220,
-      height: item.height ?? 120,
-      zIndex: item.zIndex ?? 1,
-      locked: !!item.locked,
+    pendingPayload.set(key, {
+      x: layout.x,
+      y: layout.y,
+      rotation: layout.rotation ?? 0,
+      shape: layout.shape ?? 'round',
+      width: layout.width ?? 140,
+      height: layout.height ?? 140,
+      locked: !!layout.locked,
     });
-  } finally {
-    isPersisting.value = false;
+
+    // dispara persist sem bloquear UI
+    void persistLatest(key, planDbId);
+    return;
   }
+
+  const item = findItem(drag.itemId);
+  if (!item) return;
+
+  pendingPayload.set(key, {
+    type: item.type,
+    label: item.label ?? null,
+    x: item.x,
+    y: item.y,
+    rotation: item.rotation ?? 0,
+    width: item.width ?? 220,
+    height: item.height ?? 120,
+    zIndex: item.zIndex ?? 1,
+    locked: !!item.locked,
+  });
+
+  void persistLatest(key, planDbId);
 }
 
 /* -------------------------------------------------------------------------- */
