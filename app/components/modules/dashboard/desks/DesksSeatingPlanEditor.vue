@@ -79,6 +79,37 @@ const {
 
 const planId = computed(() => seatingPlan.value?.id ?? null);
 
+// ------------------------
+// Drag safety guards (CRÍTICO)
+// ------------------------
+let dragGuardsBound = false;
+
+function onVisibilityChange() {
+  if (document.visibilityState !== 'visible') {
+    void onPointerUp();
+  }
+}
+
+function bindDragGuards() {
+  if (dragGuardsBound) return;
+  dragGuardsBound = true;
+
+  window.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('pointercancel', onPointerUp);
+  window.addEventListener('blur', onPointerUp);
+  document.addEventListener('visibilitychange', onVisibilityChange);
+}
+
+function unbindDragGuards() {
+  if (!dragGuardsBound) return;
+  dragGuardsBound = false;
+
+  window.removeEventListener('pointerup', onPointerUp);
+  window.removeEventListener('pointercancel', onPointerUp);
+  window.removeEventListener('blur', onPointerUp);
+  document.removeEventListener('visibilitychange', onVisibilityChange);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Snapshot (seats/ocupação) — fonte única para seatsLimit                     */
 /* -------------------------------------------------------------------------- */
@@ -145,6 +176,14 @@ const shouldStartEmpty = computed(() => {
   return samePosCount / layouts.length >= 0.9;
 });
 
+function getDeskSeatsLimit(deskId: number) {
+  const snap = deskById.value.get(deskId);
+  const snapLimit = snap?.seats_Limit ?? snap?.seats_Limit ?? 0;
+  if (typeof snapLimit === 'number') return snapLimit;
+
+  return 0;
+}
+
 watchEffect(() => {
   if (!seatingPlan.value) return;
   if (visibleDeskIds.value.size > 0) return;
@@ -178,7 +217,7 @@ async function removeDeskFromMap(deskId: number) {
   next.delete(deskId);
   visibleDeskIds.value = next;
 
-  await refreshSeatingPlan();
+  await refreshSeatingPlan({ force: true });
   await refreshSnapshot();
 }
 
@@ -198,33 +237,47 @@ function findNextDeskPosition() {
   return { x: startX + col * stepX, y: startY + row * stepY };
 }
 
+const isAddingDesk = ref(false);
+const addingDeskId = ref<number | null>(null);
+
 async function addDeskToMap(deskMap: {
   deskId: number;
   shape: 'round' | 'rect';
 }) {
-  if (!seatingPlan.value) return;
-  if (isMobile.value) return;
+  try {
+    if (!seatingPlan.value) return;
+    if (isMobile.value) return;
 
-  const { deskId, shape } = deskMap;
+    const { deskId, shape } = deskMap;
+    showAddDesk.value = false;
 
-  const pos = findNextDeskPosition();
-  const payload: UpsertDeskLayout = {
-    x: pos.x,
-    y: pos.y,
-    rotation: 0,
-    shape: shape ?? 'round',
-    width: shape === 'rect' ? 220 : 140,
-    height: shape === 'rect' ? 120 : 140,
-    locked: false,
-  };
+    isAddingDesk.value = true;
+    addingDeskId.value = deskId;
 
-  await upsertDeskLayout(seatingPlan.value.id, deskId, payload);
+    const pos = findNextDeskPosition();
+    const payload: UpsertDeskLayout = {
+      x: pos.x,
+      y: pos.y,
+      rotation: 0,
+      shape: shape ?? 'round',
+      width: shape === 'rect' ? 220 : 140,
+      height: shape === 'rect' ? 120 : 140,
+      locked: false,
+    };
 
-  const next = new Set(visibleDeskIds.value);
-  next.add(deskId);
-  visibleDeskIds.value = next;
+    await upsertDeskLayout(seatingPlan.value.id, deskId, payload);
 
-  showAddDesk.value = false;
+    const next = new Set(visibleDeskIds.value);
+    next.add(deskId);
+    visibleDeskIds.value = next;
+  } catch (err: unknown) {
+    toast.error('Erro ao adicionar mesa ao mapa. Por favor, tenta novamente.');
+    console.log(err);
+  } finally {
+    isAddingDesk.value = false;
+    addingDeskId.value = null;
+    await refreshSeatingPlan();
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -263,6 +316,8 @@ function onDeskPointerDown(evt: PointerEvent, deskId: number) {
   const layout = findDeskLayout(deskId);
   if (!layout || layout.locked) return;
 
+  if (isPersisting.value) return;
+
   const p = getSvgPoint(evt);
   active.value = {
     kind: 'desk',
@@ -273,12 +328,14 @@ function onDeskPointerDown(evt: PointerEvent, deskId: number) {
     originY: layout.y,
   };
 
-  (evt.target as Element).setPointerCapture?.(evt.pointerId);
+  (evt.currentTarget as Element).setPointerCapture?.(evt.pointerId);
+  bindDragGuards();
 }
 
 function onItemPointerDown(evt: PointerEvent, itemId: number) {
   evt.preventDefault();
   if (isMobile.value) return;
+  if (isPersisting.value) return;
 
   const item = findItem(itemId);
   if (!item || item.locked) return;
@@ -293,7 +350,8 @@ function onItemPointerDown(evt: PointerEvent, itemId: number) {
     originY: item.y,
   };
 
-  (evt.target as Element).setPointerCapture?.(evt.pointerId);
+  (evt.currentTarget as Element).setPointerCapture?.(evt.pointerId);
+  bindDragGuards();
 }
 
 function onPointerMove(evt: PointerEvent) {
@@ -319,17 +377,28 @@ function onPointerMove(evt: PointerEvent) {
   item.y = Math.max(0, active.value.originY + dy);
 }
 
+const isPersisting = ref(false);
+
 async function onPointerUp() {
   if (!active.value || !seatingPlan.value) return;
 
-  const id = seatingPlan.value.id;
+  const drag = active.value; // snapshot
+  const planDbId = seatingPlan.value.id;
+
+  // termina drag imediatamente (UX)
+  active.value = null;
+  unbindDragGuards();
+
+  // evita saves paralelos
+  if (isPersisting.value) return;
+  isPersisting.value = true;
 
   try {
-    if (active.value.kind === 'desk') {
-      const layout = findDeskLayout(active.value.deskId);
+    if (drag.kind === 'desk') {
+      const layout = findDeskLayout(drag.deskId);
       if (!layout) return;
 
-      const payload: UpsertDeskLayout = {
+      await upsertDeskLayout(planDbId, drag.deskId, {
         x: layout.x,
         y: layout.y,
         rotation: layout.rotation ?? 0,
@@ -337,16 +406,15 @@ async function onPointerUp() {
         width: layout.width ?? 140,
         height: layout.height ?? 140,
         locked: !!layout.locked,
-      };
+      });
 
-      await upsertDeskLayout(id, active.value.deskId, payload);
       return;
     }
 
-    const item = findItem(active.value.itemId);
+    const item = findItem(drag.itemId);
     if (!item) return;
 
-    const payload: UpsertSeatingPlanItem = {
+    await updateItem(planDbId, item.id, {
       type: item.type,
       label: item.label ?? null,
       x: item.x,
@@ -356,11 +424,9 @@ async function onPointerUp() {
       height: item.height ?? 120,
       zIndex: item.zIndex ?? 1,
       locked: !!item.locked,
-    };
-
-    await updateItem(id, item.id, payload);
+    });
   } finally {
-    active.value = null;
+    isPersisting.value = false;
   }
 }
 
@@ -1002,6 +1068,8 @@ const TEXT_PRIMARY_OP = '0.90';
             @pointermove="onPointerMove"
             @pointerup="onPointerUp"
             @pointercancel="onPointerUp"
+            @pointerleave="onPointerUp"
+            @lostpointercapture="onPointerUp"
           >
             <!-- background grid super leve -->
             <defs>
@@ -1034,7 +1102,7 @@ const TEXT_PRIMARY_OP = '0.90';
                 :transform="`translate(${item.x} ${item.y}) rotate(${item.rotation})`"
                 style="cursor: grab"
                 @pointerdown="(e) => onItemPointerDown(e, item.id)"
-                @dblclick="() => planId && deleteItem(planId, item.id)"
+                @dblclick.stop="() => planId && deleteItem(planId, item.id)"
               >
                 <rect
                   x="0"
@@ -1106,7 +1174,7 @@ const TEXT_PRIMARY_OP = '0.90';
                 <template
                   v-for="pt in getSeatPoints(
                     layout,
-                    deskById.get(layout.deskId)?.seats_Limit ?? 0,
+                    getDeskSeatsLimit(layout.deskId),
                     12,
                   )"
                   :key="`seat-${layout.deskId}-${pt.seat}`"
@@ -1228,6 +1296,8 @@ const TEXT_PRIMARY_OP = '0.90';
     <LazyDesksAddToMapModal
       :show="showAddDesk"
       :desks="availableDesks"
+      :is-loading="isAddingDesk"
+      :loading-desk-id="addingDeskId"
       @close-modal="showAddDesk = false"
       @select-desk="addDeskToMap"
     />

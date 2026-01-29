@@ -123,7 +123,7 @@ async function assign() {
 
 <template>
   <BaseModal title="Atribuir lugar" :show="show" @close-modal="close">
-    <div class="my-2 animate-fadeIn space-y-4">
+    <div class="my-2 mb-40 animate-fadeIn space-y-4">
       <!-- Contexto -->
       <div class="rounded-xl border bg-white p-3">
         <div class="text-grey-300 text-sm">

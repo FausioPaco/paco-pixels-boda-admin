@@ -7,10 +7,14 @@ type DeskLite = {
 type Props = {
   show?: boolean;
   desks?: DeskLite[]; // lista de mesas disponíveis (não colocadas no mapa)
+  isAddingDesk?: boolean;
+  loadingDeskId?: number | null;
 };
 
 const props = withDefaults(defineProps<Props>(), {
   show: false,
+  isAddingDesk: false,
+  loadingDeskId: null,
   desks: () => [],
 });
 
@@ -86,15 +90,22 @@ watch(
         </BaseSearchNotFound>
 
         <div v-else class="max-h-[340px] overflow-auto">
-          <button
-            v-for="d in filteredDesks"
-            :key="d.id"
-            type="button"
-            class="hover:bg-grey-50 w-full rounded-lg px-3 py-2 text-left text-sm transition"
-            @click="emit('selectDesk', { deskId: d.id, shape })"
-          >
-            {{ d.name }}
-          </button>
+          <BaseLoading v-if="isAddingDesk" message="Adicionando mesa..." />
+          <div v-else class="my-2 animate-fadeIn">
+            <button
+              v-for="d in filteredDesks"
+              :key="d.id"
+              type="button"
+              class="hover:bg-grey-50 w-full rounded-lg px-3 py-2 text-left text-sm transition"
+              :class="
+                loadingDeskId === d.id ? 'bg-primary-700 text-white' : undefined
+              "
+              :disabled="isAddingDesk"
+              @click="emit('selectDesk', { deskId: d.id, shape })"
+            >
+              {{ d.name }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
