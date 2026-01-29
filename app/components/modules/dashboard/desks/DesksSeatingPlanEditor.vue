@@ -1,76 +1,16 @@
 <script setup lang="ts">
 import jsPDF from 'jspdf';
+import { useToast } from 'vue-toastification';
 import { getSeatingPlanService } from '~/services/seatingPlanService';
 
-// ------------------------
-// Props
-// ------------------------
+/* -------------------------------------------------------------------------- */
+/* Types (no topo)                                                            */
+/* -------------------------------------------------------------------------- */
 type Props = {
   eventId: number;
   desks: DeskOption[];
 };
 
-const props = defineProps<Props>();
-
-// ------------------------
-// Data (composable)
-// ------------------------
-const {
-  seatingPlan,
-  isRefreshing,
-  refreshSeatingPlan,
-  isError,
-  upsertDeskLayout,
-  addItem,
-  updateItem,
-  deleteItem,
-  updateCanvas,
-} = await useSeatingPlan(props.eventId, { immediate: true });
-
-const planId = computed(() => seatingPlan.value?.id ?? null);
-
-// ------------------------
-// Snapshot (seats/ocupação) — fonte única para seatsLimit
-// ------------------------
-const { snapshot: seatingSnapshot, refreshSnapshot } =
-  await useDeskSeatingSnapshot(props.eventId);
-
-const deskById = computed(() => {
-  const map = new Map<number, (typeof seatingSnapshot.value)[number]>();
-  for (const d of seatingSnapshot.value ?? []) map.set(d.id, d);
-  return map;
-});
-
-// ------------------------
-// Runtime / responsividade
-// ------------------------
-const isClient = computed(() => import.meta.client);
-const isMobile = ref(false);
-
-let mq: MediaQueryList | null = null;
-let onMqChange: ((e: MediaQueryListEvent) => void) | null = null;
-
-onMounted(() => {
-  mq = window.matchMedia('(max-width: 1024px)');
-  const apply = () => (isMobile.value = !!mq?.matches);
-  apply();
-
-  onMqChange = () => apply();
-  mq.addEventListener?.('change', onMqChange);
-});
-
-onBeforeUnmount(() => {
-  if (mq && onMqChange) mq.removeEventListener?.('change', onMqChange);
-});
-
-// ------------------------
-// Referências DOM
-// ------------------------
-const svgRef = ref<SVGSVGElement | null>(null);
-
-// ------------------------
-// Estado de drag (mesa/item)
-// ------------------------
 type ActiveDrag =
   | null
   | {
@@ -90,11 +30,104 @@ type ActiveDrag =
       originY: number;
     };
 
+type ActionBtn = {
+  key: string;
+  label: string;
+  name: string;
+  icon: string;
+  onClick: () => void | Promise<void>;
+  disabled?: ComputedRef<boolean>;
+};
+
+type SeatOccupancy = {
+  kind: 'start' | 'cont';
+  guestId: number;
+  guestName: string;
+  peopleCount: number;
+  startSeat: number;
+  endSeat: number;
+};
+
+type SeatPoint = { seat: number; x: number; y: number };
+
+type SvgToPngResult = { blob: Blob; width: number; height: number };
+
+/* -------------------------------------------------------------------------- */
+/* Props / stores / services                                                  */
+/* -------------------------------------------------------------------------- */
+const props = defineProps<Props>();
+const { eventSlug } = useEventStore();
+const toast = useToast();
+
+const nuxtApp = useNuxtApp();
+const seatingPlanService = getSeatingPlanService(nuxtApp.$api);
+
+/* -------------------------------------------------------------------------- */
+/* Data (composable)                                                          */
+/* -------------------------------------------------------------------------- */
+const {
+  seatingPlan,
+  isRefreshing,
+  refreshSeatingPlan,
+  isError,
+  upsertDeskLayout,
+  addItem,
+  updateItem,
+  deleteItem,
+  updateCanvas,
+} = await useSeatingPlan(props.eventId, { immediate: true });
+
+const planId = computed(() => seatingPlan.value?.id ?? null);
+
+/* -------------------------------------------------------------------------- */
+/* Snapshot (seats/ocupação) — fonte única para seatsLimit                     */
+/* -------------------------------------------------------------------------- */
+const { snapshot: seatingSnapshot, refreshSnapshot } =
+  await useDeskSeatingSnapshot(props.eventId);
+
+type SeatingSnapshotRow = (typeof seatingSnapshot.value)[number];
+
+const deskById = computed(() => {
+  const map = new Map<number, SeatingSnapshotRow>();
+  for (const d of seatingSnapshot.value ?? []) map.set(d.id, d);
+  return map;
+});
+
+/* -------------------------------------------------------------------------- */
+/* Runtime / responsividade                                                    */
+/* -------------------------------------------------------------------------- */
+const isClient = computed(() => import.meta.client);
+const isMobile = ref(false);
+
+let mq: MediaQueryList | null = null;
+let onMqChange: (() => void) | null = null;
+
+onMounted(() => {
+  mq = window.matchMedia('(max-width: 1024px)');
+  const apply = () => (isMobile.value = !!mq?.matches);
+  apply();
+
+  onMqChange = () => apply();
+  mq.addEventListener?.('change', onMqChange);
+});
+
+onBeforeUnmount(() => {
+  if (mq && onMqChange) mq.removeEventListener?.('change', onMqChange);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Referências DOM                                                             */
+/* -------------------------------------------------------------------------- */
+const svgRef = ref<SVGSVGElement | null>(null);
+
+/* -------------------------------------------------------------------------- */
+/* Estado de drag (mesa/item)                                                  */
+/* -------------------------------------------------------------------------- */
 const active = ref<ActiveDrag>(null);
 
-// ------------------------
-// Patch 1 (UX): controlar que mesas são visíveis no mapa
-// ------------------------
+/* -------------------------------------------------------------------------- */
+/* Patch 1 (UX): controlar que mesas são visíveis no mapa                      */
+/* -------------------------------------------------------------------------- */
 const showAddDesk = ref(false);
 const visibleDeskIds = ref<Set<number>>(new Set());
 
@@ -112,35 +145,17 @@ const shouldStartEmpty = computed(() => {
   return samePosCount / layouts.length >= 0.9;
 });
 
-const nuxtApp = useNuxtApp();
-const seatingPlanService = getSeatingPlanService(nuxtApp.$api);
-
-async function removeDeskFromMap(deskId: number) {
-  if (!seatingPlan.value) return;
-
-  const planId = seatingPlan.value.id;
-
-  await seatingPlanService.removeDeskFromMap(planId, deskId);
-
-  // sincronizar frontend
-  const next = new Set(visibleDeskIds.value);
-  next.delete(deskId);
-  visibleDeskIds.value = next;
-
-  await refreshSeatingPlan();
-  await refreshSnapshot();
-}
-
 watchEffect(() => {
   if (!seatingPlan.value) return;
   if (visibleDeskIds.value.size > 0) return;
 
   if (shouldStartEmpty.value) {
     visibleDeskIds.value = new Set();
-  } else {
-    const ids = (seatingPlan.value.deskLayouts ?? []).map((d) => d.deskId);
-    visibleDeskIds.value = new Set(ids);
+    return;
   }
+
+  const ids = (seatingPlan.value.deskLayouts ?? []).map((d) => d.deskId);
+  visibleDeskIds.value = new Set(ids);
 });
 
 const visibleDeskLayouts = computed(() => {
@@ -153,6 +168,19 @@ const availableDesks = computed(() => {
   const placed = visibleDeskIds.value;
   return props.desks.filter((d) => !placed.has(d.id));
 });
+
+async function removeDeskFromMap(deskId: number) {
+  if (!seatingPlan.value) return;
+
+  await seatingPlanService.removeDeskFromMap(seatingPlan.value.id, deskId);
+
+  const next = new Set(visibleDeskIds.value);
+  next.delete(deskId);
+  visibleDeskIds.value = next;
+
+  await refreshSeatingPlan();
+  await refreshSnapshot();
+}
 
 function findNextDeskPosition() {
   const existing = visibleDeskLayouts.value;
@@ -167,10 +195,7 @@ function findNextDeskPosition() {
   const col = i % cols;
   const row = Math.floor(i / cols);
 
-  return {
-    x: startX + col * stepX,
-    y: startY + row * stepY,
-  };
+  return { x: startX + col * stepX, y: startY + row * stepY };
 }
 
 async function addDeskToMap(deskMap: {
@@ -182,9 +207,7 @@ async function addDeskToMap(deskMap: {
 
   const { deskId, shape } = deskMap;
 
-  const id = seatingPlan.value.id;
   const pos = findNextDeskPosition();
-
   const payload: UpsertDeskLayout = {
     x: pos.x,
     y: pos.y,
@@ -195,7 +218,7 @@ async function addDeskToMap(deskMap: {
     locked: false,
   };
 
-  await upsertDeskLayout(id, deskId, payload);
+  await upsertDeskLayout(seatingPlan.value.id, deskId, payload);
 
   const next = new Set(visibleDeskIds.value);
   next.add(deskId);
@@ -204,9 +227,9 @@ async function addDeskToMap(deskMap: {
   showAddDesk.value = false;
 }
 
-// ------------------------
-// SVG helpers
-// ------------------------
+/* -------------------------------------------------------------------------- */
+/* SVG helpers                                                                 */
+/* -------------------------------------------------------------------------- */
 function getSvgPoint(evt: PointerEvent) {
   const svg = svgRef.value;
   if (!svg) return { x: 0, y: 0 };
@@ -230,9 +253,9 @@ function findItem(itemId: number): SeatingPlanItem | undefined {
   return seatingPlan.value?.items?.find((i) => i.id === itemId);
 }
 
-// ------------------------
-// Drag handlers (mesas/itens)
-// ------------------------
+/* -------------------------------------------------------------------------- */
+/* Drag handlers (mesas/itens)                                                 */
+/* -------------------------------------------------------------------------- */
 function onDeskPointerDown(evt: PointerEvent, deskId: number) {
   evt.preventDefault();
   if (isMobile.value) return;
@@ -341,18 +364,9 @@ async function onPointerUp() {
   }
 }
 
-// ------------------------
-// Itens rápidos (palco, DJ, etc.)
-// ------------------------
-type ActionBtn = {
-  key: string;
-  label: string;
-  name: string;
-  icon: string;
-  onClick: () => void | Promise<void>;
-  disabled?: ComputedRef<boolean>;
-};
-
+/* -------------------------------------------------------------------------- */
+/* Itens rápidos (palco, DJ, etc.)                                             */
+/* -------------------------------------------------------------------------- */
 const isDesktopOnlyDisabled = computed(() => isMobile.value);
 
 async function quickAdd(type: SeatingPlanItemType) {
@@ -425,9 +439,9 @@ function deskLabel(deskId: number) {
   return d?.name ?? `Mesa ${deskId}`;
 }
 
-// ------------------------
-// Presets do canvas
-// ------------------------
+/* -------------------------------------------------------------------------- */
+/* Presets do canvas                                                           */
+/* -------------------------------------------------------------------------- */
 async function setCanvasPreset(preset: 'small' | 'medium' | 'large') {
   if (!seatingPlan.value) return;
   if (isMobile.value) return;
@@ -486,38 +500,90 @@ const exportActions: ActionBtn[] = [
   },
 ];
 
-// ------------------------
-// Export helpers (SVG -> PNG/PDF)
-// ------------------------
-const EXPORT_FONT_FAMILY = `"Plus Jakarta Sans", sans-serif`;
+/* -------------------------------------------------------------------------- */
+/* Export helpers (SVG -> PNG/PDF)                                             */
+/* -------------------------------------------------------------------------- */
+const FONT_REG_URL = '/fonts/PlusJakartaSans-Regular.ttf';
+const FONT_BOLD_URL = '/fonts/PlusJakartaSans-Bold.ttf';
+
+const EXPORT_FONT_NAME = 'Plus Jakarta Sans';
+const EXPORT_FONT_FAMILY_SVG = `${EXPORT_FONT_NAME}, sans-serif`;
+const EXPORT_FONT_FAMILY_CSS = `'${EXPORT_FONT_NAME}', sans-serif`;
+
+let fontCssCache: string | null = null;
+
+async function fetchAsBase64(url: string) {
+  const res = await fetch(url);
+  const buf = await res.arrayBuffer();
+
+  let binary = '';
+  const bytes = new Uint8Array(buf);
+  for (let i = 0; i < bytes.length; i++)
+    binary += String.fromCharCode(bytes[i]!);
+
+  return btoa(binary);
+}
+
+async function getInlineFontCss() {
+  if (fontCssCache) return fontCssCache;
+
+  const [reg64, bold64] = await Promise.all([
+    fetchAsBase64(FONT_REG_URL),
+    fetchAsBase64(FONT_BOLD_URL),
+  ]);
+
+  fontCssCache = `
+@font-face{
+  font-family:'${EXPORT_FONT_NAME}';
+  src:url(data:font/ttf;base64,${reg64}) format('truetype');
+  font-weight:400;
+  font-style:normal;
+}
+@font-face{
+  font-family:'${EXPORT_FONT_NAME}';
+  src:url(data:font/ttf;base64,${bold64}) format('truetype');
+  font-weight:700;
+  font-style:normal;
+}
+text { font-family:${EXPORT_FONT_FAMILY_CSS}; }
+`;
+  return fontCssCache;
+}
+
 async function ensureExportFontLoaded() {
   if (!import.meta.client) return;
 
-  // Nem todos os browsers suportam, mas Chrome/Edge sim
   const fonts = document.fonts as FontFaceSet | undefined;
   if (!fonts?.load) return;
 
-  // Carrega pesos que usas (normal e bold)
-  await fonts.load(`400 16px ${EXPORT_FONT_FAMILY}`);
-  await fonts.load(`700 16px ${EXPORT_FONT_FAMILY}`);
-
-  // Garante que terminou
+  await fonts.load(`400 16px "${EXPORT_FONT_NAME}"`);
+  await fonts.load(`700 16px "${EXPORT_FONT_NAME}"`);
   await fonts.ready;
+
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 }
 
-function exportReadySvgString(svgEl: SVGSVGElement) {
+async function exportReadySvgString(svgEl: SVGSVGElement) {
   const clone = svgEl.cloneNode(true) as SVGSVGElement;
-  clone.setAttribute('style', `font-family: ${EXPORT_FONT_FAMILY};`);
 
-  clone.querySelectorAll('text').forEach((t) => {
-    t.setAttribute('font-family', EXPORT_FONT_FAMILY);
-  });
+  // força font no root e nos <text>
+  clone.setAttribute('style', `font-family: ${EXPORT_FONT_FAMILY_CSS};`);
+  clone.setAttribute('font-family', EXPORT_FONT_FAMILY_SVG);
+  clone
+    .querySelectorAll('text')
+    .forEach((t) => t.setAttribute('font-family', EXPORT_FONT_FAMILY_SVG));
 
-  // xmlns + size
+  // xmlns
   if (!clone.getAttribute('xmlns')) {
     clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
   }
 
+  // injeta fontes inline (à prova de falhas)
+  const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+  style.textContent = await getInlineFontCss();
+  clone.insertBefore(style, clone.firstChild);
+
+  // size + viewBox
   const width =
     Number(svgEl.getAttribute('width')) || svgEl.viewBox.baseVal.width || 1600;
   const height =
@@ -535,12 +601,11 @@ function exportReadySvgString(svgEl: SVGSVGElement) {
   bg.setAttribute('height', String(height));
   bg.setAttribute('fill', '#ffffff');
 
-  // mete mesmo como 1º elemento “real”
   const firstEl =
     Array.from(clone.childNodes).find((n) => n.nodeType === 1) ?? null;
   clone.insertBefore(bg, firstEl);
 
-  // grid: evita pattern no export (opcional, mas recomendado)
+  // grid: evita pattern no export
   const gridRect = clone.querySelector<SVGRectElement>(
     'rect[fill="url(#grid)"]',
   );
@@ -559,9 +624,7 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-async function svgToPngBlob(
-  scale = 2,
-): Promise<{ blob: Blob; width: number; height: number } | null> {
+async function svgToPngBlob(scale = 2): Promise<SvgToPngResult | null> {
   if (!import.meta.client) return null;
 
   const svg = svgRef.value;
@@ -572,7 +635,7 @@ async function svgToPngBlob(
   const height =
     Number(svg.getAttribute('height')) || svg.viewBox.baseVal.height || 900;
 
-  const svgString = exportReadySvgString(svg);
+  const svgString = await exportReadySvgString(svg);
 
   const svgBlob = new Blob([svgString], {
     type: 'image/svg+xml;charset=utf-8',
@@ -581,7 +644,6 @@ async function svgToPngBlob(
 
   try {
     const img = new Image();
-    // importante: evita canvas “tainted” se houver assets externos (se não houver, não faz mal)
     img.crossOrigin = 'anonymous';
 
     await new Promise<void>((resolve, reject) => {
@@ -597,11 +659,9 @@ async function svgToPngBlob(
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    // fundo branco
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // desenhar
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
     const blob = await new Promise<Blob | null>((resolve) =>
@@ -610,24 +670,27 @@ async function svgToPngBlob(
 
     if (!blob) return null;
     return { blob, width, height };
+  } catch (err: unknown) {
+    toast.error('Erro ao exportar o mapa. Por favor, tenta novamente.');
+    console.log(err);
+    return null;
   } finally {
     URL.revokeObjectURL(url);
   }
 }
 
 async function exportPng(
-  filename = `seating-plan-${props.eventId}.png`,
+  filename = `seating-plan-${eventSlug}.png`,
   scale = 2,
 ) {
   await ensureExportFontLoaded();
-
   const res = await svgToPngBlob(scale);
   if (!res) return;
   downloadBlob(res.blob, filename);
 }
 
 async function exportPdf(
-  filename = `seating-plan-${props.eventId}.pdf`,
+  filename = `seating-plan-${eventSlug}.pdf`,
   scale = 2,
 ) {
   await ensureExportFontLoaded();
@@ -663,20 +726,9 @@ async function exportPdf(
   pdf.save(filename);
 }
 
-// ------------------------
-// Seats (ocupação + pontos)
-// ------------------------
-type SeatOccupancy = {
-  kind: 'start' | 'cont';
-  guestId: number;
-  guestName: string;
-  peopleCount: number;
-  startSeat: number;
-  endSeat: number;
-};
-
-type SeatPoint = { seat: number; x: number; y: number };
-
+/* -------------------------------------------------------------------------- */
+/* Seats (ocupação + pontos)                                                   */
+/* -------------------------------------------------------------------------- */
 const seatMapsByDeskId = computed(() => {
   const map = new Map<number, Map<number, SeatOccupancy>>();
 
@@ -814,9 +866,9 @@ function getSeatPoints(layout: DeskLayout, seatsLimit: number, maxRender = 12) {
     : getRoundSeatPoints(layout, seatsLimit, maxRender);
 }
 
-// ------------------------
-// Seat modal (assign)
-// ------------------------
+/* -------------------------------------------------------------------------- */
+/* Seat modal (assign)                                                         */
+/* -------------------------------------------------------------------------- */
 const showAddGuestToSeat = ref(false);
 const selectedSeat = ref<{ deskId: number; seatNumber: number } | null>(null);
 
@@ -825,9 +877,9 @@ function openSeat(deskId: number, seatNumber: number) {
   showAddGuestToSeat.value = true;
 }
 
-// ------------------------
-// Cores
-// ------------------------
+/* -------------------------------------------------------------------------- */
+/* Cores                                                                       */
+/* -------------------------------------------------------------------------- */
 const TABLE_COLOR = 'rgb(116,102,33)';
 const TABLE_FILL_OP = '0.30';
 const TABLE_STROKE_OP = '0.75';
@@ -843,6 +895,7 @@ const SEAT_OCC_STROKE_OP = '0.55';
 const TEXT_PRIMARY = 'rgb(20,20,20)';
 const TEXT_PRIMARY_OP = '0.90';
 </script>
+
 <template>
   <div class="w-full">
     <BaseLoading
@@ -998,7 +1051,7 @@ const TEXT_PRIMARY_OP = '0.90';
                 <component
                   :is="`icon-${getQuickActionByLabel(item.type)?.icon || 'item'}`"
                   :font-controlled="false"
-                  x="75"
+                  x="80"
                   y="16"
                   width="24"
                   height="24"
