@@ -155,6 +155,39 @@ const svgRef = ref<SVGSVGElement | null>(null);
 /* Estado de drag (mesa/item)                                                  */
 /* -------------------------------------------------------------------------- */
 const active = ref<ActiveDrag>(null);
+const hoveredSeat = ref<{ deskId: number; seat: number } | null>(null);
+const hoveredDeskId = ref<number | null>(null);
+const hoveredItemId = ref<number | null>(null);
+
+const draggingDeskId = computed(() =>
+  active.value?.kind === 'desk' ? active.value.deskId : null,
+);
+
+const draggingItemId = computed(() =>
+  active.value?.kind === 'item' ? active.value.itemId : null,
+);
+
+function isSeatHovered(deskId: number, seat: number) {
+  return (
+    hoveredSeat.value?.deskId === deskId && hoveredSeat.value?.seat === seat
+  );
+}
+function isDeskHovered(deskId: number) {
+  return hoveredDeskId.value === deskId;
+}
+
+function isItemHovered(itemId: number) {
+  return hoveredItemId.value === itemId;
+}
+
+const HOVER_ACCENT = '#D1C796';
+const DRAG_ACCENT = '#857526';
+
+function clearInteractionStates() {
+  hoveredSeat.value = null;
+  hoveredDeskId.value = null;
+  hoveredItemId.value = null;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Patch 1 (UX): controlar que mesas são visíveis no mapa                      */
@@ -203,10 +236,46 @@ const visibleDeskLayouts = computed(() => {
   return layouts.filter((l) => ids.has(l.deskId));
 });
 
+function syncVisibleDeskIdsWithLayouts() {
+  if (!seatingPlan.value) return;
+
+  const layoutIds = new Set(
+    (seatingPlan.value.deskLayouts ?? []).map((l) => l.deskId),
+  );
+
+  // se ainda não tem nada inicializado, adopta tudo (ou empty se shouldStartEmpty)
+  if (visibleDeskIds.value.size === 0) {
+    visibleDeskIds.value = shouldStartEmpty.value ? new Set() : layoutIds;
+    return;
+  }
+
+  // mantém apenas os ids que ainda existem no plano (remove "fantasmas")
+  const next = new Set<number>();
+  for (const id of visibleDeskIds.value) {
+    if (layoutIds.has(id)) next.add(id);
+  }
+
+  // se por algum motivo ficou vazio mas há layouts, volta a mostrar tudo
+  if (next.size === 0 && layoutIds.size > 0 && !shouldStartEmpty.value) {
+    visibleDeskIds.value = layoutIds;
+    return;
+  }
+
+  visibleDeskIds.value = next;
+}
+
 const availableDesks = computed(() => {
   const placed = visibleDeskIds.value;
   return props.desks.filter((d) => !placed.has(d.id));
 });
+
+watch(
+  () => seatingPlan.value?.deskLayouts?.map((l) => l.deskId).join(',') ?? '',
+  () => {
+    syncVisibleDeskIdsWithLayouts();
+  },
+  { immediate: true },
+);
 
 async function removeDeskFromMap(deskId: number) {
   if (!seatingPlan.value) return;
@@ -433,6 +502,8 @@ async function onPointerUp() {
   active.value = null;
   unbindDragGuards();
 
+  clearInteractionStates();
+
   const key = keyForDrag(drag);
 
   if (drag.kind === 'desk') {
@@ -562,6 +633,9 @@ async function setCanvasPreset(preset: 'small' | 'medium' | 'large') {
         : { canvasWidth: 2200, canvasHeight: 1200 };
 
   await updateCanvas(seatingPlan.value.id, next);
+
+  await refreshSeatingPlan({ force: true });
+  syncVisibleDeskIdsWithLayouts();
 }
 
 const canvasPresets: ActionBtn[] = [
@@ -742,6 +816,10 @@ async function svgToPngBlob(scale = 2): Promise<SvgToPngResult | null> {
     Number(svg.getAttribute('width')) || svg.viewBox.baseVal.width || 1600;
   const height =
     Number(svg.getAttribute('height')) || svg.viewBox.baseVal.height || 900;
+
+  clearInteractionStates();
+  await nextTick();
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
   const svgString = await exportReadySvgString(svg);
 
@@ -990,15 +1068,15 @@ function openSeat(deskId: number, seatNumber: number) {
 /* -------------------------------------------------------------------------- */
 const TABLE_COLOR = 'rgb(116,102,33)';
 const TABLE_FILL_OP = '0.30';
-const TABLE_STROKE_OP = '0.75';
+// const TABLE_STROKE_OP = '0.75';
 
-const SEAT_FREE_COLOR = 'rgb(0,0,0)';
+const SEAT_FREE_COLOR = '#6D6D6D';
 const SEAT_FREE_FILL_OP = '0.06';
-const SEAT_FREE_STROKE_OP = '0.18';
+// const SEAT_FREE_STROKE_OP = '0.18';
 
 const SEAT_OCC_COLOR = 'rgb(116,102,33)';
 const SEAT_OCC_FILL_OP = '0.30';
-const SEAT_OCC_STROKE_OP = '0.55';
+// const SEAT_OCC_STROKE_OP = '0.55';
 
 const TEXT_PRIMARY = 'rgb(20,20,20)';
 const TEXT_PRIMARY_OP = '0.90';
@@ -1142,40 +1220,128 @@ const TEXT_PRIMARY_OP = '0.90';
             <g v-for="item in seatingPlan!.items" :key="item.id">
               <g
                 :transform="`translate(${item.x} ${item.y}) rotate(${item.rotation})`"
-                style="cursor: grab"
-                @pointerdown="(e) => onItemPointerDown(e, item.id)"
+                :style="{
+                  cursor: draggingItemId === item.id ? 'grabbing' : 'grab',
+                }"
+                @pointerenter="() => (hoveredItemId = item.id)"
+                @pointerleave="() => (hoveredItemId = null)"
+                @pointerdown.stop="(e) => onItemPointerDown(e, item.id)"
                 @dblclick.stop="() => planId && deleteItem(planId, item.id)"
               >
-                <rect
-                  x="0"
-                  y="0"
-                  :width="item.width"
-                  :height="item.height"
-                  rx="24"
-                  fill="rgba(0,0,0,0.06)"
-                  stroke="rgba(0,0,0,0.35)"
-                  stroke-width="2"
-                  stroke-dasharray="6 6"
-                />
+                <!-- “lift” effect (só visual) -->
+                <g
+                  :transform="
+                    draggingItemId === item.id
+                      ? 'translate(0 -2) scale(1.02)'
+                      : isItemHovered(item.id)
+                        ? 'translate(0 -1) scale(1.01)'
+                        : ''
+                  "
+                  :style="{ transition: 'all 140ms ease' }"
+                >
+                  <!-- sombra fake -->
+                  <rect
+                    x="2"
+                    y="3"
+                    :width="item.width"
+                    :height="item.height"
+                    rx="24"
+                    :fill="
+                      draggingItemId === item.id
+                        ? 'rgba(0,0,0,0.10)'
+                        : isItemHovered(item.id)
+                          ? 'rgba(0,0,0,0.08)'
+                          : 'rgba(0,0,0,0.00)'
+                    "
+                    :style="{ transition: 'all 140ms ease' }"
+                  />
 
-                <component
-                  :is="`icon-${getQuickActionByLabel(item.type)?.icon || 'item'}`"
-                  :font-controlled="false"
-                  x="80"
-                  y="16"
-                  width="24"
-                  height="24"
-                  class="text-grey-600"
-                  fill="rgba(0,0,0,0.45)"
-                />
+                  <!-- caixa -->
+                  <rect
+                    x="0"
+                    y="0"
+                    :width="item.width"
+                    :height="item.height"
+                    rx="24"
+                    :fill="
+                      draggingItemId === item.id
+                        ? 'rgba(0,0,0,0.09)'
+                        : isItemHovered(item.id)
+                          ? 'rgba(0,0,0,0.075)'
+                          : 'rgba(0,0,0,0.06)'
+                    "
+                    :stroke="
+                      draggingItemId === item.id
+                        ? DRAG_ACCENT
+                        : isItemHovered(item.id)
+                          ? HOVER_ACCENT
+                          : 'rgba(0,0,0,0.35)'
+                    "
+                    :stroke-width="
+                      draggingItemId === item.id
+                        ? 3.5
+                        : isItemHovered(item.id)
+                          ? 3
+                          : 2
+                    "
+                    stroke-dasharray="6 6"
+                    :style="{ transition: 'all 140ms ease' }"
+                  />
 
-                <text x="70" y="60" font-size="14" fill="rgba(0,0,0,0.75)">
-                  {{ item.label || item.type }}
-                </text>
+                  <!-- icon -->
+                  <component
+                    :is="`icon-${getQuickActionByLabel(item.type)?.icon || 'item'}`"
+                    :font-controlled="false"
+                    x="80"
+                    y="16"
+                    width="24"
+                    height="24"
+                    class="text-grey-600"
+                    :fill="
+                      draggingItemId === item.id
+                        ? DRAG_ACCENT
+                        : isItemHovered(item.id)
+                          ? HOVER_ACCENT
+                          : 'rgba(0,0,0,0.45)'
+                    "
+                    :style="{ transition: 'all 140ms ease' }"
+                  />
 
-                <text x="20" y="88" font-size="11" fill="rgba(0,0,0,0.45)">
-                  duplo clique para remover
-                </text>
+                  <!-- labels -->
+                  <text
+                    x="70"
+                    y="60"
+                    font-size="14"
+                    :fill="
+                      draggingItemId === item.id
+                        ? 'rgba(0,0,0,0.90)'
+                        : 'rgba(0,0,0,0.75)'
+                    "
+                    :style="{
+                      transition: 'all 140ms ease',
+                      pointerEvents: 'none',
+                    }"
+                  >
+                    {{ item.label || item.type }}
+                  </text>
+
+                  <text
+                    x="20"
+                    y="88"
+                    font-size="11"
+                    :fill="
+                      draggingItemId === item.id
+                        ? 'rgba(0,0,0,0.65)'
+                        : 'rgba(0,0,0,0.45)'
+                    "
+                    :style="{
+                      transition: 'all 140ms ease',
+                      pointerEvents: 'none',
+                    }"
+                  >
+                    duplo clique para remover
+                  </text>
+                </g>
               </g>
             </g>
 
@@ -1183,8 +1349,12 @@ const TEXT_PRIMARY_OP = '0.90';
             <g v-for="layout in visibleDeskLayouts" :key="layout.deskId">
               <g
                 :transform="`translate(${layout.x} ${layout.y}) rotate(${layout.rotation})`"
-                style="cursor: grab"
-                @pointerdown="(e) => onDeskPointerDown(e, layout.deskId)"
+                :style="{
+                  cursor:
+                    draggingDeskId === layout.deskId ? 'grabbing' : 'grab',
+                }"
+                @pointerenter="() => (hoveredDeskId = layout.deskId)"
+                @pointerleave="() => (hoveredDeskId = null)"
               >
                 <circle
                   v-if="layout.shape === 'round'"
@@ -1192,10 +1362,30 @@ const TEXT_PRIMARY_OP = '0.90';
                   :cy="layout.height / 2"
                   :r="Math.min(layout.width, layout.height) / 2"
                   :fill="TABLE_COLOR"
-                  :fill-opacity="TABLE_FILL_OP"
-                  :stroke="TABLE_COLOR"
-                  :stroke-opacity="TABLE_STROKE_OP"
-                  stroke-width="2"
+                  :fill-opacity="
+                    draggingDeskId === layout.deskId
+                      ? Math.min(1, Number(TABLE_FILL_OP) + 0.18)
+                      : isDeskHovered(layout.deskId)
+                        ? Math.min(1, Number(TABLE_FILL_OP) + 0.08)
+                        : Number(TABLE_FILL_OP)
+                  "
+                  :stroke="
+                    draggingDeskId === layout.deskId
+                      ? DRAG_ACCENT
+                      : isDeskHovered(layout.deskId)
+                        ? HOVER_ACCENT
+                        : TABLE_COLOR
+                  "
+                  :stroke-opacity="1"
+                  :stroke-width="
+                    draggingDeskId === layout.deskId
+                      ? 3.5
+                      : isDeskHovered(layout.deskId)
+                        ? 3
+                        : 2
+                  "
+                  :style="{ transition: 'all 140ms ease' }"
+                  @pointerdown.stop="(e) => onDeskPointerDown(e, layout.deskId)"
                   @dblclick.stop="removeDeskFromMap(layout.deskId)"
                 />
                 <rect
@@ -1206,10 +1396,30 @@ const TEXT_PRIMARY_OP = '0.90';
                   :height="layout.height"
                   rx="18"
                   :fill="TABLE_COLOR"
-                  :fill-opacity="TABLE_FILL_OP"
-                  :stroke="TABLE_COLOR"
-                  :stroke-opacity="TABLE_STROKE_OP"
-                  stroke-width="2"
+                  :fill-opacity="
+                    draggingDeskId === layout.deskId
+                      ? Math.min(1, Number(TABLE_FILL_OP) + 0.18)
+                      : isDeskHovered(layout.deskId)
+                        ? Math.min(1, Number(TABLE_FILL_OP) + 0.08)
+                        : Number(TABLE_FILL_OP)
+                  "
+                  :stroke="
+                    draggingDeskId === layout.deskId
+                      ? DRAG_ACCENT
+                      : isDeskHovered(layout.deskId)
+                        ? HOVER_ACCENT
+                        : TABLE_COLOR
+                  "
+                  :stroke-opacity="1"
+                  :stroke-width="
+                    draggingDeskId === layout.deskId
+                      ? 3.5
+                      : isDeskHovered(layout.deskId)
+                        ? 3
+                        : 2
+                  "
+                  :style="{ transition: 'all 140ms ease' }"
+                  @pointerdown.stop="(e) => onDeskPointerDown(e, layout.deskId)"
                   @dblclick.stop="removeDeskFromMap(layout.deskId)"
                 />
 
@@ -1225,33 +1435,48 @@ const TEXT_PRIMARY_OP = '0.90';
                   <g
                     v-if="(deskById.get(layout.deskId)?.seats_Limit ?? 0) > 0"
                     style="cursor: pointer"
+                    @pointerenter="
+                      () =>
+                        (hoveredSeat = { deskId: layout.deskId, seat: pt.seat })
+                    "
+                    @pointerleave="() => (hoveredSeat = null)"
+                    @pointerdown.stop
                     @click.stop="openSeat(layout.deskId, pt.seat)"
                   >
                     <circle
                       :cx="pt.x"
                       :cy="pt.y"
-                      r="11"
+                      :r="isSeatHovered(layout.deskId, pt.seat) ? 12 : 11"
                       :fill="
-                        seatOccupied(layout.deskId, pt.seat)
-                          ? SEAT_OCC_COLOR
-                          : SEAT_FREE_COLOR
+                        isSeatHovered(layout.deskId, pt.seat)
+                          ? seatOccupied(layout.deskId, pt.seat)
+                            ? SEAT_OCC_COLOR
+                            : HOVER_ACCENT
+                          : seatOccupied(layout.deskId, pt.seat)
+                            ? SEAT_OCC_COLOR
+                            : SEAT_FREE_COLOR
                       "
                       :fill-opacity="
-                        seatOccupied(layout.deskId, pt.seat)
-                          ? SEAT_OCC_FILL_OP
-                          : SEAT_FREE_FILL_OP
+                        isSeatHovered(layout.deskId, pt.seat)
+                          ? seatOccupied(layout.deskId, pt.seat)
+                            ? Math.min(1, Number(SEAT_OCC_FILL_OP) + 0.12)
+                            : 0.12
+                          : seatOccupied(layout.deskId, pt.seat)
+                            ? SEAT_OCC_FILL_OP
+                            : SEAT_FREE_FILL_OP
                       "
                       :stroke="
-                        seatOccupied(layout.deskId, pt.seat)
-                          ? SEAT_OCC_COLOR
-                          : SEAT_FREE_COLOR
+                        isSeatHovered(layout.deskId, pt.seat)
+                          ? HOVER_ACCENT
+                          : seatOccupied(layout.deskId, pt.seat)
+                            ? SEAT_OCC_COLOR
+                            : SEAT_FREE_COLOR
                       "
-                      :stroke-opacity="
-                        seatOccupied(layout.deskId, pt.seat)
-                          ? SEAT_OCC_STROKE_OP
-                          : SEAT_FREE_STROKE_OP
+                      :stroke-opacity="1"
+                      :stroke-width="
+                        isSeatHovered(layout.deskId, pt.seat) ? 2.2 : 1.5
                       "
-                      stroke-width="1.5"
+                      :style="{ transition: 'all 120ms ease' }"
                     />
                     <text
                       :x="pt.x"
@@ -1261,6 +1486,8 @@ const TEXT_PRIMARY_OP = '0.90';
                       font-size="10"
                       :fill="TEXT_PRIMARY"
                       font-weight="700"
+                      style="cursor: pointer"
+                      @pointerdown.stop
                     >
                       {{ pt.seat }}
                     </text>
@@ -1313,6 +1540,7 @@ const TEXT_PRIMARY_OP = '0.90';
                   :fill="TEXT_PRIMARY"
                   :fill-opacity="TEXT_PRIMARY_OP"
                   font-weight="700"
+                  style="pointer-events: none"
                 >
                   {{ deskLabel(layout.deskId) }}
                 </text>
