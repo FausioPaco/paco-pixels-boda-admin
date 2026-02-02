@@ -95,7 +95,6 @@ export const useEventProgram = async (
     try {
       const created = await service.addItem(eventId, input);
 
-      // update local (sem depender de refresh)
       if (program.value) {
         const next = [...(program.value.items ?? []), created];
         next.sort((a, b) => a.sortOrder - b.sortOrder);
