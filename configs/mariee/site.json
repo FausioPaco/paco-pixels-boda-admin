@@ -27,5 +27,6 @@
     "image": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762952698/seo_k7rsjx.jpg"
   },
   "bodaPartnerLogo": "https://res.cloudinary.com/dwdlzepds/image/upload/v1762953067/boda-partner-logo_nlfxyd.png",
-  "qrCodeComponent": "QRCodeBackgroundModel"
+  "qrCodeComponent": "QRCodeBackgroundModel",
+  "partnerId": "1"
 }

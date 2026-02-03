@@ -119,6 +119,7 @@ export interface BudgetTemplate {
 }
 
 export interface BudgetTemplateCreateInput {
+  partnerId: number;
   eventTypeId: number;
   title: string;
   baseTotalBudget: number;

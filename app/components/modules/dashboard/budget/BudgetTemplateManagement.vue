@@ -9,6 +9,7 @@ type SortableEvent = {
   newIndex?: number;
 };
 
+const { siteConfig } = await useClientConfig();
 const toast = useToast();
 const nuxtApp = useNuxtApp();
 const budgetService = getBudgetService(nuxtApp.$api);
@@ -21,7 +22,9 @@ const iconName = computed(() => eventStore.eventTypeIcon || 'event-wedding');
 const isControlled = ref<boolean>(true);
 
 const { template, isRefreshing, refreshTemplate } =
-  await useBudgetTemplateByCurrentEventType();
+  await useBudgetTemplateByCurrentEventType({
+    partnerId: Number(siteConfig.partnerId),
+  });
 
 const isHeaderModalOpen = ref(false);
 const isCreateCategoryModalOpen = ref(false);

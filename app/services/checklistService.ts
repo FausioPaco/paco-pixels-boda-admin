@@ -122,9 +122,13 @@ export const getChecklistService = <T>(
   // ===== Templates =====
   async getCurrentTemplateForEventType(
     eventTypeId: number,
+    partnerId?: number,
   ): Promise<ChecklistTemplateDetail> {
     return $fetch<ChecklistTemplateDetail>(
       `${RESOURCE}/Templates/Current/${eventTypeId}`,
+      {
+        query: partnerId ? { partnerId } : undefined,
+      },
     );
   },
   async getTemplates(

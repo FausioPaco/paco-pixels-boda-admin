@@ -105,7 +105,7 @@ function getMovementIcon(type: StockMovementType) {
             </p>
 
             <p class="text-grey-500 text-xs">
-              {{ new Date(m.occurredAt).toLocaleString('pt-PT') }}
+              {{ formatDateWithTime(m.occurredAt) }}
             </p>
           </div>
 
