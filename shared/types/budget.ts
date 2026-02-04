@@ -174,15 +174,17 @@ export interface BudgetItemInstallment {
   id: number;
   budgetItemId: number;
   amount: number;
-  receiptDate?: string | null; // vem como ISO
-  paidInDate?: string | null; // vem como ISO
+  descriptive: string;
+  receiptDate?: Date | undefined; // vem como ISO
+  paidInDate?: Date | undefined; // vem como ISO
   paymentMethod: BudgetPaymentMethod;
 }
 
 export interface BudgetItemInstallmentInput {
   amount: number;
-  receiptDate?: string | null;
-  paidInDate?: string | null;
+  descriptive: string;
+  receiptDate?: Date | undefined;
+  paidInDate?: Date | undefined;
   paymentMethod: BudgetPaymentMethod;
 }
 

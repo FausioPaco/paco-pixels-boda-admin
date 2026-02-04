@@ -27,6 +27,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'changed'): void;
+  (
+    e: 'edit-category' | 'remove-category' | 'create-item',
+    category: BudgetCategory,
+  ): void;
+  (e: 'edit-item' | 'remove-item', item: BudgetItem): void;
 }>();
 
 const toast = useToast();
@@ -34,11 +39,6 @@ const nuxtApp = useNuxtApp();
 const budgetService = getBudgetService(nuxtApp.$api);
 
 const isOpen = ref(true);
-
-const isEditCategoryModalOpen = ref(false);
-const isCreateItemModalOpen = ref(false);
-const isEditItemModalOpen = ref(false);
-const selectedItem = ref<BudgetItem | undefined>(undefined);
 
 const localItems = ref<BudgetItem[]>([]);
 
@@ -69,16 +69,6 @@ async function onItemsDragEnd() {
     draggingItemId.value = null;
   }
 }
-
-const openCreateItem = () => {
-  selectedItem.value = undefined;
-  isCreateItemModalOpen.value = true;
-};
-
-const openEditItem = (item: BudgetItem) => {
-  selectedItem.value = item;
-  isEditItemModalOpen.value = true;
-};
 
 const editing = ref<EditingState>(null);
 
@@ -310,17 +300,6 @@ const subtotalDue = computed(() =>
   localItems.value.reduce((acc, i) => acc + Number(getDraftDue(i) ?? 0), 0),
 );
 
-const isRemoveCategoryModalOpen = ref(false);
-const isRemoveItemModalOpen = ref(false);
-const selectedItemToRemove = ref<BudgetItem | undefined>(undefined);
-
-const openRemoveCategory = () => (isRemoveCategoryModalOpen.value = true);
-
-const openRemoveItem = (item: BudgetItem) => {
-  selectedItemToRemove.value = item;
-  isRemoveItemModalOpen.value = true;
-};
-
 const titleModel = (id: number) =>
   computed<string>({
     get() {
@@ -448,7 +427,7 @@ watch(
             type="button"
             class="bg-primary-100 text-grey-500 hover:bg-primary-600 rounded-full p-2 transition hover:text-white"
             title="Editar"
-            @click.stop="isEditCategoryModalOpen = true"
+            @click.stop="emit('edit-category', category)"
           >
             <IconPencil :font-controlled="false" class="size-3" />
           </button>
@@ -457,7 +436,7 @@ watch(
             type="button"
             class="bg-primary-100 text-grey-500 hover:bg-primary-600 rounded-full p-2 transition hover:text-white"
             title="Editar"
-            @click.stop="openRemoveCategory"
+            @click.stop="emit('remove-category', category)"
           >
             <IconTrash :font-controlled="false" class="size-3" />
           </button>
@@ -684,7 +663,7 @@ watch(
                     type="button"
                     class="text-grey-500 hover:text-primary-700 transition"
                     title="Editar"
-                    @click.stop="openEditItem(item)"
+                    @click.stop="emit('edit-item', item)"
                   >
                     <IconPencil :font-controlled="false" class="size-4" />
                   </button>
@@ -693,7 +672,7 @@ watch(
                     type="button"
                     class="text-grey-500 transition hover:text-red-600"
                     title="Remover"
-                    @click.stop="openRemoveItem(item)"
+                    @click.stop="emit('remove-item', item)"
                   >
                     <IconTrash :font-controlled="false" class="size-4" />
                   </button>
@@ -707,7 +686,7 @@ watch(
         <button
           type="button"
           class="text-grey-300 hover:text-primary-700 group my-4 inline-flex items-center gap-1 text-sm transition"
-          @click="openCreateItem"
+          @click="emit('create-item', category)"
         >
           <IconPlusSimple
             :font-controlled="false"
@@ -738,57 +717,5 @@ watch(
         </div>
       </div>
     </transition>
-
-    <!-- Modals -->
-    <LazyBudgetCategoryFormModal
-      :show="isEditCategoryModalOpen"
-      mode="EVENT"
-      :parent-id="budget?.id ?? 0"
-      :category="category"
-      @close="isEditCategoryModalOpen = false"
-      @saved="emit('changed')"
-    />
-
-    <!-- Create item -->
-    <LazyBudgetItemFormModal
-      :show="isCreateItemModalOpen"
-      mode="EVENT"
-      :category-id="category.id"
-      :item="undefined"
-      @close="isCreateItemModalOpen = false"
-      @saved="emit('changed')"
-    />
-
-    <!-- Edit item -->
-    <LazyBudgetItemFormModal
-      :show="isEditItemModalOpen"
-      mode="EVENT"
-      :category-id="category.id"
-      :item="selectedItem"
-      @close="isEditItemModalOpen = false"
-      @saved="emit('changed')"
-    />
-
-    <!-- Remove Category -->
-    <LazyBudgetCategoryRemoveModal
-      :show="isRemoveCategoryModalOpen"
-      :category="category"
-      @close-modal="isRemoveCategoryModalOpen = false"
-      @success="emit('changed')"
-    />
-
-    <!-- Remove Budget Item -->
-    <LazyBudgetItemRemoveModal
-      :show="isRemoveItemModalOpen"
-      :item="selectedItemToRemove"
-      @close-modal="
-        isRemoveItemModalOpen = false;
-        selectedItemToRemove = undefined;
-      "
-      @success="
-        emit('changed');
-        selectedItemToRemove = undefined;
-      "
-    />
   </div>
 </template>

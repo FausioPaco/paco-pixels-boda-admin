@@ -2,7 +2,7 @@
 import { useToast } from 'vue-toastification';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
-import { number, object, string, mixed } from 'yup';
+import { number, object, string, mixed, date } from 'yup';
 import { getBudgetService } from '~/services/budgetService';
 
 type Mode = 'EVENT' | 'TEMPLATE';
@@ -105,8 +105,9 @@ const editingInstallmentId = ref<number | null>(null);
 const instSchema = toTypedSchema(
   object({
     amount: number().typeError('Valor inválido.').min(0).required(),
-    receiptDate: string().nullable().optional(),
-    paidInDate: string().nullable().optional(),
+    descriptive: string().required('A descrição da prestação é obrigatória.'),
+    receiptDate: date().optional(),
+    paidInDate: date().optional(),
     paymentMethod: mixed<BudgetPaymentMethod>().required(),
   }),
 );
@@ -121,9 +122,10 @@ const {
   validationSchema: instSchema,
   initialValues: {
     amount: 0,
-    receiptDate: null,
-    paidInDate: null,
+    receiptDate: undefined,
+    paidInDate: undefined,
     paymentMethod: BudgetPaymentMethod.Deposit,
+    descriptive: '',
   },
 });
 
@@ -132,17 +134,24 @@ const [instReceiptDate, instReceiptDateAttrs] = defineFieldInst('receiptDate');
 const [instPaidInDate, instPaidInDateAttrs] = defineFieldInst('paidInDate');
 const [instPaymentMethod, instPaymentMethodAttrs] =
   defineFieldInst('paymentMethod');
+const [instDescriptive, instDescriptiveAttrs] = defineFieldInst('descriptive');
+
+const showInstallmentForm = ref(false);
 
 const startCreateInstallment = () => {
   editingInstallmentId.value = null;
+
   resetInstallmentForm({
     values: {
       amount: 0,
-      receiptDate: null,
-      paidInDate: null,
+      receiptDate: undefined,
+      paidInDate: undefined,
       paymentMethod: BudgetPaymentMethod.Deposit,
+      descriptive: '',
     },
   });
+
+  // showInstallmentForm.value = true;
 };
 
 const startEditInstallment = (p: BudgetItemInstallment) => {
@@ -150,30 +159,37 @@ const startEditInstallment = (p: BudgetItemInstallment) => {
   resetInstallmentForm({
     values: {
       amount: p.amount ?? 0,
-      receiptDate: p.receiptDate ?? null,
-      paidInDate: p.paidInDate ?? null,
+      receiptDate: p.receiptDate ?? undefined,
+      paidInDate: p.paidInDate ?? undefined,
       paymentMethod: p.paymentMethod ?? BudgetPaymentMethod.Deposit,
+      descriptive: p.descriptive ?? '',
     },
   });
+
+  showInstallmentForm.value = true;
 };
 
-const cancelInstallmentEdit = () => startCreateInstallment();
+function cancelInstallmentEdit() {
+  showInstallmentForm.value = false;
+}
 
 const saveInstallment = handleSubmitInst(async (values) => {
   if (!showTabs.value) return;
 
   try {
     if (!editingInstallmentId.value) {
-      await budgetService.addInstallment(props.item!.id, values);
+      await budgetService.addInstallment(props.item!.id, { ...values });
       toast.success('Prestação adicionada.');
     } else {
-      await budgetService.updateInstallment(editingInstallmentId.value, values);
+      await budgetService.updateInstallment(editingInstallmentId.value, {
+        ...values,
+      });
       toast.success('Prestação actualizada.');
     }
 
     await loadInstallments();
     emit('saved'); // para refreshBudget no pai
-    startCreateInstallment();
+    showInstallmentForm.value = false;
   } catch (e) {
     console.log(e);
     toast.error('Não foi possível guardar a prestação.');
@@ -269,6 +285,7 @@ const onSubmitItem = handleSubmit(async (values) => {
   <BaseModal
     :show="show"
     :title="item ? `Editar: ${item.title}` : 'Adicionar item'"
+    size="large"
     @close-modal="close"
   >
     <BaseTab v-if="showTabs">
@@ -380,7 +397,7 @@ const onSubmitItem = handleSubmit(async (values) => {
 
         <div v-else>
           <div class="flex items-center justify-between">
-            <p class="text-grey-900 text-sm font-semibold">
+            <p class="text-grey-400 text-lg font-semibold">
               Lista de prestações
             </p>
 
@@ -390,7 +407,7 @@ const onSubmitItem = handleSubmit(async (values) => {
               btn-size="sm"
               btn-type="outline-primary"
               :disabled="isSavingInstallment || isLoadingInstallments"
-              @click="startCreateInstallment"
+              @click="showInstallmentForm = true"
             >
               Nova prestação
             </BaseButton>
@@ -414,11 +431,11 @@ const onSubmitItem = handleSubmit(async (values) => {
               <table class="w-full text-left text-sm">
                 <thead class="text-grey-500 text-xs">
                   <tr>
-                    <th class="py-2">Valor</th>
-                    <th class="py-2">Data do comprovativo</th>
-                    <th class="py-2">Data de entrada</th>
-                    <th class="py-2">Forma</th>
-                    <th class="py-2"></th>
+                    <th class="py-2 text-sm">Descritivo</th>
+                    <th class="py-2 text-sm">Valor</th>
+                    <th class="py-2 text-sm">Data do comprovativo</th>
+                    <th class="py-2 text-sm">Data de entrada</th>
+                    <th class="py-2 text-sm">Forma</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -427,29 +444,30 @@ const onSubmitItem = handleSubmit(async (values) => {
                     :key="p.id"
                     class="border-grey-100 border-t"
                   >
-                    <td class="py-2">{{ formatMoney(p.amount) }}</td>
-                    <td class="py-2">
+                    <td class="py-2 text-sm">
+                      {{ truncate(p.descriptive, 90) }}
+                    </td>
+                    <td class="py-2 text-sm">{{ formatMoney(p.amount) }}</td>
+                    <td class="py-2 text-sm">
                       {{
                         p.receiptDate
-                          ? formatDateWithTime(new Date(p.receiptDate))
+                          ? formatDate(new Date(p.receiptDate))
                           : '—'
                       }}
                     </td>
-                    <td class="py-2">
+                    <td class="py-2 text-sm">
                       {{
-                        p.paidInDate
-                          ? formatDateWithTime(new Date(p.paidInDate))
-                          : '—'
+                        p.paidInDate ? formatDate(new Date(p.paidInDate)) : '—'
                       }}
                     </td>
-                    <td class="py-2">
+                    <td class="py-2 text-sm">
                       {{
                         p.paymentMethod === BudgetPaymentMethod.Deposit
                           ? 'Depósito'
                           : 'Cash'
                       }}
                     </td>
-                    <td class="py-2">
+                    <td class="py-2 text-sm">
                       <div class="flex items-center justify-end gap-2">
                         <button
                           type="button"
@@ -475,77 +493,124 @@ const onSubmitItem = handleSubmit(async (values) => {
               </table>
             </div>
 
-            <div class="border-grey-100 mt-5 rounded-2xl border p-4">
-              <p class="text-grey-900 text-sm font-semibold">
-                {{
-                  editingInstallmentId
-                    ? 'Editar prestação'
-                    : 'Adicionar prestação'
-                }}
-              </p>
+            <transition name="inst-form" mode="out-in">
+              <div
+                v-if="showInstallmentForm"
+                class="border-grey-100 mt-5 rounded-2xl border p-4"
+              >
+                <p class="text-grey-900 text-sm font-semibold">
+                  {{
+                    editingInstallmentId
+                      ? 'Editar prestação'
+                      : 'Adicionar prestação'
+                  }}
+                </p>
 
-              <form class="mt-3" @submit.prevent="saveInstallment">
-                <BaseInput
-                  id="instAmount"
-                  v-model="instAmount"
-                  v-bind="instAmountAttrs"
-                  :error-message="instErrors.amount"
-                  :readonly="isSavingInstallment"
-                  label="Valor"
-                  type="number"
-                  step="0.01"
-                />
+                <form class="mt-3" @submit.prevent="saveInstallment">
+                  <BaseInput
+                    id="instAmount"
+                    v-model="instAmount"
+                    v-bind="instAmountAttrs"
+                    :error-message="instErrors.amount"
+                    :readonly="isSavingInstallment"
+                    label="Valor"
+                    type="number"
+                    step="0.01"
+                  />
 
-                <BaseInput
-                  id="instReceiptDate"
-                  v-model="instReceiptDate"
-                  v-bind="instReceiptDateAttrs"
-                  :error-message="instErrors.receiptDate"
-                  :readonly="isSavingInstallment"
-                  label="Data do comprovativo"
-                  type="date"
-                />
+                  <div class="my-3">
+                    <label class="mb-1 block text-sm font-medium"
+                      >Data do comprovativo</label
+                    >
+                    <DatePicker
+                      v-model="instReceiptDate"
+                      v-bind="instReceiptDateAttrs"
+                      locale="pt-PT"
+                      :enable-time-picker="false"
+                      :clearable="true"
+                      :teleport="true"
+                      :format="'dd/MM/yyyy'"
+                      model-type="yyyy-MM-dd"
+                      :auto-apply="true"
+                      select-text="Selecionar"
+                      cancel-text="Cancelar"
+                      placeholder="Seleccione a data"
+                    />
+                    <p
+                      v-if="instErrors.receiptDate"
+                      class="text-danger-800 mt-1 animate-fadeIn text-sm"
+                    >
+                      {{ instErrors.receiptDate }}
+                    </p>
+                  </div>
 
-                <BaseInput
-                  id="instPaidInDate"
-                  v-model="instPaidInDate"
-                  v-bind="instPaidInDateAttrs"
-                  :error-message="instErrors.paidInDate"
-                  :readonly="isSavingInstallment"
-                  label="Data de entrada"
-                  type="date"
-                />
+                  <div class="my-3">
+                    <label class="mb-1 block text-sm font-medium"
+                      >Data de entrada</label
+                    >
+                    <DatePicker
+                      v-model="instPaidInDate"
+                      v-bind="instPaidInDateAttrs"
+                      locale="pt-PT"
+                      :enable-time-picker="false"
+                      :clearable="true"
+                      :teleport="true"
+                      :format="'dd/MM/yyyy'"
+                      model-type="yyyy-MM-dd"
+                      :auto-apply="true"
+                      select-text="Selecionar"
+                      cancel-text="Cancelar"
+                      placeholder="Seleccione a data"
+                    />
+                    <p
+                      v-if="instErrors.paidInDate"
+                      class="text-danger-800 mt-1 animate-fadeIn text-sm"
+                    >
+                      {{ instErrors.paidInDate }}
+                    </p>
+                  </div>
 
-                <BaseSelect
-                  id="instPaymentMethod"
-                  v-model="instPaymentMethod"
-                  v-bind="instPaymentMethodAttrs"
-                  :error-message="instErrors.paymentMethod"
-                  :disabled="isSavingInstallment"
-                  label="Forma de pagamento"
-                  :options="BUDGET_PAYMENT_METHODS"
-                />
-
-                <div class="mt-4 flex justify-center gap-3">
-                  <BaseButton
-                    type="button"
-                    btn-type="outline-primary"
+                  <BaseSelect
+                    id="instPaymentMethod"
+                    v-model="instPaymentMethod"
+                    v-bind="instPaymentMethodAttrs"
+                    :error-message="instErrors.paymentMethod"
                     :disabled="isSavingInstallment"
-                    @click="cancelInstallmentEdit"
-                  >
-                    Limpar
-                  </BaseButton>
+                    label="Forma de pagamento"
+                    :options="BUDGET_PAYMENT_METHODS"
+                  />
 
-                  <BaseButton
-                    type="submit"
-                    :disabled="isSavingInstallment"
-                    :loading="isSavingInstallment"
-                  >
-                    Guardar prestação
-                  </BaseButton>
-                </div>
-              </form>
-            </div>
+                  <BaseInput
+                    id="instDescriptive"
+                    v-model="instDescriptive"
+                    v-bind="instDescriptiveAttrs"
+                    :error-message="instErrors.descriptive"
+                    :readonly="isSavingInstallment"
+                    label="Descritivo:"
+                    type="text"
+                  />
+
+                  <div class="mt-4 flex justify-center gap-3">
+                    <BaseButton
+                      type="button"
+                      btn-type="outline-primary"
+                      :disabled="isSavingInstallment"
+                      @click="cancelInstallmentEdit"
+                    >
+                      Cancelar
+                    </BaseButton>
+
+                    <BaseButton
+                      type="submit"
+                      :disabled="isSavingInstallment"
+                      :loading="isSavingInstallment"
+                    >
+                      Guardar prestação
+                    </BaseButton>
+                  </div>
+                </form>
+              </div>
+            </transition>
           </div>
 
           <div class="mt-5 flex w-full justify-center">
