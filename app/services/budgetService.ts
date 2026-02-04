@@ -267,4 +267,12 @@ export const getBudgetService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
       method: 'DELETE',
     });
   },
+
+  // ===== Export =====
+  async exportBudgetExcel(budgetId: number): Promise<Blob> {
+    return $fetch(`${RESOURCE}/${budgetId}/export`, {
+      method: 'GET',
+      responseType: 'blob',
+    }) as unknown as Blob;
+  },
 });

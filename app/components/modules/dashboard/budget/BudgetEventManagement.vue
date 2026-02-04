@@ -2,6 +2,7 @@
 import draggable from 'vuedraggable';
 import { useToast } from 'vue-toastification';
 import { getBudgetService } from '~/services/budgetService';
+import { downloadBlob } from '~/utils/fileUtils';
 
 type SortableEvent = {
   item: HTMLElement;
@@ -123,6 +124,31 @@ const displayedCategories = computed(() => {
     matchesBudgetCategory(cat, term),
   );
 });
+
+const isExporting = ref(false);
+
+const exportExcel = async () => {
+  if (!budget.value) return;
+
+  try {
+    isExporting.value = true;
+
+    const blob = await budgetService.exportBudgetExcel(budget.value.id);
+    const fileName = `ORCAMENTO_${budget.value.id}.xlsx`;
+
+    downloadBlob(blob, fileName);
+  } catch (e) {
+    if (isFetchErrorLike(e)) {
+      toast.error(getServerErrors(e.data), { timeout: false });
+    } else {
+      toast.error('Não foi possível exportar o orçamento para Excel.', {
+        timeout: false,
+      });
+    }
+  } finally {
+    isExporting.value = false;
+  }
+};
 </script>
 
 <template>
@@ -193,13 +219,25 @@ const displayedCategories = computed(() => {
             disable-margins
           />
         </div>
-        <BaseButton
-          icon="add"
-          btn-size="sm"
-          btn-type="outline-primary"
-          @click="openCreateCategory"
-          >Adicionar categoria</BaseButton
-        >
+        <div class="flex flex-wrap gap-2">
+          <BaseButton
+            icon="add"
+            btn-size="sm"
+            btn-type="outline-primary"
+            @click="openCreateCategory"
+            >Adicionar categoria</BaseButton
+          >
+          <BaseButton
+            btn-size="sm"
+            icon="download"
+            btn-type="outline-primary"
+            :loading="isExporting"
+            :disabled="isExporting"
+            @click="exportExcel"
+          >
+            Exportar Excel
+          </BaseButton>
+        </div>
       </div>
 
       <!-- Categories (draggable) -->
