@@ -60,7 +60,7 @@ const alignClass = computed(() => {
 });
 
 const baseClass =
-  'w-full rounded-xl border px-2 py-1 text-sm transition ' +
+  'w-full rounded-md border px-2 py-1 text-sm transition ' +
   'focus:outline-none focus:ring-2 focus:ring-primary-300 ' +
   'disabled:opacity-60 disabled:cursor-not-allowed ' +
   'readonly:bg-grey-50 readonly:opacity-90';

@@ -195,11 +195,11 @@ const exportExcel = async () => {
         <!-- Ultrapassou budget -->
         <div
           v-if="budget?.totals?.isOverBudget"
-          class="my-4 flex animate-fadeIn flex-wrap items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700"
+          class="bg-warning-50 text-warning-700 my-4 flex animate-fadeIn flex-wrap items-center gap-2 rounded-lg p-3 text-sm"
         >
           <IconWarning
             :font-controlled="false"
-            class="block size-[16px] text-red-700"
+            class="text-warning-700 block size-[16px]"
           />
           O custo actual ultrapassou o orçamento em
           <b>{{ formatMoney(budget.totals.overBudgetBy, budget.currency) }}</b
@@ -235,7 +235,7 @@ const exportExcel = async () => {
             :disabled="isExporting"
             @click="exportExcel"
           >
-            Exportar Excel
+            Exportar para Excel
           </BaseButton>
         </div>
       </div>

@@ -83,13 +83,6 @@ const serverErrors = ref<ServerError>({
 const installments = ref<BudgetItemInstallment[]>([]);
 const isLoadingInstallments = ref(false);
 
-const hasInstallments = computed(() => installments.value.length > 0);
-
-// paidAmount read-only quando houver prestações (EVENT + edit)
-const paidAmountReadonly = computed(
-  () => showTabs.value && hasInstallments.value,
-);
-
 const loadInstallments = async () => {
   if (!showTabs.value) return;
 
@@ -275,7 +268,7 @@ const onSubmitItem = handleSubmit(async (values) => {
 <template>
   <BaseModal
     :show="show"
-    :title="item ? 'Editar item' : 'Adicionar item'"
+    :title="item ? `Editar: ${item.title}` : 'Adicionar item'"
     @close-modal="close"
   >
     <BaseTab v-if="showTabs">
@@ -293,7 +286,7 @@ const onSubmitItem = handleSubmit(async (values) => {
 
       <BaseTabItem
         id="budget-item-installments"
-        icon="budget-template"
+        icon="installments"
         :tab-position="2"
         :total-tabs="2"
         :is-active="activeTab === 'INSTALLMENTS'"
@@ -344,11 +337,11 @@ const onSubmitItem = handleSubmit(async (values) => {
             v-model="paidAmount"
             v-bind="paidAmountAttrs"
             :error-message="errors.paidAmount"
-            :disabled="isSubmitting || paidAmountReadonly"
             helper-text="Calculado automaticamente a partir das prestações."
             label="Montante pago"
             type="number"
             step="0.01"
+            :disabled="mode === 'EVENT'"
           />
 
           <BaseTextArea
@@ -393,6 +386,7 @@ const onSubmitItem = handleSubmit(async (values) => {
 
             <BaseButton
               type="button"
+              icon="add"
               btn-size="sm"
               btn-type="outline-primary"
               :disabled="isSavingInstallment || isLoadingInstallments"
@@ -405,8 +399,15 @@ const onSubmitItem = handleSubmit(async (values) => {
           <BaseLoading v-if="isLoadingInstallments" class="mt-3" />
 
           <div v-else class="mt-3">
-            <div v-if="installments.length === 0" class="text-grey-500 text-sm">
-              Ainda não existem prestações para este item.
+            <div
+              v-if="installments.length === 0"
+              class="text-grey-400 flex gap-2 text-sm"
+            >
+              <IconInstallments
+                :font-controlled="false"
+                class="inline size-6"
+              />
+              <span class="font-medium">Nenhuma prestação adicionada.</span>
             </div>
 
             <div v-else class="overflow-x-auto">
