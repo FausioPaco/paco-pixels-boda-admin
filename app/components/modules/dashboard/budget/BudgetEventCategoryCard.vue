@@ -2,6 +2,7 @@
 import draggable from 'vuedraggable';
 import { useToast } from 'vue-toastification';
 import { getBudgetService } from '~/services/budgetService';
+import { getServerErrors } from '~/utils/serverUtils';
 
 type SortableEvent = {
   item: HTMLElement;
@@ -10,6 +11,12 @@ type SortableEvent = {
 };
 
 type ReorderItem = { id: number; sortOrder: number };
+
+type Draft = {
+  title: string;
+  estimatedAmount: number | null;
+  actualCost: number | null;
+};
 
 const props = defineProps<{
   budget: Budget;
@@ -82,42 +89,168 @@ const openEditItem = (item: BudgetItem) => {
   isEditItemModalOpen.value = true;
 };
 
-// helpers (event tem valores reais, mas mantemos compatível com o design)
-const getEstimated = (i: BudgetItem) => i.estimatedAmount ?? 0;
-const getActual = (i: BudgetItem) => i.actualCost ?? 0;
-const getPaid = (i: BudgetItem) => i.paidAmount ?? 0;
+// ===== Inline edit state =====
+const draftsById = ref<Record<number, Draft>>({});
+const dirtyById = ref<Record<number, boolean>>({});
+const savingById = ref<Record<number, boolean>>({});
+const pendingById = ref<Record<number, boolean>>({});
+const timersById = ref<Record<number, ReturnType<typeof setTimeout> | null>>(
+  {},
+);
 
-const getDue = (i: BudgetItem) => {
-  const due = Math.max(Number(getActual(i)) - Number(getPaid(i)), 0);
-  return due ?? 0;
+const ensureDraft = (item: BudgetItem) => {
+  if (!draftsById.value[item.id]) {
+    draftsById.value[item.id] = {
+      title: item.title ?? '',
+      estimatedAmount: item.estimatedAmount ?? 0,
+      actualCost: item.actualCost ?? 0,
+    };
+  }
 };
 
+watch(
+  () => localItems.value,
+  (items) => {
+    for (const i of items) ensureDraft(i);
+  },
+  { immediate: true },
+);
+
+const getPaid = (i: BudgetItem) => i.paidAmount ?? 0;
+
+const getDraftEstimated = (i: BudgetItem) =>
+  draftsById.value[i.id]?.estimatedAmount ?? i.estimatedAmount ?? 0;
+
+const getDraftActual = (i: BudgetItem) =>
+  draftsById.value[i.id]?.actualCost ?? i.actualCost ?? 0;
+
+const getDraftDue = (i: BudgetItem) => {
+  const actual = Number(getDraftActual(i) ?? 0);
+  const paid = Number(getPaid(i) ?? 0);
+  return Math.max(actual - paid, 0);
+};
+
+const markDirty = (id: number) => {
+  dirtyById.value[id] = true;
+};
+
+const clearTimer = (id: number) => {
+  const t = timersById.value[id];
+  if (t) clearTimeout(t);
+  timersById.value[id] = null;
+};
+
+const scheduleSave = (id: number) => {
+  markDirty(id);
+  clearTimer(id);
+
+  timersById.value[id] = setTimeout(() => {
+    saveNow(id);
+  }, 700);
+};
+
+const saveNow = async (id: number) => {
+  clearTimer(id);
+
+  const item = localItems.value.find((x) => x.id === id);
+  const draft = draftsById.value[id];
+  if (!item || !draft) return;
+
+  // Evita salvar em paralelo
+  if (savingById.value[id]) {
+    pendingById.value[id] = true;
+    return;
+  }
+
+  // Normalização
+  const title = (draft.title ?? '').trim();
+  const estimatedAmount = draft.estimatedAmount ?? item.estimatedAmount ?? 0;
+  const actualCost = draft.actualCost ?? item.actualCost ?? 0;
+
+  if (!title) {
+    toast.error('O título do item não pode ficar vazio.');
+    ensureDraft(item);
+
+    draftsById.value[id] = {
+      title: item.title ?? '',
+      estimatedAmount: item.estimatedAmount ?? 0,
+      actualCost: item.actualCost ?? 0,
+    };
+
+    dirtyById.value[id] = false;
+    return;
+  }
+
+  savingById.value[id] = true;
+
+  try {
+    const updated = await budgetService.updateItem(id, {
+      title,
+      estimatedAmount: Number(estimatedAmount),
+      actualCost: Number(actualCost),
+      notes: item.notes ?? null,
+    });
+
+    // Atualiza a row com resposta do backend
+    const idx = localItems.value.findIndex((x) => x.id === id);
+    if (idx >= 0)
+      localItems.value[idx] = { ...localItems.value[idx], ...updated };
+
+    // mantém draft alinhado
+    draftsById.value[id] = {
+      title: updated.title,
+      estimatedAmount: updated.estimatedAmount,
+      actualCost: updated.actualCost,
+    };
+
+    dirtyById.value[id] = false;
+
+    // Importante: para atualizar totais globais, avisa o pai (o pai já faz refreshBudget)
+    emit('changed');
+  } catch (e) {
+    console.log(e);
+
+    const msg = isFetchErrorLike(e)
+      ? getServerErrors(e.data)
+      : 'Não foi possível guardar o item.';
+
+    toast.error(msg);
+
+    // reverte draft para o item actual
+    draftsById.value[id] = {
+      title: item.title ?? '',
+      estimatedAmount: item.estimatedAmount ?? 0,
+      actualCost: item.actualCost ?? 0,
+    };
+    dirtyById.value[id] = false;
+  } finally {
+    savingById.value[id] = false;
+
+    if (pendingById.value[id]) {
+      pendingById.value[id] = false;
+      saveNow(id);
+    }
+  }
+};
+
+// ===== Subtotals (usam draft para estimado/actual) =====
 const subtotalEstimated = computed(() =>
   localItems.value.reduce(
-    (acc: number, i: BudgetItem) => acc + Number(getEstimated(i) ?? 0),
+    (acc, i) => acc + Number(getDraftEstimated(i) ?? 0),
     0,
   ),
 );
 
 const subtotalActual = computed(() =>
-  localItems.value.reduce(
-    (acc: number, i: BudgetItem) => acc + Number(getActual(i) ?? 0),
-    0,
-  ),
+  localItems.value.reduce((acc, i) => acc + Number(getDraftActual(i) ?? 0), 0),
 );
 
 const subtotalPaid = computed(() =>
-  localItems.value.reduce(
-    (acc: number, i: BudgetItem) => acc + Number(getPaid(i) ?? 0),
-    0,
-  ),
+  localItems.value.reduce((acc, i) => acc + Number(getPaid(i) ?? 0), 0),
 );
 
 const subtotalDue = computed(() =>
-  localItems.value.reduce(
-    (acc: number, i: BudgetItem) => acc + Number(getDue(i) ?? 0),
-    0,
-  ),
+  localItems.value.reduce((acc, i) => acc + Number(getDraftDue(i) ?? 0), 0),
 );
 
 const isRemoveCategoryModalOpen = ref(false);
@@ -130,6 +263,54 @@ const openRemoveItem = (item: BudgetItem) => {
   selectedItemToRemove.value = item;
   isRemoveItemModalOpen.value = true;
 };
+
+const titleModel = (id: number) =>
+  computed<string>({
+    get() {
+      const d = draftsById.value[id];
+      return d?.title ?? '';
+    },
+    set(v) {
+      const item = localItems.value.find((x) => x.id === id);
+      if (item) ensureDraft(item);
+      if (!draftsById.value[id])
+        draftsById.value[id] = { title: '', estimatedAmount: 0, actualCost: 0 };
+      draftsById.value[id]!.title = v;
+      scheduleSave(id);
+    },
+  });
+
+const estimatedModel = (id: number) =>
+  computed<number | null>({
+    get() {
+      const d = draftsById.value[id];
+      return d?.estimatedAmount ?? 0;
+    },
+    set(v) {
+      const item = localItems.value.find((x) => x.id === id);
+      if (item) ensureDraft(item);
+      if (!draftsById.value[id])
+        draftsById.value[id] = { title: '', estimatedAmount: 0, actualCost: 0 };
+      draftsById.value[id]!.estimatedAmount = v;
+      scheduleSave(id);
+    },
+  });
+
+const actualModel = (id: number) =>
+  computed<number | null>({
+    get() {
+      const d = draftsById.value[id];
+      return d?.actualCost ?? 0;
+    },
+    set(v) {
+      const item = localItems.value.find((x) => x.id === id);
+      if (item) ensureDraft(item);
+      if (!draftsById.value[id])
+        draftsById.value[id] = { title: '', estimatedAmount: 0, actualCost: 0 };
+      draftsById.value[id]!.actualCost = v;
+      scheduleSave(id);
+    },
+  });
 </script>
 
 <template>
@@ -252,17 +433,42 @@ const openRemoveItem = (item: BudgetItem) => {
                   />
                 </button>
 
-                <span class="text-grey-900 text-sm font-medium">
-                  {{ item.title }}
-                </span>
+                <div class="flex-1">
+                  <BaseInputCompact
+                    :id="`budget-item-title-${item.id}`"
+                    v-model="titleModel(item.id).value"
+                    type="text"
+                    align="left"
+                    :disabled="savingById[item.id]"
+                    @blur="saveNow(item.id)"
+                  />
+                </div>
               </div>
 
-              <div class="text-grey-700 text-sm">
-                {{ formatMoney(getEstimated(item), budget.currency) }}
+              <div>
+                <BaseInputCompact
+                  :id="`budget-item-est-${item.id}`"
+                  v-model="estimatedModel(item.id).value"
+                  type="number"
+                  align="right"
+                  :disabled="savingById[item.id]"
+                  step="0.01"
+                  min="0"
+                  @blur="saveNow(item.id)"
+                />
               </div>
 
-              <div class="text-grey-700 text-sm">
-                {{ formatMoney(getActual(item), budget.currency) }}
+              <div>
+                <BaseInputCompact
+                  :id="`budget-item-actual-${item.id}`"
+                  v-model="actualModel(item.id).value"
+                  type="number"
+                  align="right"
+                  :disabled="savingById[item.id]"
+                  step="0.01"
+                  min="0"
+                  @blur="saveNow(item.id)"
+                />
               </div>
 
               <div class="text-sm text-green-700">
@@ -271,7 +477,7 @@ const openRemoveItem = (item: BudgetItem) => {
 
               <div class="flex items-center justify-between gap-2">
                 <span class="text-grey-900 text-sm">
-                  {{ formatMoney(getDue(item), budget.currency) }}
+                  {{ formatMoney(getDraftDue(item), budget.currency) }}
                 </span>
 
                 <div class="flex items-center gap-2">

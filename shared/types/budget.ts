@@ -73,7 +73,7 @@ export interface BudgetItemInput {
   title: string;
   estimatedAmount: number;
   actualCost: number;
-  paidAmount: number;
+  paidAmount?: number | null;
   notes?: string | null;
 }
 
