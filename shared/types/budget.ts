@@ -164,3 +164,37 @@ export const BUDGET_CURRENCIES = [
   { id: 'MZN', value: 'MZN', name: 'Metical (MZN)' },
   { id: 'USD', value: 'USD', name: 'Dólar (USD)' },
 ];
+
+export enum BudgetPaymentMethod {
+  Deposit = 1,
+  Cash = 2,
+}
+
+export interface BudgetItemInstallment {
+  id: number;
+  budgetItemId: number;
+  amount: number;
+  receiptDate?: string | null; // vem como ISO
+  paidInDate?: string | null; // vem como ISO
+  paymentMethod: BudgetPaymentMethod;
+}
+
+export interface BudgetItemInstallmentInput {
+  amount: number;
+  receiptDate?: string | null;
+  paidInDate?: string | null;
+  paymentMethod: BudgetPaymentMethod;
+}
+
+export const BUDGET_PAYMENT_METHODS = [
+  {
+    id: BudgetPaymentMethod.Deposit,
+    value: BudgetPaymentMethod.Deposit,
+    name: 'Depósito',
+  },
+  {
+    id: BudgetPaymentMethod.Cash,
+    value: BudgetPaymentMethod.Cash,
+    name: 'Cash',
+  },
+];

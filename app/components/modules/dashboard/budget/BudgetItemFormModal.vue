@@ -2,10 +2,11 @@
 import { useToast } from 'vue-toastification';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
-import { number, object, string } from 'yup';
+import { number, object, string, mixed } from 'yup';
 import { getBudgetService } from '~/services/budgetService';
 
 type Mode = 'EVENT' | 'TEMPLATE';
+type TabKey = 'DETAILS' | 'INSTALLMENTS';
 
 interface Props {
   show?: boolean;
@@ -21,6 +22,25 @@ const toast = useToast();
 const nuxtApp = useNuxtApp();
 const budgetService = getBudgetService(nuxtApp.$api);
 
+// ------------------------
+// Tabs
+// ------------------------
+const activeTab = ref<TabKey>('DETAILS');
+
+const showTabs = computed(() => props.mode === 'EVENT' && !!props.item);
+
+watch(
+  () => props.show,
+  (open) => {
+    if (!open) return;
+    activeTab.value = 'DETAILS';
+  },
+  { immediate: true },
+);
+
+// ------------------------
+// Form (Item)
+// ------------------------
 const schema = toTypedSchema(
   object({
     title: string()
@@ -52,10 +72,147 @@ const [actualCost, actualCostAttrs] = defineField('actualCost');
 const [paidAmount, paidAmountAttrs] = defineField('paidAmount');
 const [notes, notesAttrs] = defineField('notes');
 
+const serverErrors = ref<ServerError>({
+  hasErrors: false,
+  message: '',
+});
+
+// ------------------------
+// Installments
+// ------------------------
+const installments = ref<BudgetItemInstallment[]>([]);
+const isLoadingInstallments = ref(false);
+
+const hasInstallments = computed(() => installments.value.length > 0);
+
+// paidAmount read-only quando houver prestações (EVENT + edit)
+const paidAmountReadonly = computed(
+  () => showTabs.value && hasInstallments.value,
+);
+
+const loadInstallments = async () => {
+  if (!showTabs.value) return;
+
+  try {
+    isLoadingInstallments.value = true;
+    installments.value = await budgetService.getInstallments(props.item!.id);
+
+    // opcional: reflectir total pago imediatamente no form
+    const sum = installments.value.reduce((acc, x) => acc + (x.amount ?? 0), 0);
+    paidAmount.value = Number(sum.toFixed(2));
+  } catch (e) {
+    console.log(e);
+  } finally {
+    isLoadingInstallments.value = false;
+  }
+};
+
+// Form inline para criar/editar prestação
+const editingInstallmentId = ref<number | null>(null);
+const instSchema = toTypedSchema(
+  object({
+    amount: number().typeError('Valor inválido.').min(0).required(),
+    receiptDate: string().nullable().optional(),
+    paidInDate: string().nullable().optional(),
+    paymentMethod: mixed<BudgetPaymentMethod>().required(),
+  }),
+);
+
+const {
+  handleSubmit: handleSubmitInst,
+  resetForm: resetInstallmentForm,
+  defineField: defineFieldInst,
+  errors: instErrors,
+  isSubmitting: isSavingInstallment,
+} = useForm({
+  validationSchema: instSchema,
+  initialValues: {
+    amount: 0,
+    receiptDate: null,
+    paidInDate: null,
+    paymentMethod: BudgetPaymentMethod.Deposit,
+  },
+});
+
+const [instAmount, instAmountAttrs] = defineFieldInst('amount');
+const [instReceiptDate, instReceiptDateAttrs] = defineFieldInst('receiptDate');
+const [instPaidInDate, instPaidInDateAttrs] = defineFieldInst('paidInDate');
+const [instPaymentMethod, instPaymentMethodAttrs] =
+  defineFieldInst('paymentMethod');
+
+const startCreateInstallment = () => {
+  editingInstallmentId.value = null;
+  resetInstallmentForm({
+    values: {
+      amount: 0,
+      receiptDate: null,
+      paidInDate: null,
+      paymentMethod: BudgetPaymentMethod.Deposit,
+    },
+  });
+};
+
+const startEditInstallment = (p: BudgetItemInstallment) => {
+  editingInstallmentId.value = p.id;
+  resetInstallmentForm({
+    values: {
+      amount: p.amount ?? 0,
+      receiptDate: p.receiptDate ?? null,
+      paidInDate: p.paidInDate ?? null,
+      paymentMethod: p.paymentMethod ?? BudgetPaymentMethod.Deposit,
+    },
+  });
+};
+
+const cancelInstallmentEdit = () => startCreateInstallment();
+
+const saveInstallment = handleSubmitInst(async (values) => {
+  if (!showTabs.value) return;
+
+  try {
+    if (!editingInstallmentId.value) {
+      await budgetService.addInstallment(props.item!.id, values);
+      toast.success('Prestação adicionada.');
+    } else {
+      await budgetService.updateInstallment(editingInstallmentId.value, values);
+      toast.success('Prestação actualizada.');
+    }
+
+    await loadInstallments();
+    emit('saved'); // para refreshBudget no pai
+    startCreateInstallment();
+  } catch (e) {
+    console.log(e);
+    toast.error('Não foi possível guardar a prestação.');
+  }
+});
+
+const removeInstallment = async (id: number) => {
+  if (!showTabs.value) return;
+
+  // confirmação simples (podemos depois trocar por BaseConfirm se tiveres)
+  const ok = window.confirm('Remover esta prestação?');
+  if (!ok) return;
+
+  try {
+    await budgetService.deleteInstallment(id);
+    toast.success('Prestação removida.');
+    await loadInstallments();
+    emit('saved');
+  } catch (e) {
+    console.log(e);
+    toast.error('Não foi possível remover a prestação.');
+  }
+};
+
+// ------------------------
+// Open modal: hydrate item + installments
+// ------------------------
 watch(
   () => props.show,
-  (open) => {
+  async (open) => {
     if (!open) return;
+
     const i = props.item;
 
     resetForm({
@@ -67,19 +224,22 @@ watch(
         notes: i?.notes ?? '',
       },
     });
+
+    // instalar tab + carregar prestações só quando EVENT e edit
+    installments.value = [];
+    startCreateInstallment();
+    await loadInstallments();
   },
   { immediate: true },
 );
 
 const close = () => emit('close');
 
-const serverErrors = ref<ServerError>({
-  hasErrors: false,
-  message: '',
-});
-
-const onSubmit = handleSubmit(async (values) => {
+const onSubmitItem = handleSubmit(async (values) => {
   try {
+    serverErrors.value.hasErrors = false;
+    serverErrors.value.message = '';
+
     if (props.mode === 'EVENT') {
       if (!props.item) {
         await budgetService.addItem(props.categoryId, values);
@@ -118,80 +278,282 @@ const onSubmit = handleSubmit(async (values) => {
     :title="item ? 'Editar item' : 'Adicionar item'"
     @close-modal="close"
   >
-    <form @submit.prevent="onSubmit">
-      <BaseInput
-        id="budgetTitleItem"
-        v-model="title"
-        v-bind="titleAttrs"
-        :error-message="errors.title"
-        :readonly="isSubmitting"
-        label="Título"
-        placeholder="Ex: Organizador de casamento"
-      />
+    <BaseTab v-if="showTabs">
+      <BaseTabItem
+        id="budget-item-details"
+        icon="budget"
+        :tab-position="1"
+        :total-tabs="2"
+        :is-active="activeTab === 'DETAILS'"
+        class="w-full md:w-1/2"
+        @click="activeTab = 'DETAILS'"
+      >
+        Detalhes do item
+      </BaseTabItem>
 
-      <BaseInput
-        id="budgetEstimatedAmount"
-        v-model="estimatedAmount"
-        v-bind="estimatedAmountAttrs"
-        :error-message="errors.estimatedAmount"
-        :readonly="isSubmitting"
-        label="Custo estimado"
-        type="number"
-        step="0.01"
-      />
+      <BaseTabItem
+        id="budget-item-installments"
+        icon="budget-template"
+        :tab-position="2"
+        :total-tabs="2"
+        :is-active="activeTab === 'INSTALLMENTS'"
+        class="w-full md:w-1/2"
+        @click="activeTab = 'INSTALLMENTS'"
+      >
+        Prestações
+      </BaseTabItem>
+    </BaseTab>
 
-      <BaseInput
-        id="budgetActualCost"
-        v-model="actualCost"
-        v-bind="actualCostAttrs"
-        :error-message="errors.actualCost"
-        :readonly="isSubmitting"
-        label="Custo actual"
-        type="number"
-        step="0.01"
-      />
+    <transition name="fade" mode="out-in">
+      <div :key="activeTab" class="mt-4">
+        <form v-if="activeTab === 'DETAILS'" @submit.prevent="onSubmitItem">
+          <BaseInput
+            id="budgetTitleItem"
+            v-model="title"
+            v-bind="titleAttrs"
+            :error-message="errors.title"
+            :readonly="isSubmitting"
+            label="Título"
+            placeholder="Ex: Organizador de casamento"
+          />
 
-      <BaseInput
-        id="budgetPaidAmount"
-        v-model="paidAmount"
-        v-bind="paidAmountAttrs"
-        :error-message="errors.paidAmount"
-        :readonly="isSubmitting"
-        label="Montante pago"
-        type="number"
-        step="0.01"
-      />
+          <BaseInput
+            id="budgetEstimatedAmount"
+            v-model="estimatedAmount"
+            v-bind="estimatedAmountAttrs"
+            :error-message="errors.estimatedAmount"
+            :readonly="isSubmitting"
+            label="Custo estimado"
+            type="number"
+            step="0.01"
+          />
 
-      <BaseTextArea
-        id="budgetNotes"
-        v-model="notes"
-        v-bind="notesAttrs"
-        :error-message="errors.notes"
-        :readonly="isSubmitting"
-        label="Notas (opcional)"
-        placeholder="Notas internas..."
-      />
+          <BaseInput
+            id="budgetActualCost"
+            v-model="actualCost"
+            v-bind="actualCostAttrs"
+            :error-message="errors.actualCost"
+            :readonly="isSubmitting"
+            label="Custo actual"
+            type="number"
+            step="0.01"
+          />
 
-      <BaseError v-if="serverErrors.hasErrors">{{
-        serverErrors.message
-      }}</BaseError>
+          <BaseInput
+            id="budgetPaidAmount"
+            v-model="paidAmount"
+            v-bind="paidAmountAttrs"
+            :error-message="errors.paidAmount"
+            :disabled="isSubmitting || paidAmountReadonly"
+            helper-text="Calculado automaticamente a partir das prestações."
+            label="Montante pago"
+            type="number"
+            step="0.01"
+          />
 
-      <div class="flex w-full justify-center gap-3">
-        <BaseButton
-          type="button"
-          btn-type="outline-primary"
-          :disabled="isSubmitting"
-          @click="close"
-          >Cancelar</BaseButton
-        >
-        <BaseButton
-          type="submit"
-          :disabled="isSubmitting"
-          :loading="isSubmitting"
-        >
-          Guardar</BaseButton
-        >
+          <BaseTextArea
+            id="budgetNotes"
+            v-model="notes"
+            v-bind="notesAttrs"
+            :error-message="errors.notes"
+            :readonly="isSubmitting"
+            label="Notas (opcional)"
+            placeholder="Notas internas..."
+          />
+
+          <BaseError v-if="serverErrors.hasErrors">{{
+            serverErrors.message
+          }}</BaseError>
+
+          <div class="flex w-full justify-center gap-3">
+            <BaseButton
+              type="button"
+              btn-type="outline-primary"
+              :disabled="isSubmitting"
+              @click="close"
+            >
+              Cancelar
+            </BaseButton>
+
+            <BaseButton
+              type="submit"
+              :disabled="isSubmitting"
+              :loading="isSubmitting"
+            >
+              Guardar
+            </BaseButton>
+          </div>
+        </form>
+
+        <div v-else>
+          <div class="flex items-center justify-between">
+            <p class="text-grey-900 text-sm font-semibold">
+              Lista de prestações
+            </p>
+
+            <BaseButton
+              type="button"
+              btn-size="sm"
+              btn-type="outline-primary"
+              :disabled="isSavingInstallment || isLoadingInstallments"
+              @click="startCreateInstallment"
+            >
+              Nova prestação
+            </BaseButton>
+          </div>
+
+          <BaseLoading v-if="isLoadingInstallments" class="mt-3" />
+
+          <div v-else class="mt-3">
+            <div v-if="installments.length === 0" class="text-grey-500 text-sm">
+              Ainda não existem prestações para este item.
+            </div>
+
+            <div v-else class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <thead class="text-grey-500 text-xs">
+                  <tr>
+                    <th class="py-2">Valor</th>
+                    <th class="py-2">Data do comprovativo</th>
+                    <th class="py-2">Data de entrada</th>
+                    <th class="py-2">Forma</th>
+                    <th class="py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="p in installments"
+                    :key="p.id"
+                    class="border-grey-100 border-t"
+                  >
+                    <td class="py-2">{{ formatMoney(p.amount) }}</td>
+                    <td class="py-2">
+                      {{
+                        p.receiptDate
+                          ? formatDateWithTime(new Date(p.receiptDate))
+                          : '—'
+                      }}
+                    </td>
+                    <td class="py-2">
+                      {{
+                        p.paidInDate
+                          ? formatDateWithTime(new Date(p.paidInDate))
+                          : '—'
+                      }}
+                    </td>
+                    <td class="py-2">
+                      {{
+                        p.paymentMethod === BudgetPaymentMethod.Deposit
+                          ? 'Depósito'
+                          : 'Cash'
+                      }}
+                    </td>
+                    <td class="py-2">
+                      <div class="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          class="text-grey-500 hover:text-primary-700 transition"
+                          title="Editar prestação"
+                          @click="startEditInstallment(p)"
+                        >
+                          <IconPencil :font-controlled="false" class="size-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          class="text-grey-500 transition hover:text-red-600"
+                          title="Remover prestação"
+                          @click="removeInstallment(p.id)"
+                        >
+                          <IconTrash :font-controlled="false" class="size-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="border-grey-100 mt-5 rounded-2xl border p-4">
+              <p class="text-grey-900 text-sm font-semibold">
+                {{
+                  editingInstallmentId
+                    ? 'Editar prestação'
+                    : 'Adicionar prestação'
+                }}
+              </p>
+
+              <form class="mt-3" @submit.prevent="saveInstallment">
+                <BaseInput
+                  id="instAmount"
+                  v-model="instAmount"
+                  v-bind="instAmountAttrs"
+                  :error-message="instErrors.amount"
+                  :readonly="isSavingInstallment"
+                  label="Valor"
+                  type="number"
+                  step="0.01"
+                />
+
+                <BaseInput
+                  id="instReceiptDate"
+                  v-model="instReceiptDate"
+                  v-bind="instReceiptDateAttrs"
+                  :error-message="instErrors.receiptDate"
+                  :readonly="isSavingInstallment"
+                  label="Data do comprovativo"
+                  type="date"
+                />
+
+                <BaseInput
+                  id="instPaidInDate"
+                  v-model="instPaidInDate"
+                  v-bind="instPaidInDateAttrs"
+                  :error-message="instErrors.paidInDate"
+                  :readonly="isSavingInstallment"
+                  label="Data de entrada"
+                  type="date"
+                />
+
+                <BaseSelect
+                  id="instPaymentMethod"
+                  v-model="instPaymentMethod"
+                  v-bind="instPaymentMethodAttrs"
+                  :error-message="instErrors.paymentMethod"
+                  :disabled="isSavingInstallment"
+                  label="Forma de pagamento"
+                  :options="BUDGET_PAYMENT_METHODS"
+                />
+
+                <div class="mt-4 flex justify-center gap-3">
+                  <BaseButton
+                    type="button"
+                    btn-type="outline-primary"
+                    :disabled="isSavingInstallment"
+                    @click="cancelInstallmentEdit"
+                  >
+                    Limpar
+                  </BaseButton>
+
+                  <BaseButton
+                    type="submit"
+                    :disabled="isSavingInstallment"
+                    :loading="isSavingInstallment"
+                  >
+                    Guardar prestação
+                  </BaseButton>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="mt-5 flex w-full justify-center">
+            <BaseButton type="button" btn-type="outline-primary" @click="close">
+              Fechar
+            </BaseButton>
+          </div>
+        </div>
       </div>
-    </form>
+    </transition>
   </BaseModal>
 </template>
