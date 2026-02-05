@@ -13,9 +13,13 @@ interface Props {
   mode: Mode;
   categoryId: number | undefined;
   item: BudgetItem | BudgetTemplateItem | undefined;
+  initialTab?: TabKey;
 }
 
-const props = withDefaults(defineProps<Props>(), { show: false });
+const props = withDefaults(defineProps<Props>(), {
+  show: false,
+  initialTab: 'DETAILS',
+});
 const emit = defineEmits<{ (e: 'close' | 'saved'): void }>();
 
 const toast = useToast();
@@ -223,7 +227,7 @@ watch(
   () => props.show,
   async (open) => {
     if (!open) return;
-    activeTab.value = 'DETAILS';
+    activeTab.value = props.initialTab ?? 'DETAILS';
 
     const i = props.item;
 
@@ -467,7 +471,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                       {{
                         p.paymentMethod === BudgetPaymentMethod.Deposit
                           ? 'Depósito'
-                          : 'Cash'
+                          : 'Dinheiro'
                       }}
                     </td>
                     <td class="py-2 text-sm">

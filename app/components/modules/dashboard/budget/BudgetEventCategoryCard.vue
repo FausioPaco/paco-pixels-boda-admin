@@ -31,7 +31,10 @@ const emit = defineEmits<{
     e: 'edit-category' | 'remove-category' | 'create-item',
     category: BudgetCategory,
   ): void;
-  (e: 'edit-item' | 'remove-item', item: BudgetItem): void;
+  (
+    e: 'edit-item' | 'remove-item' | 'open-installments',
+    item: BudgetItem,
+  ): void;
 }>();
 
 const toast = useToast();
@@ -475,9 +478,9 @@ watch(
           class="text-grey-500 mt-5 hidden animate-fadeIn grid-cols-5 gap-3 pb-4 text-xs md:grid"
         >
           <div class="pl-6">Título</div>
-          <div>Estimado</div>
-          <div>Custo actual</div>
-          <div>Montante pago</div>
+          <div class="md:pl-3">Estimado</div>
+          <div class="md:pl-2">Custo actual</div>
+          <div class="md:pl-2">Montante pago</div>
           <div class="-ml-2">Montante devido</div>
         </div>
 
@@ -649,9 +652,24 @@ watch(
                 </transition>
               </div>
 
-              <div class="text-sm text-green-700">
-                {{ formatMoney(getPaid(item), budget.currency) }}
-              </div>
+              <button
+                type="button"
+                class="hover:bg-grey-50 group relative flex items-center justify-start gap-1 rounded-lg px-2 py-1 transition"
+                @click.stop="emit('open-installments', item)"
+              >
+                <span
+                  class="text-sm font-medium text-green-600 group-hover:underline"
+                >
+                  {{ formatMoney(getPaid(item), budget.currency) }}
+                </span>
+
+                <!-- Tooltip -->
+                <span
+                  class="bg-grey-900 pointer-events-none absolute -top-8 right-0 whitespace-nowrap rounded-md px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100"
+                >
+                  Verificar prestações
+                </span>
+              </button>
 
               <div class="flex items-center justify-between gap-2">
                 <span class="text-grey-900 text-sm">

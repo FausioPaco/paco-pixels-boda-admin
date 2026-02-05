@@ -126,6 +126,7 @@ const displayedCategories = computed(() => {
 });
 
 const isExporting = ref(false);
+const { eventInitials } = useEventStore();
 
 const exportExcel = async () => {
   if (!budget.value) return;
@@ -134,7 +135,7 @@ const exportExcel = async () => {
     isExporting.value = true;
 
     const blob = await budgetService.exportBudgetExcel(budget.value.id);
-    const fileName = `ORCAMENTO_${budget.value.id}.xlsx`;
+    const fileName = `ORCAMENTO_${eventInitials}.xlsx`;
 
     downloadBlob(blob, fileName);
   } catch (e) {
@@ -160,6 +161,7 @@ const selectedCategory = ref<BudgetCategory | undefined>(undefined);
 const isRemoveCategoryModalOpen = ref(false);
 const isRemoveItemModalOpen = ref(false);
 const selectedItemToRemove = ref<BudgetItem | undefined>(undefined);
+const initialItemTab = ref<'DETAILS' | 'INSTALLMENTS'>('DETAILS');
 
 const openRemoveCategory = (category: BudgetCategory) => {
   selectedCategory.value = category;
@@ -191,6 +193,12 @@ const getSelectedCategory = computed(() => {
   if (!selectedCategory.value) return null;
   return selectedCategory.value;
 });
+
+const openInstallments = (item: BudgetItem) => {
+  selectedItem.value = item;
+  initialItemTab.value = 'INSTALLMENTS';
+  isEditItemModalOpen.value = true;
+};
 </script>
 
 <template>
@@ -318,6 +326,7 @@ const getSelectedCategory = computed(() => {
               @create-item="openCreateItem"
               @edit-item="openEditItem"
               @remove-item="openRemoveItem"
+              @open-installments="openInstallments"
             />
           </div>
         </template>
@@ -341,6 +350,12 @@ const getSelectedCategory = computed(() => {
             :category="category"
             :search="search"
             @changed="refreshBudget({ force: true })"
+            @edit-category="openCategoryForm"
+            @remove-category="openRemoveCategory"
+            @create-item="openCreateItem"
+            @edit-item="openEditItem"
+            @remove-item="openRemoveItem"
+            @open-installments="openInstallments"
           />
         </div>
       </div>
@@ -444,6 +459,7 @@ const getSelectedCategory = computed(() => {
       mode="EVENT"
       :category-id="selectedCategory?.id"
       :item="selectedItem"
+      :initial-tab="initialItemTab"
       @close="isEditItemModalOpen = false"
       @saved="refreshBudget({ force: true })"
     />
