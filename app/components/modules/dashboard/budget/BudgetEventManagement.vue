@@ -155,7 +155,7 @@ const isEditCategoryModalOpen = ref(false);
 const isCreateItemModalOpen = ref(false);
 const isEditItemModalOpen = ref(false);
 const selectedItem = ref<BudgetItem | undefined>(undefined);
-const selectedCategory = ref<BudgetCategory | undefined | null>(null);
+const selectedCategory = ref<BudgetCategory | undefined>(undefined);
 
 const isRemoveCategoryModalOpen = ref(false);
 const isRemoveItemModalOpen = ref(false);
@@ -186,6 +186,11 @@ const openRemoveItem = (item: BudgetItem) => {
   selectedItemToRemove.value = item;
   isRemoveItemModalOpen.value = true;
 };
+
+const getSelectedCategory = computed(() => {
+  if (!selectedCategory.value) return null;
+  return selectedCategory.value;
+});
 </script>
 
 <template>
@@ -409,14 +414,15 @@ const openRemoveItem = (item: BudgetItem) => {
       :show="isEditCategoryModalOpen"
       mode="EVENT"
       :parent-id="budget!.id"
-      :category="selectedCategory as BudgetCategory"
+      :category="getSelectedCategory"
+      @saved="refreshBudget({ force: true })"
       @close="isEditCategoryModalOpen = false"
     />
 
     <!-- Remove Category -->
     <LazyBudgetCategoryRemoveModal
       :show="isRemoveCategoryModalOpen"
-      :category="selectedCategory as BudgetCategory"
+      :category="selectedCategory"
       @close-modal="isRemoveCategoryModalOpen = false"
       @success="refreshBudget({ force: true })"
     />
@@ -434,10 +440,9 @@ const openRemoveItem = (item: BudgetItem) => {
 
     <!-- Edit item -->
     <LazyBudgetItemFormModal
-      v-if="selectedCategory"
       :show="isEditItemModalOpen"
       mode="EVENT"
-      :category-id="selectedCategory.id"
+      :category-id="selectedCategory?.id"
       :item="selectedItem"
       @close="isEditItemModalOpen = false"
       @saved="refreshBudget({ force: true })"

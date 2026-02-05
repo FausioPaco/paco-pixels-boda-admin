@@ -2,7 +2,7 @@
 import { useToast } from 'vue-toastification';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
-import { number, object, string, mixed, date } from 'yup';
+import { number, object, string, mixed } from 'yup';
 import { getBudgetService } from '~/services/budgetService';
 
 type Mode = 'EVENT' | 'TEMPLATE';
@@ -11,7 +11,7 @@ type TabKey = 'DETAILS' | 'INSTALLMENTS';
 interface Props {
   show?: boolean;
   mode: Mode;
-  categoryId: number;
+  categoryId: number | undefined;
   item: BudgetItem | BudgetTemplateItem | undefined;
 }
 
@@ -28,15 +28,6 @@ const budgetService = getBudgetService(nuxtApp.$api);
 const activeTab = ref<TabKey>('DETAILS');
 
 const showTabs = computed(() => props.mode === 'EVENT' && !!props.item);
-
-watch(
-  () => props.show,
-  (open) => {
-    if (!open) return;
-    activeTab.value = 'DETAILS';
-  },
-  { immediate: true },
-);
 
 // ------------------------
 // Form (Item)
@@ -106,8 +97,8 @@ const instSchema = toTypedSchema(
   object({
     amount: number().typeError('Valor inválido.').min(0).required(),
     descriptive: string().required('A descrição da prestação é obrigatória.'),
-    receiptDate: date().optional(),
-    paidInDate: date().optional(),
+    receiptDate: string().nullable().optional(),
+    paidInDate: string().nullable().optional(),
     paymentMethod: mixed<BudgetPaymentMethod>().required(),
   }),
 );
@@ -122,8 +113,8 @@ const {
   validationSchema: instSchema,
   initialValues: {
     amount: 0,
-    receiptDate: undefined,
-    paidInDate: undefined,
+    receiptDate: null,
+    paidInDate: null,
     paymentMethod: BudgetPaymentMethod.Deposit,
     descriptive: '',
   },
@@ -151,7 +142,7 @@ const startCreateInstallment = () => {
     },
   });
 
-  // showInstallmentForm.value = true;
+  showInstallmentForm.value = true;
 };
 
 const startEditInstallment = (p: BudgetItemInstallment) => {
@@ -159,8 +150,8 @@ const startEditInstallment = (p: BudgetItemInstallment) => {
   resetInstallmentForm({
     values: {
       amount: p.amount ?? 0,
-      receiptDate: p.receiptDate ?? undefined,
-      paidInDate: p.paidInDate ?? undefined,
+      receiptDate: p.receiptDate ? String(p.receiptDate).slice(0, 10) : null,
+      paidInDate: p.paidInDate ? String(p.paidInDate).slice(0, 10) : null,
       paymentMethod: p.paymentMethod ?? BudgetPaymentMethod.Deposit,
       descriptive: p.descriptive ?? '',
     },
@@ -173,16 +164,25 @@ function cancelInstallmentEdit() {
   showInstallmentForm.value = false;
 }
 
+const normalizeDate = (d?: string | null) =>
+  d ? new Date(`${d}T12:00:00`).toISOString() : null;
+
 const saveInstallment = handleSubmitInst(async (values) => {
   if (!showTabs.value) return;
 
   try {
     if (!editingInstallmentId.value) {
-      await budgetService.addInstallment(props.item!.id, { ...values });
+      await budgetService.addInstallment(props.item!.id, {
+        ...values,
+        receiptDate: normalizeDate(values.receiptDate),
+        paidInDate: normalizeDate(values.paidInDate),
+      });
       toast.success('Prestação adicionada.');
     } else {
       await budgetService.updateInstallment(editingInstallmentId.value, {
         ...values,
+        receiptDate: normalizeDate(values.receiptDate),
+        paidInDate: normalizeDate(values.paidInDate),
       });
       toast.success('Prestação actualizada.');
     }
@@ -221,6 +221,7 @@ watch(
   () => props.show,
   async (open) => {
     if (!open) return;
+    activeTab.value = 'DETAILS';
 
     const i = props.item;
 
@@ -251,7 +252,7 @@ const onSubmitItem = handleSubmit(async (values) => {
 
     if (props.mode === 'EVENT') {
       if (!props.item) {
-        await budgetService.addItem(props.categoryId, values);
+        await budgetService.addItem(props.categoryId!, values);
         toast.success('Item criado.');
       } else {
         await budgetService.updateItem(props.item.id, values);
@@ -259,7 +260,7 @@ const onSubmitItem = handleSubmit(async (values) => {
       }
     } else {
       if (!props.item) {
-        await budgetService.addTemplateItem(props.categoryId, values);
+        await budgetService.addTemplateItem(props.categoryId!, values);
         toast.success('Item do modelo criado.');
       } else {
         await budgetService.updateTemplateItem(props.item.id, values);
@@ -407,7 +408,7 @@ const onSubmitItem = handleSubmit(async (values) => {
               btn-size="sm"
               btn-type="outline-primary"
               :disabled="isSavingInstallment || isLoadingInstallments"
-              @click="showInstallmentForm = true"
+              @click="startCreateInstallment()"
             >
               Nova prestação
             </BaseButton>
@@ -536,6 +537,10 @@ const onSubmitItem = handleSubmit(async (values) => {
                       cancel-text="Cancelar"
                       placeholder="Seleccione a data"
                     />
+                    <small class="text-grey-400 my-2 text-xs font-medium">
+                      Data que consta no comprovativo de pagamento (quando o
+                      cliente efectuou o pagamento).
+                    </small>
                     <p
                       v-if="instErrors.receiptDate"
                       class="text-danger-800 mt-1 animate-fadeIn text-sm"
@@ -562,6 +567,9 @@ const onSubmitItem = handleSubmit(async (values) => {
                       cancel-text="Cancelar"
                       placeholder="Seleccione a data"
                     />
+                    <small class="text-grey-400 my-2 text-xs font-medium">
+                      Data em que o valor entrou ou foi confirmado na conta.
+                    </small>
                     <p
                       v-if="instErrors.paidInDate"
                       class="text-danger-800 mt-1 animate-fadeIn text-sm"

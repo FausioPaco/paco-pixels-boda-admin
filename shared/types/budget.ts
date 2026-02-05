@@ -175,16 +175,16 @@ export interface BudgetItemInstallment {
   budgetItemId: number;
   amount: number;
   descriptive: string;
-  receiptDate?: Date | undefined; // vem como ISO
-  paidInDate?: Date | undefined; // vem como ISO
+  receiptDate?: string | undefined | null; // vem como ISO
+  paidInDate?: string | undefined | null; // vem como ISO
   paymentMethod: BudgetPaymentMethod;
 }
 
 export interface BudgetItemInstallmentInput {
   amount: number;
   descriptive: string;
-  receiptDate?: Date | undefined;
-  paidInDate?: Date | undefined;
+  receiptDate?: string | undefined | null;
+  paidInDate?: string | undefined | null;
   paymentMethod: BudgetPaymentMethod;
 }
 
@@ -197,6 +197,6 @@ export const BUDGET_PAYMENT_METHODS = [
   {
     id: BudgetPaymentMethod.Cash,
     value: BudgetPaymentMethod.Cash,
-    name: 'Cash',
+    name: 'Dinheiro',
   },
 ];

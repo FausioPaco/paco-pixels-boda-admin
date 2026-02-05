@@ -193,7 +193,7 @@ const scheduleSave = (id: number) => {
 
   timersById.value[id] = setTimeout(() => {
     saveNow(id);
-  }, 700);
+  }, 1500);
 };
 
 const saveNow = async (id: number) => {
@@ -427,7 +427,7 @@ watch(
             type="button"
             class="bg-primary-100 text-grey-500 hover:bg-primary-600 rounded-full p-2 transition hover:text-white"
             title="Editar"
-            @click.stop="emit('edit-category', category)"
+            @click.stop="$emit('edit-category', category)"
           >
             <IconPencil :font-controlled="false" class="size-3" />
           </button>

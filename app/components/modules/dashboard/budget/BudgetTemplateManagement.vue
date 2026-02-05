@@ -355,7 +355,7 @@ const openRemoveItem = (item: BudgetTemplateItem) => {
       :show="isEditCategoryModalOpen"
       mode="TEMPLATE"
       :parent-id="template?.id ?? 0"
-      :category="selectedCategory as BudgetTemplateCategory"
+      :category="selectedCategory"
       @close="isEditCategoryModalOpen = false"
       @saved="refreshTemplate({ force: true })"
     />
