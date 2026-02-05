@@ -176,6 +176,11 @@ const openRemoveItem = (item: BudgetTemplateItem) => {
   selectedItemToRemove.value = item;
   isRemoveItemModalOpen.value = true;
 };
+
+const getSelectedCategory = computed(() => {
+  if (!selectedCategory.value) return null;
+  return selectedCategory.value as BudgetTemplateCategory;
+});
 </script>
 
 <template>
@@ -341,7 +346,7 @@ const openRemoveItem = (item: BudgetTemplateItem) => {
       @saved="refreshTemplate({ force: true })"
     />
 
-    <LazyBudgetTemplateCategoryFormModal
+    <LazyBudgetCategoryFormModal
       :show="isCreateCategoryModalOpen"
       :mode="'TEMPLATE'"
       :parent-id="template?.id ?? 0"
@@ -351,49 +356,46 @@ const openRemoveItem = (item: BudgetTemplateItem) => {
     />
 
     <!-- Modals -->
-    <LazyBudgetTemplateCategoryFormModal
+    <LazyBudgetCategoryFormModal
       :show="isEditCategoryModalOpen"
       mode="TEMPLATE"
       :parent-id="template?.id ?? 0"
-      :category="selectedCategory"
+      :category="getSelectedCategory"
       @close="isEditCategoryModalOpen = false"
       @saved="refreshTemplate({ force: true })"
     />
 
     <!-- Create item -->
-    <LazyBudgetTemplateItemFormModal
+    <LazyBudgetItemFormModal
       :show="isCreateItemModalOpen"
       mode="TEMPLATE"
-      :category-id="selectedCategory?.id"
+      :category-id="getSelectedCategory?.id"
       :item="undefined"
       @close="isCreateItemModalOpen = false"
       @saved="refreshTemplate({ force: true })"
     />
 
     <!-- Edit item -->
-    <LazyBudgetTemplateItemFormModal
-      v-if="selectedCategory"
+    <LazyBudgetItemFormModal
       :show="isEditItemModalOpen"
       mode="TEMPLATE"
-      :category-id="selectedCategory?.id"
+      :category-id="getSelectedCategory?.id"
       :item="selectedItem"
       @close="isEditItemModalOpen = false"
       @saved="refreshTemplate({ force: true })"
     />
 
     <!-- Remove Category -->
-    <LazyBudgetTemplateCategoryRemoveModal
-      v-if="selectedCategory"
+    <LazyBudgetCategoryRemoveModal
       :show="isRemoveCategoryModalOpen"
       mode="TEMPLATE"
-      :category="selectedCategory"
+      :category="getSelectedCategory"
       @close-modal="isRemoveCategoryModalOpen = false"
       @success="refreshTemplate({ force: true })"
     />
 
     <!-- Remove Template Item -->
-    <LazyBudgetTemplateItemRemoveModal
-      v-if="selectedItem"
+    <LazyBudgetItemRemoveModal
       :show="isRemoveItemModalOpen"
       :item="selectedItem"
       @close-modal="

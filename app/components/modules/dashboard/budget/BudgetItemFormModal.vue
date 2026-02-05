@@ -174,6 +174,7 @@ const saveInstallment = handleSubmitInst(async (values) => {
     if (!editingInstallmentId.value) {
       await budgetService.addInstallment(props.item!.id, {
         ...values,
+        paymentMethod: Number(values.paymentMethod),
         receiptDate: normalizeDate(values.receiptDate),
         paidInDate: normalizeDate(values.paidInDate),
       });
@@ -181,6 +182,7 @@ const saveInstallment = handleSubmitInst(async (values) => {
     } else {
       await budgetService.updateInstallment(editingInstallmentId.value, {
         ...values,
+        paymentMethod: Number(values.paymentMethod),
         receiptDate: normalizeDate(values.receiptDate),
         paidInDate: normalizeDate(values.paidInDate),
       });

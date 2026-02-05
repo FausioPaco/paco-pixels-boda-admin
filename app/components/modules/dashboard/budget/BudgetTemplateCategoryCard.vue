@@ -126,7 +126,7 @@ const scheduleSave = (id: number) => {
 
   timersById.value[id] = setTimeout(() => {
     saveNow(id);
-  }, 700);
+  }, 1200);
 };
 
 const resetDraft = (id: number) => {

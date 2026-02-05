@@ -6,7 +6,7 @@ type Mode = 'EVENT' | 'TEMPLATE';
 
 interface IBudgetCategoryRemoveModal {
   show?: boolean;
-  category?: BudgetCategory | BudgetTemplateCategory | undefined;
+  category?: BudgetCategory | BudgetTemplateCategory | undefined | null;
   mode?: Mode;
 }
 
