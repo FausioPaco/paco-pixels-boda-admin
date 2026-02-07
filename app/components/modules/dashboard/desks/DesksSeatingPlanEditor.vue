@@ -651,6 +651,22 @@ function deskLabel(deskId: number) {
   return d?.name ?? `Mesa ${deskId}`;
 }
 
+const ITEM_ICON_SIZE = 24;
+const ITEM_ICON_Y = 16;
+
+function getItemIconX(item: SeatingPlanItem) {
+  return (item.width - ITEM_ICON_SIZE) / 2;
+}
+
+function getItemLabelX(item: SeatingPlanItem) {
+  return item.width / 2;
+}
+
+// baseline do texto (fica por baixo do ícone, mas consistente)
+function getItemLabelY() {
+  return ITEM_ICON_Y + ITEM_ICON_SIZE + 24; // 16 + 24 + 24 = 64
+}
+
 /* -------------------------------------------------------------------------- */
 /* Presets do canvas                                                           */
 /* -------------------------------------------------------------------------- */
@@ -1114,20 +1130,45 @@ const SEAT_OCC_FILL_OP = '0.30';
 const TEXT_PRIMARY = 'rgb(20,20,20)';
 const TEXT_PRIMARY_OP = '0.90';
 
-const ITEM_ICON_SIZE = 24;
-const ITEM_ICON_Y = 16;
+/* -------------------------------------------------------------------------- */
+/* Canvas custom (cm)                                                         */
+/* -------------------------------------------------------------------------- */
+const showCustomCanvas = ref(false);
+const isUpdatingCustomCanvas = ref(false);
 
-function getItemIconX(item: SeatingPlanItem) {
-  return (item.width - ITEM_ICON_SIZE) / 2;
-}
+const currentCanvasLabel = computed(() => {
+  if (!seatingPlan.value) return null;
+  return `${seatingPlan.value.canvasWidth} cm x ${seatingPlan.value.canvasHeight} cm`;
+});
 
-function getItemLabelX(item: SeatingPlanItem) {
-  return item.width / 2;
-}
+async function applyCustomCanvas(payload: {
+  widthCm: number;
+  heightCm: number;
+}) {
+  if (!seatingPlan.value) return;
+  if (isMobile.value) return;
 
-// baseline do texto (fica por baixo do ícone, mas consistente)
-function getItemLabelY() {
-  return ITEM_ICON_Y + ITEM_ICON_SIZE + 24; // 16 + 24 + 24 = 64
+  try {
+    isUpdatingCustomCanvas.value = true;
+
+    const next: UpdateSeatingPlanCanvas = {
+      canvasWidth: payload.widthCm,
+      canvasHeight: payload.heightCm,
+    };
+
+    await updateCanvas(seatingPlan.value.id, next);
+
+    await refreshSeatingPlan({ force: true });
+    syncVisibleDeskIdsWithLayouts();
+
+    toast.success('Sala customizada actualizada com sucesso.');
+  } catch (e) {
+    console.log(e);
+    toast.error('Não foi possível actualizar a sala customizada.');
+  } finally {
+    isUpdatingCustomCanvas.value = false;
+    showCustomCanvas.value = false;
+  }
 }
 </script>
 
@@ -1206,6 +1247,25 @@ function getItemLabelY() {
                 />
                 <span class="whitespace-nowrap">{{ p.label }}</span>
               </button>
+
+              <!-- Custom Canvas -->
+              <button
+                class="hover:border-primary-600 hover:bg-primary-600 inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition-all duration-300 hover:-translate-y-0.5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="isDesktopOnlyDisabled || isUpdatingCustomCanvas"
+                title="Definir dimensões em centímetros"
+                @click="showCustomCanvas = true"
+              >
+                <IconPencil :font-controlled="false" class="h-4 w-4" />
+                <span class="whitespace-nowrap">Sala customizada</span>
+              </button>
+
+              <!-- opcional: label da dimensão actual -->
+              <span
+                v-if="currentCanvasLabel"
+                class="text-grey-500 ml-2 inline-flex items-center text-xs font-semibold"
+              >
+                ({{ currentCanvasLabel }})
+              </span>
             </div>
 
             <!-- Exports -->
@@ -1644,6 +1704,15 @@ function getItemLabelY() {
       "
       @close-modal="showAddGuestToSeat = false"
       @assigned="refreshSnapshot()"
+    />
+
+    <LazyDesksSeatingPlanCustomCanvasModal
+      :show="showCustomCanvas"
+      :initial-width-cm="seatingPlan?.canvasWidth ?? 1600"
+      :initial-height-cm="seatingPlan?.canvasHeight ?? 900"
+      :is-submitting="isUpdatingCustomCanvas"
+      @close-modal="showCustomCanvas = false"
+      @submit="applyCustomCanvas"
     />
   </div>
 </template>
