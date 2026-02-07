@@ -7,6 +7,10 @@ export type SeatingPlanItemType =
   | 'Parede'
   | 'Saida'
   | 'Drinks'
+  | 'Mesa de Honra'
+  | 'Bolo'
+  | 'Bar'
+  | 'Presentes'
   | 'Generic';
 
 export type DeskShape = 'round' | 'rect';
