@@ -44,8 +44,7 @@ const { errors, handleSubmit, defineField, resetForm } = useForm({
         )
         .typeError('Deves especificar a mesa')
         .positive('O número de mesa deve ser um número positivo')
-        .integer('O número de mesa não pode conter vírgula')
-        .required('Deve especificar a mesa'),
+        .integer('O número de mesa não pode conter vírgula'),
 
       phone: string().required('Deve colocar o contacto do convidado'),
 
@@ -81,7 +80,7 @@ const onSubmit = handleSubmit((values, _) => {
   const guestInput: GuestInput = {
     eventId: Number(eventId!),
     people_Count: values.people,
-    deskId: values.desk,
+    deskId: values.desk ?? undefined,
     name: values.name,
     phone: values.phone,
     categoryId: values.category,
@@ -150,7 +149,7 @@ watch(
 </script>
 <template>
   <BaseModal
-    :title="desk ? 'Actualizar Convidado' : 'Adicionar Convidado'"
+    :title="guest ? 'Actualizar Convidado' : 'Adicionar Convidado'"
     :show="show"
     @close-modal="closeModal"
   >
@@ -216,6 +215,12 @@ watch(
             name: desk.name,
             value: desk.id,
           }))
+        "
+        :disabled="props.guest?.absence_Declared"
+        :helper-text="
+          props.guest?.absence_Declared
+            ? 'Não é possível atribuir mesa a um convidado ausente'
+            : ''
         "
       />
 

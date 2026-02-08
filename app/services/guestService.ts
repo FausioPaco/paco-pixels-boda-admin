@@ -117,4 +117,14 @@ export const getGuestService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
       method: 'post',
     });
   },
+
+  async declareAbsence(
+    guestId: number,
+    payload: DeclareAbsenceInput,
+  ): Promise<Guest> {
+    return $fetch<Guest>(`${RESOURCE}/DeclareAbsence/${guestId}`, {
+      method: 'post',
+      body: payload,
+    });
+  },
 });

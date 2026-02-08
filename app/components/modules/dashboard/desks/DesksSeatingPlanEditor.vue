@@ -608,6 +608,39 @@ const quickActions: ActionBtn[] = [
     onClick: () => quickAdd('Entrada'),
     disabled: isDesktopOnlyDisabled,
   },
+
+  {
+    key: 'honour-table',
+    label: '+ Mesa de Honra',
+    name: 'Mesa de Honra',
+    icon: 'head-table',
+    onClick: () => quickAdd('Mesa de Honra'),
+    disabled: isDesktopOnlyDisabled,
+  },
+  {
+    key: 'cake',
+    label: '+ Bolo',
+    name: 'Bolo',
+    icon: 'cake-table',
+    onClick: () => quickAdd('Bolo'),
+    disabled: isDesktopOnlyDisabled,
+  },
+  {
+    key: 'bar',
+    label: '+ Bar',
+    name: 'Bar',
+    icon: 'bar-table',
+    onClick: () => quickAdd('Bar'),
+    disabled: isDesktopOnlyDisabled,
+  },
+  {
+    key: 'presents',
+    label: '+ Presentes',
+    name: 'Presentes',
+    icon: 'gifts-table',
+    onClick: () => quickAdd('Presentes'),
+    disabled: isDesktopOnlyDisabled,
+  },
 ];
 
 const getQuickActionByLabel = (name: string) =>
@@ -616,6 +649,22 @@ const getQuickActionByLabel = (name: string) =>
 function deskLabel(deskId: number) {
   const d = props.desks.find((x) => x.id === deskId);
   return d?.name ?? `Mesa ${deskId}`;
+}
+
+const ITEM_ICON_SIZE = 24;
+const ITEM_ICON_Y = 16;
+
+function getItemIconX(item: SeatingPlanItem) {
+  return (item.width - ITEM_ICON_SIZE) / 2;
+}
+
+function getItemLabelX(item: SeatingPlanItem) {
+  return item.width / 2;
+}
+
+// baseline do texto (fica por baixo do ícone, mas consistente)
+function getItemLabelY() {
+  return ITEM_ICON_Y + ITEM_ICON_SIZE + 24; // 16 + 24 + 24 = 64
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1080,6 +1129,47 @@ const SEAT_OCC_FILL_OP = '0.30';
 
 const TEXT_PRIMARY = 'rgb(20,20,20)';
 const TEXT_PRIMARY_OP = '0.90';
+
+/* -------------------------------------------------------------------------- */
+/* Canvas custom (cm)                                                         */
+/* -------------------------------------------------------------------------- */
+const showCustomCanvas = ref(false);
+const isUpdatingCustomCanvas = ref(false);
+
+const currentCanvasLabel = computed(() => {
+  if (!seatingPlan.value) return null;
+  return `${seatingPlan.value.canvasWidth} cm x ${seatingPlan.value.canvasHeight} cm`;
+});
+
+async function applyCustomCanvas(payload: {
+  widthCm: number;
+  heightCm: number;
+}) {
+  if (!seatingPlan.value) return;
+  if (isMobile.value) return;
+
+  try {
+    isUpdatingCustomCanvas.value = true;
+
+    const next: UpdateSeatingPlanCanvas = {
+      canvasWidth: payload.widthCm,
+      canvasHeight: payload.heightCm,
+    };
+
+    await updateCanvas(seatingPlan.value.id, next);
+
+    await refreshSeatingPlan({ force: true });
+    syncVisibleDeskIdsWithLayouts();
+
+    toast.success('Sala customizada actualizada com sucesso.');
+  } catch (e) {
+    console.log(e);
+    toast.error('Não foi possível actualizar a sala customizada.');
+  } finally {
+    isUpdatingCustomCanvas.value = false;
+    showCustomCanvas.value = false;
+  }
+}
 </script>
 
 <template>
@@ -1107,8 +1197,8 @@ const TEXT_PRIMARY_OP = '0.90';
 
       <div v-else class="my-6 animate-fadeIn">
         <!-- Main Actions -->
-        <div class="mb-3 flex flex-wrap items-start gap-2">
-          <!-- Quick add (itens como palco/DJ/etc.) -->
+        <div class="flex flex-col gap-4">
+          <!-- Quick Actions -->
           <div class="flex flex-wrap gap-2">
             <button
               v-for="a in quickActions"
@@ -1136,8 +1226,10 @@ const TEXT_PRIMARY_OP = '0.90';
             </button>
           </div>
 
-          <!-- Right side -->
-          <div class="ml-auto flex flex-wrap items-center gap-2">
+          <!-- Canvas Presets and Exports -->
+          <div
+            class="mb-3 flex flex-col justify-start gap-2 md:flex-row md:items-center md:justify-between"
+          >
             <!-- Canvas presets -->
             <div class="flex flex-wrap gap-2">
               <button
@@ -1155,25 +1247,44 @@ const TEXT_PRIMARY_OP = '0.90';
                 />
                 <span class="whitespace-nowrap">{{ p.label }}</span>
               </button>
-            </div>
-          </div>
 
-          <!-- Exports -->
-          <div class="ml-auto mt-3 flex flex-wrap items-center gap-2">
-            <button
-              v-for="e in exportActions"
-              :key="e.key"
-              class="hover:border-primary-600 hover:bg-primary-600 inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-              :title="e.label"
-              @click="e.onClick"
-            >
-              <component
-                :is="`icon-${e.icon}`"
-                :font-controlled="false"
-                class="h-4 w-4"
-              />
-              <span class="whitespace-nowrap">{{ e.label }}</span>
-            </button>
+              <!-- Custom Canvas -->
+              <button
+                class="hover:border-primary-600 hover:bg-primary-600 inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition-all duration-300 hover:-translate-y-0.5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="isDesktopOnlyDisabled || isUpdatingCustomCanvas"
+                title="Definir dimensões em centímetros"
+                @click="showCustomCanvas = true"
+              >
+                <IconPencil :font-controlled="false" class="h-4 w-4" />
+                <span class="whitespace-nowrap">Sala customizada</span>
+              </button>
+
+              <!-- opcional: label da dimensão actual -->
+              <span
+                v-if="currentCanvasLabel"
+                class="text-grey-500 ml-2 inline-flex items-center text-xs font-semibold"
+              >
+                ({{ currentCanvasLabel }})
+              </span>
+            </div>
+
+            <!-- Exports -->
+            <div class="ml-auto flex flex-wrap items-center gap-2">
+              <button
+                v-for="e in exportActions"
+                :key="e.key"
+                class="hover:border-primary-600 hover:bg-primary-600 inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                :title="e.label"
+                @click="e.onClick"
+              >
+                <component
+                  :is="`icon-${e.icon}`"
+                  :font-controlled="false"
+                  class="h-4 w-4"
+                />
+                <span class="whitespace-nowrap">{{ e.label }}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1292,10 +1403,10 @@ const TEXT_PRIMARY_OP = '0.90';
                   <component
                     :is="`icon-${getQuickActionByLabel(item.type)?.icon || 'item'}`"
                     :font-controlled="false"
-                    x="80"
-                    y="16"
-                    width="24"
-                    height="24"
+                    :x="getItemIconX(item)"
+                    :y="ITEM_ICON_Y"
+                    :width="ITEM_ICON_SIZE"
+                    :height="ITEM_ICON_SIZE"
                     class="text-grey-600"
                     :fill="
                       draggingItemId === item.id
@@ -1309,9 +1420,12 @@ const TEXT_PRIMARY_OP = '0.90';
 
                   <!-- labels -->
                   <text
-                    x="70"
-                    y="60"
+                    :x="getItemLabelX(item)"
+                    :y="getItemLabelY()"
                     font-size="14"
+                    text-anchor="middle"
+                    dominant-baseline="middle"
+                    lengthAdjust="spacingAndGlyphs"
                     :fill="
                       draggingItemId === item.id
                         ? 'rgba(0,0,0,0.90)'
@@ -1590,6 +1704,15 @@ const TEXT_PRIMARY_OP = '0.90';
       "
       @close-modal="showAddGuestToSeat = false"
       @assigned="refreshSnapshot()"
+    />
+
+    <LazyDesksSeatingPlanCustomCanvasModal
+      :show="showCustomCanvas"
+      :initial-width-cm="seatingPlan?.canvasWidth ?? 1600"
+      :initial-height-cm="seatingPlan?.canvasHeight ?? 900"
+      :is-submitting="isUpdatingCustomCanvas"
+      @close-modal="showCustomCanvas = false"
+      @submit="applyCustomCanvas"
     />
   </div>
 </template>

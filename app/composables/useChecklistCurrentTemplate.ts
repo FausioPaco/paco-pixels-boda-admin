@@ -1,6 +1,8 @@
 import { getChecklistService } from '~/services/checklistService';
 
-export const useChecklistCurrentTemplate = async () => {
+export const useChecklistCurrentTemplate = async (
+  partnerId: number | null = null,
+) => {
   const template = useState<ChecklistTemplateDetail | null>(
     'checklist-current-template',
     () => null,
@@ -22,6 +24,7 @@ export const useChecklistCurrentTemplate = async () => {
     () =>
       getChecklistService(nuxtApp.$api).getCurrentTemplateForEventType(
         eventTypeId.value!,
+        partnerId ?? undefined,
       ),
     {
       default: () => null,

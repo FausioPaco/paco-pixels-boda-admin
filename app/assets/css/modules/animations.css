@@ -113,3 +113,28 @@
     transform: none;
   }
 }
+
+.inline-edit-enter-active,
+.inline-edit-leave-active {
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.inline-edit-enter-from,
+.inline-edit-leave-to {
+  opacity: 0;
+  transform: translateY(-2px) scale(0.98);
+}
+
+.inst-form-enter-active,
+.inst-form-leave-active {
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+.inst-form-enter-from,
+.inst-form-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}

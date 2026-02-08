@@ -34,7 +34,7 @@ const props = withDefaults(defineProps<IButtonLinkProps>(), {
   iconSize: 28,
   loading: false,
   disabled: false,
-    onlyIcon: false, 
+  onlyIcon: false,
 });
 
 const getButtonStyleClass = () => {
@@ -44,7 +44,7 @@ const getButtonStyleClass = () => {
   if (props.btnType === 'white')
     return ' border-white border-2 text-white hover:bg-white hover:text-primary-500';
 
-  return 'bg-primary-500 border-2 border-primary-500 text-white hover:shadow-primary-500/50 hover:bg-primary-800 hover:border-primary-800 hover:text-white hover:shadow-primary-600/50 hover:-translate-y-0.5 disabled:bg-grey-100 disabled:text-grey-400 disabled:border-grey-100';
+  return 'bg-primary-500 border-2 border-primary-500 text-white hover:shadow-primary-500/50 hover:bg-primary-700 hover:border-primary-700 hover:text-white hover:shadow-primary-600/50 hover:-translate-y-0.5 disabled:bg-grey-100 disabled:text-grey-400 disabled:border-grey-100';
 };
 
 const getButtonSizeClass = () => {
@@ -65,7 +65,8 @@ const getButtonClass = computed(() => {
   btnClasses.push(getButtonStyleClass());
   btnClasses.push(getButtonSizeClass());
 
-  if (props.icon && !props.onlyIcon) btnClasses.push('flex items-center justify-center gap-2');
+  if (props.icon && !props.onlyIcon)
+    btnClasses.push('flex items-center justify-center gap-2');
 
   return btnClasses.join(' ');
 });

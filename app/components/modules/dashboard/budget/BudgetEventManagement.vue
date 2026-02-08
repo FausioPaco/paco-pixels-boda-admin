@@ -2,6 +2,7 @@
 import draggable from 'vuedraggable';
 import { useToast } from 'vue-toastification';
 import { getBudgetService } from '~/services/budgetService';
+import { downloadBlob } from '~/utils/fileUtils';
 
 type SortableEvent = {
   item: HTMLElement;
@@ -123,6 +124,81 @@ const displayedCategories = computed(() => {
     matchesBudgetCategory(cat, term),
   );
 });
+
+const isExporting = ref(false);
+const { eventInitials } = useEventStore();
+
+const exportExcel = async () => {
+  if (!budget.value) return;
+
+  try {
+    isExporting.value = true;
+
+    const blob = await budgetService.exportBudgetExcel(budget.value.id);
+    const fileName = `ORCAMENTO_${eventInitials}.xlsx`;
+
+    downloadBlob(blob, fileName);
+  } catch (e) {
+    if (isFetchErrorLike(e)) {
+      toast.error(getServerErrors(e.data), { timeout: false });
+    } else {
+      toast.error('Não foi possível exportar o orçamento para Excel.', {
+        timeout: false,
+      });
+    }
+  } finally {
+    isExporting.value = false;
+  }
+};
+
+// Budget Item Management
+const isEditCategoryModalOpen = ref(false);
+const isCreateItemModalOpen = ref(false);
+const isEditItemModalOpen = ref(false);
+const selectedItem = ref<BudgetItem | undefined>(undefined);
+const selectedCategory = ref<BudgetCategory | undefined>(undefined);
+
+const isRemoveCategoryModalOpen = ref(false);
+const isRemoveItemModalOpen = ref(false);
+const selectedItemToRemove = ref<BudgetItem | undefined>(undefined);
+const initialItemTab = ref<'DETAILS' | 'INSTALLMENTS'>('DETAILS');
+
+const openRemoveCategory = (category: BudgetCategory) => {
+  selectedCategory.value = category;
+  isRemoveCategoryModalOpen.value = true;
+};
+
+const openCategoryForm = (category: BudgetCategory) => {
+  selectedCategory.value = category;
+  isEditCategoryModalOpen.value = true;
+};
+
+const openCreateItem = (category: BudgetCategory) => {
+  selectedCategory.value = category;
+  selectedItem.value = undefined;
+  isCreateItemModalOpen.value = true;
+};
+
+const openEditItem = (item: BudgetItem) => {
+  selectedItem.value = item;
+  isEditItemModalOpen.value = true;
+};
+
+const openRemoveItem = (item: BudgetItem) => {
+  selectedItemToRemove.value = item;
+  isRemoveItemModalOpen.value = true;
+};
+
+const getSelectedCategory = computed(() => {
+  if (!selectedCategory.value) return null;
+  return selectedCategory.value;
+});
+
+const openInstallments = (item: BudgetItem) => {
+  selectedItem.value = item;
+  initialItemTab.value = 'INSTALLMENTS';
+  isEditItemModalOpen.value = true;
+};
 </script>
 
 <template>
@@ -169,11 +245,11 @@ const displayedCategories = computed(() => {
         <!-- Ultrapassou budget -->
         <div
           v-if="budget?.totals?.isOverBudget"
-          class="my-4 flex animate-fadeIn flex-wrap items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700"
+          class="bg-warning-50 text-warning-700 my-4 flex animate-fadeIn flex-wrap items-center gap-2 rounded-lg p-3 text-sm"
         >
           <IconWarning
             :font-controlled="false"
-            class="block size-[16px] text-red-700"
+            class="text-warning-700 block size-[16px]"
           />
           O custo actual ultrapassou o orçamento em
           <b>{{ formatMoney(budget.totals.overBudgetBy, budget.currency) }}</b
@@ -193,13 +269,25 @@ const displayedCategories = computed(() => {
             disable-margins
           />
         </div>
-        <BaseButton
-          icon="add"
-          btn-size="sm"
-          btn-type="outline-primary"
-          @click="openCreateCategory"
-          >Adicionar categoria</BaseButton
-        >
+        <div class="flex flex-wrap gap-2">
+          <BaseButton
+            icon="add"
+            btn-size="sm"
+            btn-type="outline-primary"
+            @click="openCreateCategory"
+            >Adicionar categoria</BaseButton
+          >
+          <BaseButton
+            btn-size="sm"
+            icon="download"
+            btn-type="outline-primary"
+            :loading="isExporting"
+            :disabled="isExporting"
+            @click="exportExcel"
+          >
+            Exportar para Excel
+          </BaseButton>
+        </div>
       </div>
 
       <!-- Categories (draggable) -->
@@ -233,6 +321,12 @@ const displayedCategories = computed(() => {
               :category="category"
               :search="search"
               @changed="refreshBudget({ force: true })"
+              @edit-category="openCategoryForm"
+              @remove-category="openRemoveCategory"
+              @create-item="openCreateItem"
+              @edit-item="openEditItem"
+              @remove-item="openRemoveItem"
+              @open-installments="openInstallments"
             />
           </div>
         </template>
@@ -256,6 +350,12 @@ const displayedCategories = computed(() => {
             :category="category"
             :search="search"
             @changed="refreshBudget({ force: true })"
+            @edit-category="openCategoryForm"
+            @remove-category="openRemoveCategory"
+            @create-item="openCreateItem"
+            @edit-item="openEditItem"
+            @remove-item="openRemoveItem"
+            @open-installments="openInstallments"
           />
         </div>
       </div>
@@ -321,6 +421,61 @@ const displayedCategories = computed(() => {
       :category="null"
       @close="isCreateCategoryModalOpen = false"
       @saved="refreshBudget({ force: true })"
+    />
+
+    <!-- Event Category Modals -->
+    <LazyBudgetCategoryFormModal
+      v-if="budget"
+      :show="isEditCategoryModalOpen"
+      mode="EVENT"
+      :parent-id="budget!.id"
+      :category="getSelectedCategory"
+      @saved="refreshBudget({ force: true })"
+      @close="isEditCategoryModalOpen = false"
+    />
+
+    <!-- Remove Category -->
+    <LazyBudgetCategoryRemoveModal
+      :show="isRemoveCategoryModalOpen"
+      :category="selectedCategory"
+      @close-modal="isRemoveCategoryModalOpen = false"
+      @success="refreshBudget({ force: true })"
+    />
+
+    <!-- Create item -->
+    <LazyBudgetItemFormModal
+      v-if="selectedCategory"
+      :show="isCreateItemModalOpen"
+      mode="EVENT"
+      :category-id="selectedCategory.id"
+      :item="undefined"
+      @close="isCreateItemModalOpen = false"
+      @saved="refreshBudget({ force: true })"
+    />
+
+    <!-- Edit item -->
+    <LazyBudgetItemFormModal
+      :show="isEditItemModalOpen"
+      mode="EVENT"
+      :category-id="selectedCategory?.id"
+      :item="selectedItem"
+      :initial-tab="initialItemTab"
+      @close="isEditItemModalOpen = false"
+      @saved="refreshBudget({ force: true })"
+    />
+
+    <!-- Remove Budget Item -->
+    <LazyBudgetItemRemoveModal
+      :show="isRemoveItemModalOpen"
+      :item="selectedItemToRemove"
+      @close-modal="
+        isRemoveItemModalOpen = false;
+        selectedItemToRemove = undefined;
+      "
+      @success="
+        refreshBudget({ force: true });
+        selectedItemToRemove = undefined;
+      "
     />
   </div>
 </template>

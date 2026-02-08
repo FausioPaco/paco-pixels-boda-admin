@@ -2,6 +2,7 @@
 interface IModalProps {
   show?: boolean;
   title?: string;
+  size?: 'small' | 'medium' | 'large';
 }
 
 defineOptions({
@@ -11,6 +12,7 @@ defineOptions({
 const props = withDefaults(defineProps<IModalProps>(), {
   show: false,
   title: 'Título do Modal',
+  size: 'medium',
 });
 
 const emit = defineEmits<{
@@ -100,7 +102,12 @@ onUnmounted(() => {
         :class="['max-h-[calc(100vh-24px)]']"
       >
         <div
-          class="relative mx-auto mt-3 max-w-2xl rounded bg-white px-3 pb-6 pt-3 shadow-xl"
+          class="relative mx-auto mt-3 rounded bg-white px-3 pb-6 pt-3 shadow-xl"
+          :class="{
+            'w-full max-w-md': size === 'small',
+            'w-full max-w-2xl': size === 'medium',
+            'w-full max-w-4xl': size === 'large',
+          }"
         >
           <!-- Modal Title -->
           <div class="flex items-center justify-between py-3">

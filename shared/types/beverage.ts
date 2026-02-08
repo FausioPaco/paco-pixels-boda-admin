@@ -143,7 +143,7 @@ export interface StockMovement {
   eventBeverageId: number;
   type: 'In' | 'Out' | 'Adjust' | 'MarkOutOfStock';
   quantity: number;
-  occurredAt: string;
+  occurredAt: Date;
   note: string | null | undefined;
   beverageName?: string | null | undefined;
   createdByName: string;

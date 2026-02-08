@@ -14,9 +14,10 @@ const iconName = computed(() => eventStore.eventTypeIcon || 'event-wedding');
 
 const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
+const { siteConfig } = await useClientConfig();
 
 const { template, isRefreshing, refreshCurrentTemplate } =
-  await useChecklistCurrentTemplate();
+  await useChecklistCurrentTemplate(siteConfig.partnerId ?? null);
 
 const isEditTemplateModalOpen = ref(false);
 

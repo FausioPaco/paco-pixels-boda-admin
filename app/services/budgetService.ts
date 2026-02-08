@@ -234,4 +234,45 @@ export const getBudgetService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
       },
     );
   },
+
+  // ===== Installments =====
+  async getInstallments(itemId: number): Promise<BudgetItemInstallment[]> {
+    return $fetch<BudgetItemInstallment[]>(
+      `${RESOURCE}/items/${itemId}/installments`,
+    );
+  },
+
+  async addInstallment(
+    itemId: number,
+    input: BudgetItemInstallmentInput,
+  ): Promise<BudgetItemInstallment> {
+    return $fetch<BudgetItemInstallment>(
+      `${RESOURCE}/items/${itemId}/installments`,
+      { method: 'POST', body: input },
+    );
+  },
+
+  async updateInstallment(
+    installmentId: number,
+    input: BudgetItemInstallmentInput,
+  ): Promise<BudgetItemInstallment> {
+    return $fetch<BudgetItemInstallment>(
+      `${RESOURCE}/installments/${installmentId}`,
+      { method: 'PUT', body: input },
+    );
+  },
+
+  async deleteInstallment(installmentId: number): Promise<void> {
+    await $fetch(`${RESOURCE}/installments/${installmentId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // ===== Export =====
+  async exportBudgetExcel(budgetId: number): Promise<Blob> {
+    return $fetch(`${RESOURCE}/${budgetId}/export`, {
+      method: 'GET',
+      responseType: 'blob',
+    }) as unknown as Blob;
+  },
 });

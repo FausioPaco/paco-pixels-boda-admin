@@ -9,6 +9,7 @@ type SortableEvent = {
   newIndex?: number;
 };
 
+const { siteConfig } = await useClientConfig();
 const toast = useToast();
 const nuxtApp = useNuxtApp();
 const budgetService = getBudgetService(nuxtApp.$api);
@@ -21,7 +22,9 @@ const iconName = computed(() => eventStore.eventTypeIcon || 'event-wedding');
 const isControlled = ref<boolean>(true);
 
 const { template, isRefreshing, refreshTemplate } =
-  await useBudgetTemplateByCurrentEventType();
+  await useBudgetTemplateByCurrentEventType({
+    partnerId: Number(siteConfig.partnerId),
+  });
 
 const isHeaderModalOpen = ref(false);
 const isCreateCategoryModalOpen = ref(false);
@@ -113,7 +116,10 @@ function matchesBudgetTemplateItem(item: BudgetTemplateItem, term: string) {
   return listContains(item.title, term);
 }
 
-function matchesBudgetCategory(category: BudgetTemplateCategory, term: string) {
+function matchesBudgetTemplateCategory(
+  category: BudgetTemplateCategory,
+  term: string,
+) {
   const categoryMatch = listContains(category.title, term);
 
   if (categoryMatch) return true;
@@ -130,8 +136,50 @@ const displayedCategories = computed(() => {
 
   const term = normalizedSearch.value;
   return localCategories.value.filter((cat) =>
-    matchesBudgetCategory(cat, term),
+    matchesBudgetTemplateCategory(cat, term),
   );
+});
+
+// Budget Item Management
+const isEditCategoryModalOpen = ref(false);
+const isCreateItemModalOpen = ref(false);
+const isEditItemModalOpen = ref(false);
+const selectedItem = ref<BudgetTemplateItem | undefined>(undefined);
+const selectedCategory = ref<BudgetTemplateCategory | undefined | null>(null);
+
+const isRemoveCategoryModalOpen = ref(false);
+const isRemoveItemModalOpen = ref(false);
+const selectedItemToRemove = ref<BudgetTemplateItem | undefined>(undefined);
+
+const openRemoveCategory = (category: BudgetTemplateCategory) => {
+  selectedCategory.value = category;
+  isRemoveCategoryModalOpen.value = true;
+};
+
+const openCategoryForm = (category: BudgetTemplateCategory) => {
+  selectedCategory.value = category;
+  isEditCategoryModalOpen.value = true;
+};
+
+const openCreateItem = (category: BudgetTemplateCategory) => {
+  selectedCategory.value = category;
+  selectedItem.value = undefined;
+  isCreateItemModalOpen.value = true;
+};
+
+const openEditItem = (item: BudgetTemplateItem) => {
+  selectedItem.value = item;
+  isEditItemModalOpen.value = true;
+};
+
+const openRemoveItem = (item: BudgetTemplateItem) => {
+  selectedItemToRemove.value = item;
+  isRemoveItemModalOpen.value = true;
+};
+
+const getSelectedCategory = computed(() => {
+  if (!selectedCategory.value) return null;
+  return selectedCategory.value as BudgetTemplateCategory;
 });
 </script>
 
@@ -255,6 +303,11 @@ const displayedCategories = computed(() => {
               class="flex-1"
               :template="template"
               :category="category"
+              @edit-category="openCategoryForm"
+              @remove-category="openRemoveCategory"
+              @create-item="openCreateItem"
+              @edit-item="openEditItem"
+              @remove-item="openRemoveItem"
               @changed="refreshTemplate({ force: true })"
             />
           </div>
@@ -300,6 +353,59 @@ const displayedCategories = computed(() => {
       :category="null"
       @close="isCreateCategoryModalOpen = false"
       @saved="refreshTemplate({ force: true })"
+    />
+
+    <!-- Modals -->
+    <LazyBudgetCategoryFormModal
+      :show="isEditCategoryModalOpen"
+      mode="TEMPLATE"
+      :parent-id="template?.id ?? 0"
+      :category="getSelectedCategory"
+      @close="isEditCategoryModalOpen = false"
+      @saved="refreshTemplate({ force: true })"
+    />
+
+    <!-- Create item -->
+    <LazyBudgetItemFormModal
+      :show="isCreateItemModalOpen"
+      mode="TEMPLATE"
+      :category-id="getSelectedCategory?.id"
+      :item="undefined"
+      @close="isCreateItemModalOpen = false"
+      @saved="refreshTemplate({ force: true })"
+    />
+
+    <!-- Edit item -->
+    <LazyBudgetItemFormModal
+      :show="isEditItemModalOpen"
+      mode="TEMPLATE"
+      :category-id="getSelectedCategory?.id"
+      :item="selectedItem"
+      @close="isEditItemModalOpen = false"
+      @saved="refreshTemplate({ force: true })"
+    />
+
+    <!-- Remove Category -->
+    <LazyBudgetCategoryRemoveModal
+      :show="isRemoveCategoryModalOpen"
+      mode="TEMPLATE"
+      :category="getSelectedCategory"
+      @close-modal="isRemoveCategoryModalOpen = false"
+      @success="refreshTemplate({ force: true })"
+    />
+
+    <!-- Remove Template Item -->
+    <LazyBudgetItemRemoveModal
+      :show="isRemoveItemModalOpen"
+      :item="selectedItem"
+      @close-modal="
+        isRemoveItemModalOpen = false;
+        selectedItem = undefined;
+      "
+      @success="
+        refreshTemplate({ force: true });
+        selectedItem = undefined;
+      "
     />
   </div>
 </template>

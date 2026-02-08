@@ -2,6 +2,7 @@
 import draggable from 'vuedraggable';
 import { useToast } from 'vue-toastification';
 import { getBudgetService } from '~/services/budgetService';
+import { getServerErrors } from '~/utils/serverUtils';
 
 type SortableEvent = {
   item: HTMLElement;
@@ -10,6 +11,16 @@ type SortableEvent = {
 };
 
 type ReorderItem = { id: number; sortOrder: number };
+
+type EditableField = 'title' | 'estimated' | 'actual' | 'paid';
+type EditingState = { id: number; field: EditableField } | null;
+
+type Draft = {
+  title: string;
+  estimatedAmount: number | null;
+  actualCost: number | null;
+  paidAmount: number | null;
+};
 
 // Mantive os types como "any" para não quebrar caso o teu budget.ts tenha nomes diferentes.
 // Se quiseres, depois eu tipifico certinho com os teus types reais.
@@ -20,6 +31,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'changed'): void;
+  (
+    e: 'edit-category' | 'remove-category' | 'create-item',
+    category: BudgetTemplateCategory,
+  ): void;
+  (e: 'edit-item' | 'remove-item', item: BudgetTemplateItem): void;
 }>();
 
 const toast = useToast();
@@ -28,21 +44,301 @@ const budgetService = getBudgetService(nuxtApp.$api);
 
 const isOpen = ref(true);
 
-const isEditCategoryModalOpen = ref(false);
-const isCreateItemModalOpen = ref(false);
-const isEditItemModalOpen = ref(false);
-const selectedItem = ref<BudgetTemplateItem | undefined>(undefined);
-const isRemoveCategoryModalOpen = ref(false);
-const isRemoveItemModalOpen = ref(false);
+const localItems = ref<BudgetTemplateItem[]>([]);
 
-const openRemoveCategory = () => (isRemoveCategoryModalOpen.value = true);
+// ===== Inline edit state (igual ao BudgetEventCategoryCard) =====
+const editing = ref<EditingState>(null);
 
-const openRemoveItem = (item: BudgetTemplateItem) => {
-  selectedItem.value = item;
-  isRemoveItemModalOpen.value = true;
+const isEditing = (id: number, field: EditableField) =>
+  editing.value?.id === id && editing.value?.field === field;
+
+const focusById = async (elId: string) => {
+  if (!import.meta.client) return;
+  await nextTick();
+  const el = document.getElementById(elId) as HTMLInputElement | null;
+  el?.focus?.();
+  el?.select?.();
 };
 
-const localItems = ref<BudgetTemplateItem[]>([]);
+const startEdit = async (id: number, field: EditableField) => {
+  editing.value = { id, field };
+
+  if (field === 'title') await focusById(`budget-template-item-title-${id}`);
+  if (field === 'estimated') await focusById(`budget-template-item-est-${id}`);
+  if (field === 'actual') await focusById(`budget-template-item-actual-${id}`);
+  if (field === 'paid') await focusById(`budget-template-item-paid-${id}`);
+};
+
+const stopEdit = () => {
+  editing.value = null;
+};
+
+const draftsById = ref<Record<number, Draft | undefined>>({});
+const dirtyById = ref<Record<number, boolean>>({});
+const savingById = ref<Record<number, boolean>>({});
+const pendingById = ref<Record<number, boolean>>({});
+const timersById = ref<
+  Record<number, ReturnType<typeof setTimeout> | undefined | null>
+>({});
+
+const syncDraftFromItem = (item: BudgetTemplateItem) => {
+  const id = item.id;
+  if (dirtyById.value[id] || savingById.value[id] || pendingById.value[id])
+    return;
+
+  draftsById.value[id] = {
+    title: item.title ?? '',
+    estimatedAmount: item.estimatedAmount ?? 0,
+    actualCost: item.actualCost ?? 0,
+    paidAmount: item.paidAmount ?? 0,
+  };
+};
+
+function ensureDraft(item: BudgetTemplateItem) {
+  const id = item.id;
+
+  if (!draftsById.value[id]) {
+    draftsById.value[id] = {
+      title: item.title ?? '',
+      estimatedAmount: item.estimatedAmount ?? 0,
+      actualCost: item.actualCost ?? 0,
+      paidAmount: item.paidAmount ?? 0,
+    };
+    return;
+  }
+
+  syncDraftFromItem(item);
+}
+
+const markDirty = (id: number) => {
+  dirtyById.value[id] = true;
+};
+
+const clearTimer = (id: number) => {
+  const t = timersById.value[id];
+  if (t) clearTimeout(t);
+  timersById.value[id] = null;
+};
+
+const scheduleSave = (id: number) => {
+  markDirty(id);
+  clearTimer(id);
+
+  timersById.value[id] = setTimeout(() => {
+    saveNow(id);
+  }, 1200);
+};
+
+const resetDraft = (id: number) => {
+  const item = localItems.value.find((x) => x.id === id);
+  if (!item) return;
+
+  draftsById.value[id] = {
+    title: item.title ?? '',
+    estimatedAmount: item.estimatedAmount ?? 0,
+    actualCost: item.actualCost ?? 0,
+    paidAmount: item.paidAmount ?? 0,
+  };
+
+  dirtyById.value[id] = false;
+  clearTimer(id);
+};
+
+const onEditKeydown = async (evt: KeyboardEvent, id: number) => {
+  if (evt.key === 'Enter') {
+    evt.preventDefault();
+    await saveNow(id);
+    stopEdit();
+    return;
+  }
+
+  if (evt.key === 'Escape') {
+    evt.preventDefault();
+    resetDraft(id);
+    stopEdit();
+  }
+};
+
+const getDraftEstimated = (i: BudgetTemplateItem) =>
+  draftsById.value[i.id]?.estimatedAmount ?? i.estimatedAmount ?? 0;
+
+const getDraftActual = (i: BudgetTemplateItem) =>
+  draftsById.value[i.id]?.actualCost ?? i.actualCost ?? 0;
+
+const getDraftPaid = (i: BudgetTemplateItem) =>
+  draftsById.value[i.id]?.paidAmount ?? i.paidAmount ?? 0;
+
+const getDraftDue = (i: BudgetTemplateItem) => {
+  const actual = Number(getDraftActual(i) ?? 0);
+  const paid = Number(getDraftPaid(i) ?? 0);
+  return Math.max(actual - paid, 0);
+};
+
+const titleModel = (id: number) =>
+  computed<string>({
+    get() {
+      const d = draftsById.value[id];
+      return d?.title ?? '';
+    },
+    set(v) {
+      const item = localItems.value.find((x) => x.id === id);
+      if (item) ensureDraft(item);
+      if (!draftsById.value[id])
+        draftsById.value[id] = {
+          title: '',
+          estimatedAmount: 0,
+          actualCost: 0,
+          paidAmount: 0,
+        };
+      draftsById.value[id]!.title = v;
+      scheduleSave(id);
+    },
+  });
+
+const estimatedModel = (id: number) =>
+  computed<number | null>({
+    get() {
+      const d = draftsById.value[id];
+      return d?.estimatedAmount ?? 0;
+    },
+    set(v) {
+      const item = localItems.value.find((x) => x.id === id);
+      if (item) ensureDraft(item);
+      if (!draftsById.value[id])
+        draftsById.value[id] = {
+          title: '',
+          estimatedAmount: 0,
+          actualCost: 0,
+          paidAmount: 0,
+        };
+      draftsById.value[id]!.estimatedAmount = v;
+      scheduleSave(id);
+    },
+  });
+
+const actualModel = (id: number) =>
+  computed<number | null>({
+    get() {
+      const d = draftsById.value[id];
+      return d?.actualCost ?? 0;
+    },
+    set(v) {
+      const item = localItems.value.find((x) => x.id === id);
+      if (item) ensureDraft(item);
+      if (!draftsById.value[id])
+        draftsById.value[id] = {
+          title: '',
+          estimatedAmount: 0,
+          actualCost: 0,
+          paidAmount: 0,
+        };
+      draftsById.value[id]!.actualCost = v;
+      scheduleSave(id);
+    },
+  });
+
+const paidModel = (id: number) =>
+  computed<number | null>({
+    get() {
+      const d = draftsById.value[id];
+      return d?.paidAmount ?? 0;
+    },
+    set(v) {
+      const item = localItems.value.find((x) => x.id === id);
+      if (item) ensureDraft(item);
+      if (!draftsById.value[id])
+        draftsById.value[id] = {
+          title: '',
+          estimatedAmount: 0,
+          actualCost: 0,
+          paidAmount: 0,
+        };
+      draftsById.value[id]!.paidAmount = v;
+      scheduleSave(id);
+    },
+  });
+
+const saveNow = async (id: number) => {
+  clearTimer(id);
+
+  const item = localItems.value.find((x) => x.id === id);
+  const draft = draftsById.value[id];
+  if (!item || !draft) return;
+
+  if (savingById.value[id]) {
+    pendingById.value[id] = true;
+    return;
+  }
+
+  const title = (draft.title ?? '').trim();
+  const estimatedAmount = draft.estimatedAmount ?? item.estimatedAmount ?? 0;
+  const actualCost = draft.actualCost ?? item.actualCost ?? 0;
+  const paidAmount = draft.paidAmount ?? item.paidAmount ?? 0;
+
+  if (!title) {
+    toast.error('O título do item não pode ficar vazio.');
+    ensureDraft(item);
+    draftsById.value[id] = {
+      title: item.title ?? '',
+      estimatedAmount: item.estimatedAmount ?? 0,
+      actualCost: item.actualCost ?? 0,
+      paidAmount: item.paidAmount ?? 0,
+    };
+    dirtyById.value[id] = false;
+    return;
+  }
+
+  savingById.value[id] = true;
+
+  try {
+    // Nota: se o nome do método no teu budgetService for diferente, ajusta aqui.
+    const updated = await budgetService.updateTemplateItem(id, {
+      title,
+      estimatedAmount: Number(estimatedAmount),
+      actualCost: Number(actualCost),
+      paidAmount: Number(paidAmount),
+      notes: item.notes ?? null,
+    });
+
+    const idx = localItems.value.findIndex((x) => x.id === id);
+    if (idx >= 0)
+      localItems.value[idx] = { ...localItems.value[idx], ...updated };
+
+    draftsById.value[id] = {
+      title: updated.title,
+      estimatedAmount: updated.estimatedAmount,
+      actualCost: updated.actualCost,
+      paidAmount: updated.paidAmount,
+    };
+
+    dirtyById.value[id] = false;
+    emit('changed');
+  } catch (e) {
+    console.log(e);
+
+    const msg = isFetchErrorLike(e)
+      ? getServerErrors(e.data)
+      : 'Não foi possível guardar o item.';
+
+    toast.error(msg);
+
+    draftsById.value[id] = {
+      title: item.title ?? '',
+      estimatedAmount: item.estimatedAmount ?? 0,
+      actualCost: item.actualCost ?? 0,
+      paidAmount: item.paidAmount ?? 0,
+    };
+
+    dirtyById.value[id] = false;
+  } finally {
+    savingById.value[id] = false;
+
+    if (pendingById.value[id]) {
+      pendingById.value[id] = false;
+      saveNow(id);
+    }
+  }
+};
 
 watch(
   () => props.category?.items,
@@ -84,52 +380,46 @@ async function onItemsDragEnd() {
   }
 }
 
-const openCreateItem = () => {
-  selectedItem.value = undefined;
-  isCreateItemModalOpen.value = true;
-};
-
-const openEditItem = (item: BudgetTemplateItem) => {
-  selectedItem.value = item;
-  isEditItemModalOpen.value = true;
-};
-
 // helpers (template pode ter apenas estimatedAmount; mas mantive compatível com o teu design)
-const getEstimated = (i: BudgetTemplateItem) => i.estimatedAmount ?? 0;
-const getActual = (i: BudgetTemplateItem) =>
-  i.actualCost ?? getEstimated(i) ?? 0;
+// const getEstimated = (i: BudgetTemplateItem) => i.estimatedAmount ?? 0;
+// const getActual = (i: BudgetTemplateItem) =>
+//   i.actualCost ?? getEstimated(i) ?? 0;
+// const getPaid = (i: BudgetTemplateItem) => i.paidAmount ?? 0;
 
-const getPaid = (i: BudgetTemplateItem) => i.paidAmount ?? 0;
-
-const getDue = (i: BudgetTemplateItem) => {
-  const due = Math.max(Number(getActual(i)) - Number(getPaid(i)), 0);
-  return due ?? 0;
-};
+watch(
+  () => localItems.value,
+  (items) => {
+    for (const i of items) ensureDraft(i);
+  },
+  { immediate: true },
+);
 
 const subtotalEstimated = computed(() =>
   localItems.value.reduce(
-    (acc: number, i: BudgetTemplateItem) => acc + Number(getEstimated(i) ?? 0),
+    (acc: number, i: BudgetTemplateItem) =>
+      acc + Number(getDraftEstimated(i) ?? 0),
     0,
   ),
 );
 
 const subtotalActual = computed(() =>
   localItems.value.reduce(
-    (acc: number, i: BudgetTemplateItem) => acc + Number(getActual(i) ?? 0),
+    (acc: number, i: BudgetTemplateItem) =>
+      acc + Number(getDraftActual(i) ?? 0),
     0,
   ),
 );
 
 const subtotalPaid = computed(() =>
   localItems.value.reduce(
-    (acc: number, i: BudgetTemplateItem) => acc + Number(getPaid(i) ?? 0),
+    (acc: number, i: BudgetTemplateItem) => acc + Number(getDraftPaid(i) ?? 0),
     0,
   ),
 );
 
 const subtotalDue = computed(() =>
   localItems.value.reduce(
-    (acc: number, i: BudgetTemplateItem) => acc + Number(getDue(i) ?? 0),
+    (acc: number, i: BudgetTemplateItem) => acc + Number(getDraftDue(i) ?? 0),
     0,
   ),
 );
@@ -174,7 +464,7 @@ const subtotalDue = computed(() =>
             type="button"
             class="bg-primary-100 text-grey-500 hover:bg-primary-600 rounded-full p-2 transition hover:text-white"
             title="Editar"
-            @click.stop="isEditCategoryModalOpen = true"
+            @click.stop="emit('edit-category', category)"
           >
             <IconPencil :font-controlled="false" class="size-3" />
           </button>
@@ -183,7 +473,7 @@ const subtotalDue = computed(() =>
             type="button"
             class="bg-primary-100 text-grey-500 hover:bg-primary-600 rounded-full p-2 transition hover:text-white"
             title="Editar"
-            @click.stop="openRemoveCategory"
+            @click.stop="$emit('remove-category', category)"
           >
             <IconTrash :font-controlled="false" class="size-3" />
           </button>
@@ -221,10 +511,10 @@ const subtotalDue = computed(() =>
           v-if="localItems.length > 0"
           class="text-grey-500 mt-5 hidden animate-fadeIn grid-cols-5 gap-3 pb-4 text-xs md:grid"
         >
-          <div class="pl-7">Título</div>
-          <div>Estimado</div>
-          <div>Custo actual</div>
-          <div>Montante pago</div>
+          <div class="pl-6">Título</div>
+          <div class="md:pl-3">Estimado</div>
+          <div class="md:pl-2">Custo actual</div>
+          <div class="md:pl-2">Montante pago</div>
           <div class="-ml-2">Montante devido</div>
         </div>
 
@@ -255,26 +545,182 @@ const subtotalDue = computed(() =>
                   />
                 </button>
 
-                <span class="text-grey-900 text-sm font-medium">
-                  {{ item.title }}
-                </span>
+                <!-- Titulo -->
+                <div class="flex-1">
+                  <transition name="inline-edit" mode="out-in">
+                    <BaseInputCompact
+                      v-if="isEditing(item.id, 'title')"
+                      :id="`budget-template-item-title-${item.id}`"
+                      v-model="titleModel(item.id).value"
+                      type="text"
+                      align="left"
+                      :disabled="savingById[item.id]"
+                      @blur="
+                        saveNow(item.id);
+                        stopEdit();
+                      "
+                      @keydown="(e: KeyboardEvent) => onEditKeydown(e, item.id)"
+                    />
+
+                    <button
+                      v-else
+                      type="button"
+                      class="hover:bg-grey-50 group flex w-full items-center justify-between rounded-lg px-2 py-1 text-left transition"
+                      :class="
+                        savingById[item.id]
+                          ? 'cursor-not-allowed opacity-60'
+                          : 'cursor-text'
+                      "
+                      :disabled="savingById[item.id]"
+                      @click.stop="startEdit(item.id, 'title')"
+                    >
+                      <span class="text-grey-900 text-sm font-medium">
+                        {{ draftsById[item.id]?.title ?? item.title }}
+                      </span>
+
+                      <IconPencil
+                        :font-controlled="false"
+                        class="text-grey-400 ml-2 size-3 opacity-0 transition group-hover:opacity-100"
+                      />
+                    </button>
+                  </transition>
+                </div>
               </div>
 
-              <div class="text-grey-700 text-sm">
-                {{ formatMoney(getEstimated(item), template.currency) }}
+              <!-- Estimated -->
+              <div>
+                <transition name="inline-edit" mode="out-in">
+                  <BaseInputCompact
+                    v-if="isEditing(item.id, 'estimated')"
+                    :id="`budget-template-item-est-${item.id}`"
+                    v-model="estimatedModel(item.id).value"
+                    type="number"
+                    align="left"
+                    :disabled="savingById[item.id]"
+                    step="0.01"
+                    min="0"
+                    @blur="
+                      saveNow(item.id);
+                      stopEdit();
+                    "
+                    @keydown="(e: KeyboardEvent) => onEditKeydown(e, item.id)"
+                  />
+
+                  <button
+                    v-else
+                    type="button"
+                    class="hover:bg-grey-50 group flex w-full items-center justify-between rounded-lg py-1 pr-2 transition"
+                    :class="
+                      savingById[item.id]
+                        ? 'cursor-not-allowed opacity-60'
+                        : 'cursor-text'
+                    "
+                    :disabled="savingById[item.id]"
+                    @click.stop="startEdit(item.id, 'estimated')"
+                  >
+                    <span class="text-grey-900 text-sm">
+                      {{
+                        formatMoney(getDraftEstimated(item), template.currency)
+                      }}
+                    </span>
+
+                    <IconPencil
+                      :font-controlled="false"
+                      class="text-grey-400 ml-2 size-3 opacity-0 transition group-hover:opacity-100"
+                    />
+                  </button>
+                </transition>
               </div>
 
-              <div class="text-grey-700 text-sm">
-                {{ formatMoney(getActual(item), template.currency) }}
+              <!-- Actual -->
+              <div>
+                <transition name="inline-edit" mode="out-in">
+                  <BaseInputCompact
+                    v-if="isEditing(item.id, 'actual')"
+                    :id="`budget-template-item-actual-${item.id}`"
+                    v-model="actualModel(item.id).value"
+                    type="number"
+                    align="left"
+                    :disabled="savingById[item.id]"
+                    step="0.01"
+                    min="0"
+                    @blur="
+                      saveNow(item.id);
+                      stopEdit();
+                    "
+                    @keydown="(e: KeyboardEvent) => onEditKeydown(e, item.id)"
+                  />
+
+                  <button
+                    v-else
+                    type="button"
+                    class="hover:bg-grey-50 group flex w-full items-center justify-between rounded-lg px-2 py-1 transition"
+                    :class="
+                      savingById[item.id]
+                        ? 'cursor-not-allowed opacity-60'
+                        : 'cursor-text'
+                    "
+                    :disabled="savingById[item.id]"
+                    @click.stop="startEdit(item.id, 'actual')"
+                  >
+                    <span class="text-grey-900 text-sm">
+                      {{ formatMoney(getDraftActual(item), template.currency) }}
+                    </span>
+
+                    <IconPencil
+                      :font-controlled="false"
+                      class="text-grey-400 ml-2 size-3 opacity-0 transition group-hover:opacity-100"
+                    />
+                  </button>
+                </transition>
               </div>
 
-              <div class="text-sm text-green-700">
-                {{ formatMoney(getPaid(item), template.currency) }}
+              <!-- Paid (editável no template) -->
+              <div>
+                <transition name="inline-edit" mode="out-in">
+                  <BaseInputCompact
+                    v-if="isEditing(item.id, 'paid')"
+                    :id="`budget-template-item-paid-${item.id}`"
+                    v-model="paidModel(item.id).value"
+                    type="number"
+                    align="left"
+                    :disabled="savingById[item.id]"
+                    step="0.01"
+                    min="0"
+                    @blur="
+                      saveNow(item.id);
+                      stopEdit();
+                    "
+                    @keydown="(e: KeyboardEvent) => onEditKeydown(e, item.id)"
+                  />
+
+                  <button
+                    v-else
+                    type="button"
+                    class="hover:bg-grey-50 group flex w-full items-center justify-between rounded-lg px-2 py-1 transition"
+                    :class="
+                      savingById[item.id]
+                        ? 'cursor-not-allowed opacity-60'
+                        : 'cursor-text'
+                    "
+                    :disabled="savingById[item.id]"
+                    @click.stop="startEdit(item.id, 'paid')"
+                  >
+                    <span class="text-sm text-green-700">
+                      {{ formatMoney(getDraftPaid(item), template.currency) }}
+                    </span>
+
+                    <IconPencil
+                      :font-controlled="false"
+                      class="text-grey-400 ml-2 size-3 opacity-0 transition group-hover:opacity-100"
+                    />
+                  </button>
+                </transition>
               </div>
 
               <div class="flex items-center justify-between gap-2">
                 <span class="text-grey-900 text-sm">
-                  {{ formatMoney(getDue(item), template.currency) }}
+                  {{ formatMoney(getDraftDue(item), template.currency) }}
                 </span>
 
                 <div class="flex items-center gap-2">
@@ -282,7 +728,7 @@ const subtotalDue = computed(() =>
                     type="button"
                     class="text-grey-500 hover:text-primary-700 transition"
                     title="Editar"
-                    @click.stop="openEditItem(item)"
+                    @click.stop="emit('edit-item', item)"
                   >
                     <IconPencil :font-controlled="false" class="size-4" />
                   </button>
@@ -291,7 +737,7 @@ const subtotalDue = computed(() =>
                     type="button"
                     class="text-grey-500 transition hover:text-red-600"
                     title="Remover"
-                    @click.stop="openRemoveItem(item)"
+                    @click.stop="emit('remove-item', item)"
                   >
                     <IconTrash :font-controlled="false" class="size-4" />
                   </button>
@@ -305,7 +751,7 @@ const subtotalDue = computed(() =>
         <button
           type="button"
           class="text-grey-300 hover:text-primary-700 group my-4 inline-flex items-center gap-1 text-sm transition"
-          @click="openCreateItem"
+          @click="emit('create-item', category)"
         >
           <IconPlusSimple
             :font-controlled="false"
@@ -336,58 +782,5 @@ const subtotalDue = computed(() =>
         </div>
       </div>
     </transition>
-
-    <!-- Modals -->
-    <LazyBudgetCategoryFormModal
-      :show="isEditCategoryModalOpen"
-      mode="TEMPLATE"
-      :parent-id="template?.id ?? 0"
-      :category="category"
-      @close="isEditCategoryModalOpen = false"
-      @saved="emit('changed')"
-    />
-
-    <!-- Create item -->
-    <LazyBudgetItemFormModal
-      :show="isCreateItemModalOpen"
-      mode="TEMPLATE"
-      :category-id="category.id"
-      :item="undefined"
-      @close="isCreateItemModalOpen = false"
-      @saved="emit('changed')"
-    />
-
-    <!-- Edit item -->
-    <LazyBudgetItemFormModal
-      :show="isEditItemModalOpen"
-      mode="TEMPLATE"
-      :category-id="category.id"
-      :item="selectedItem"
-      @close="isEditItemModalOpen = false"
-      @saved="emit('changed')"
-    />
-
-    <!-- Remove Category -->
-    <LazyBudgetCategoryRemoveModal
-      :show="isRemoveCategoryModalOpen"
-      mode="TEMPLATE"
-      :category="category"
-      @close-modal="isRemoveCategoryModalOpen = false"
-      @success="emit('changed')"
-    />
-
-    <!-- Remove Template Item -->
-    <LazyBudgetItemRemoveModal
-      :show="isRemoveItemModalOpen"
-      :item="selectedItem"
-      @close-modal="
-        isRemoveItemModalOpen = false;
-        selectedItem = undefined;
-      "
-      @success="
-        emit('changed');
-        selectedItem = undefined;
-      "
-    />
   </div>
 </template>

@@ -2,6 +2,7 @@
 import draggable from 'vuedraggable';
 import { useToast } from 'vue-toastification';
 import { getBudgetService } from '~/services/budgetService';
+import { getServerErrors } from '~/utils/serverUtils';
 
 type SortableEvent = {
   item: HTMLElement;
@@ -10,6 +11,14 @@ type SortableEvent = {
 };
 
 type ReorderItem = { id: number; sortOrder: number };
+type EditableField = 'title' | 'estimated' | 'actual';
+type EditingState = { id: number; field: EditableField } | null;
+
+type Draft = {
+  title: string;
+  estimatedAmount: number | null;
+  actualCost: number | null;
+};
 
 const props = defineProps<{
   budget: Budget;
@@ -18,6 +27,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'changed'): void;
+  (
+    e: 'edit-category' | 'remove-category' | 'create-item',
+    category: BudgetCategory,
+  ): void;
+  (
+    e: 'edit-item' | 'remove-item' | 'open-installments',
+    item: BudgetItem,
+  ): void;
 }>();
 
 const toast = useToast();
@@ -26,23 +43,7 @@ const budgetService = getBudgetService(nuxtApp.$api);
 
 const isOpen = ref(true);
 
-const isEditCategoryModalOpen = ref(false);
-const isCreateItemModalOpen = ref(false);
-const isEditItemModalOpen = ref(false);
-const selectedItem = ref<BudgetItem | undefined>(undefined);
-
 const localItems = ref<BudgetItem[]>([]);
-
-watch(
-  () => props.category?.items,
-  (list) => {
-    const safe = list ?? [];
-    localItems.value = [...safe].sort(
-      (a: BudgetItem, b: BudgetItem) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
-    );
-  },
-  { immediate: true },
-);
 
 const draggingItemId = ref<number | null>(null);
 
@@ -72,64 +73,322 @@ async function onItemsDragEnd() {
   }
 }
 
-const openCreateItem = () => {
-  selectedItem.value = undefined;
-  isCreateItemModalOpen.value = true;
+const editing = ref<EditingState>(null);
+
+const isEditing = (id: number, field: EditableField) =>
+  editing.value?.id === id && editing.value?.field === field;
+
+const focusById = async (elId: string) => {
+  if (!import.meta.client) return;
+  await nextTick();
+  const el = document.getElementById(elId) as HTMLInputElement | null;
+  el?.focus?.();
+  el?.select?.();
 };
 
-const openEditItem = (item: BudgetItem) => {
-  selectedItem.value = item;
-  isEditItemModalOpen.value = true;
+const startEdit = async (id: number, field: EditableField) => {
+  editing.value = { id, field };
+
+  if (field === 'title') await focusById(`budget-item-title-${id}`);
+  if (field === 'estimated') await focusById(`budget-item-est-${id}`);
+  if (field === 'actual') await focusById(`budget-item-actual-${id}`);
 };
 
-// helpers (event tem valores reais, mas mantemos compatível com o design)
-const getEstimated = (i: BudgetItem) => i.estimatedAmount ?? 0;
-const getActual = (i: BudgetItem) => i.actualCost ?? 0;
+const stopEdit = () => {
+  editing.value = null;
+};
+
+const resetDraft = (id: number) => {
+  const item = localItems.value.find((x) => x.id === id);
+  if (!item) return;
+
+  draftsById.value[id] = {
+    title: item.title ?? '',
+    estimatedAmount: item.estimatedAmount ?? 0,
+    actualCost: item.actualCost ?? 0,
+  };
+
+  dirtyById.value[id] = false;
+  clearTimer(id);
+};
+
+const onEditKeydown = async (evt: KeyboardEvent, id: number) => {
+  if (evt.key === 'Enter') {
+    evt.preventDefault();
+    await saveNow(id);
+    stopEdit();
+    return;
+  }
+
+  if (evt.key === 'Escape') {
+    evt.preventDefault();
+    resetDraft(id);
+    stopEdit();
+  }
+};
+
+// ===== Inline edit state =====
+const draftsById = ref<Record<number, Draft | undefined>>({});
+
+const dirtyById = ref<Record<number, boolean>>({});
+const savingById = ref<Record<number, boolean>>({});
+const pendingById = ref<Record<number, boolean>>({});
+const timersById = ref<
+  Record<number, ReturnType<typeof setTimeout> | undefined | null>
+>({});
+
+const syncDraftFromItem = (item: BudgetItem) => {
+  const id = item.id;
+
+  // se o user está a editar (dirty) ou a guardar, não mexe
+  if (dirtyById.value[id] || savingById.value[id] || pendingById.value[id])
+    return;
+
+  draftsById.value[id] = {
+    title: item.title ?? '',
+    estimatedAmount: item.estimatedAmount ?? 0,
+    actualCost: item.actualCost ?? 0,
+  };
+};
+
+function ensureDraft(item: BudgetItem) {
+  const id = item.id;
+
+  if (!draftsById.value[id]) {
+    draftsById.value[id] = {
+      title: item.title ?? '',
+      estimatedAmount: item.estimatedAmount ?? 0,
+      actualCost: item.actualCost ?? 0,
+    };
+    return;
+  }
+
+  syncDraftFromItem(item);
+}
+
 const getPaid = (i: BudgetItem) => i.paidAmount ?? 0;
 
-const getDue = (i: BudgetItem) => {
-  const due = Math.max(Number(getActual(i)) - Number(getPaid(i)), 0);
-  return due ?? 0;
+const getDraftEstimated = (i: BudgetItem) =>
+  draftsById.value[i.id]?.estimatedAmount ?? i.estimatedAmount ?? 0;
+
+const getDraftActual = (i: BudgetItem) =>
+  draftsById.value[i.id]?.actualCost ?? i.actualCost ?? 0;
+
+const getDraftDue = (i: BudgetItem) => {
+  const actual = Number(getDraftActual(i) ?? 0);
+  const paid = Number(getPaid(i) ?? 0);
+  return Math.max(actual - paid, 0);
 };
 
+const markDirty = (id: number) => {
+  dirtyById.value[id] = true;
+};
+
+const clearTimer = (id: number) => {
+  const t = timersById.value[id];
+  if (t) clearTimeout(t);
+  timersById.value[id] = null;
+};
+
+const scheduleSave = (id: number) => {
+  markDirty(id);
+  clearTimer(id);
+
+  timersById.value[id] = setTimeout(() => {
+    saveNow(id);
+  }, 1500);
+};
+
+const saveNow = async (id: number) => {
+  clearTimer(id);
+
+  const item = localItems.value.find((x) => x.id === id);
+  const draft = draftsById.value[id];
+  if (!item || !draft) return;
+
+  // Evita salvar em paralelo
+  if (savingById.value[id]) {
+    pendingById.value[id] = true;
+    return;
+  }
+
+  // Normalização
+  const title = (draft.title ?? '').trim();
+  const estimatedAmount = draft.estimatedAmount ?? item.estimatedAmount ?? 0;
+  const actualCost = draft.actualCost ?? item.actualCost ?? 0;
+
+  if (!title) {
+    toast.error('O título do item não pode ficar vazio.');
+    ensureDraft(item);
+
+    draftsById.value[id] = {
+      title: item.title ?? '',
+      estimatedAmount: item.estimatedAmount ?? 0,
+      actualCost: item.actualCost ?? 0,
+    };
+
+    dirtyById.value[id] = false;
+    return;
+  }
+
+  savingById.value[id] = true;
+
+  try {
+    const updated = await budgetService.updateItem(id, {
+      title,
+      estimatedAmount: Number(estimatedAmount),
+      actualCost: Number(actualCost),
+      notes: item.notes ?? null,
+    });
+
+    // Atualiza a row com resposta do backend
+    const idx = localItems.value.findIndex((x) => x.id === id);
+    if (idx >= 0)
+      localItems.value[idx] = { ...localItems.value[idx], ...updated };
+
+    // mantém draft alinhado
+    draftsById.value[id] = {
+      title: updated.title,
+      estimatedAmount: updated.estimatedAmount,
+      actualCost: updated.actualCost,
+    };
+
+    dirtyById.value[id] = false;
+
+    // Importante: para atualizar totais globais, avisa o pai (o pai já faz refreshBudget)
+    emit('changed');
+  } catch (e) {
+    console.log(e);
+
+    const msg = isFetchErrorLike(e)
+      ? getServerErrors(e.data)
+      : 'Não foi possível guardar o item.';
+
+    toast.error(msg);
+
+    // reverte draft para o item actual
+    draftsById.value[id] = {
+      title: item.title ?? '',
+      estimatedAmount: item.estimatedAmount ?? 0,
+      actualCost: item.actualCost ?? 0,
+    };
+    dirtyById.value[id] = false;
+  } finally {
+    savingById.value[id] = false;
+
+    if (pendingById.value[id]) {
+      pendingById.value[id] = false;
+      saveNow(id);
+    }
+  }
+};
+
+// ===== Subtotals (usam draft para estimado/actual) =====
 const subtotalEstimated = computed(() =>
   localItems.value.reduce(
-    (acc: number, i: BudgetItem) => acc + Number(getEstimated(i) ?? 0),
+    (acc, i) => acc + Number(getDraftEstimated(i) ?? 0),
     0,
   ),
 );
 
 const subtotalActual = computed(() =>
-  localItems.value.reduce(
-    (acc: number, i: BudgetItem) => acc + Number(getActual(i) ?? 0),
-    0,
-  ),
+  localItems.value.reduce((acc, i) => acc + Number(getDraftActual(i) ?? 0), 0),
 );
 
 const subtotalPaid = computed(() =>
-  localItems.value.reduce(
-    (acc: number, i: BudgetItem) => acc + Number(getPaid(i) ?? 0),
-    0,
-  ),
+  localItems.value.reduce((acc, i) => acc + Number(getPaid(i) ?? 0), 0),
 );
 
 const subtotalDue = computed(() =>
-  localItems.value.reduce(
-    (acc: number, i: BudgetItem) => acc + Number(getDue(i) ?? 0),
-    0,
-  ),
+  localItems.value.reduce((acc, i) => acc + Number(getDraftDue(i) ?? 0), 0),
 );
 
-const isRemoveCategoryModalOpen = ref(false);
-const isRemoveItemModalOpen = ref(false);
-const selectedItemToRemove = ref<BudgetItem | undefined>(undefined);
+const titleModel = (id: number) =>
+  computed<string>({
+    get() {
+      const d = draftsById.value[id];
+      return d?.title ?? '';
+    },
+    set(v) {
+      const item = localItems.value.find((x) => x.id === id);
+      if (item) ensureDraft(item);
+      if (!draftsById.value[id])
+        draftsById.value[id] = { title: '', estimatedAmount: 0, actualCost: 0 };
+      draftsById.value[id]!.title = v;
+      scheduleSave(id);
+    },
+  });
 
-const openRemoveCategory = () => (isRemoveCategoryModalOpen.value = true);
+const estimatedModel = (id: number) =>
+  computed<number | null>({
+    get() {
+      const d = draftsById.value[id];
+      return d?.estimatedAmount ?? 0;
+    },
+    set(v) {
+      const item = localItems.value.find((x) => x.id === id);
+      if (item) ensureDraft(item);
+      if (!draftsById.value[id])
+        draftsById.value[id] = { title: '', estimatedAmount: 0, actualCost: 0 };
+      draftsById.value[id]!.estimatedAmount = v;
+      scheduleSave(id);
+    },
+  });
 
-const openRemoveItem = (item: BudgetItem) => {
-  selectedItemToRemove.value = item;
-  isRemoveItemModalOpen.value = true;
-};
+const actualModel = (id: number) =>
+  computed<number | null>({
+    get() {
+      const d = draftsById.value[id];
+      return d?.actualCost ?? 0;
+    },
+    set(v) {
+      const item = localItems.value.find((x) => x.id === id);
+      if (item) ensureDraft(item);
+      if (!draftsById.value[id])
+        draftsById.value[id] = { title: '', estimatedAmount: 0, actualCost: 0 };
+      draftsById.value[id]!.actualCost = v;
+      scheduleSave(id);
+    },
+  });
+
+watch(
+  () => localItems.value,
+  (items) => {
+    for (const i of items) ensureDraft(i);
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.category?.items,
+  (list) => {
+    const safe = (list ?? [])
+      .slice()
+      .sort(
+        (a: BudgetItem, b: BudgetItem) =>
+          (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+      );
+
+    localItems.value = safe;
+
+    // sync drafts com valores do backend (se não estiver dirty/saving)
+    for (const i of safe) ensureDraft(i);
+
+    // opcional: limpar drafts de itens removidos
+    const ids = new Set(safe.map((x) => x.id));
+    for (const key of Object.keys(draftsById.value)) {
+      const id = Number(key);
+      if (!ids.has(id)) {
+        draftsById.value[id] = undefined;
+        dirtyById.value[id] = false;
+        savingById.value[id] = false;
+        pendingById.value[id] = false;
+        timersById.value[id] = undefined;
+      }
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -171,7 +430,7 @@ const openRemoveItem = (item: BudgetItem) => {
             type="button"
             class="bg-primary-100 text-grey-500 hover:bg-primary-600 rounded-full p-2 transition hover:text-white"
             title="Editar"
-            @click.stop="isEditCategoryModalOpen = true"
+            @click.stop="$emit('edit-category', category)"
           >
             <IconPencil :font-controlled="false" class="size-3" />
           </button>
@@ -180,7 +439,7 @@ const openRemoveItem = (item: BudgetItem) => {
             type="button"
             class="bg-primary-100 text-grey-500 hover:bg-primary-600 rounded-full p-2 transition hover:text-white"
             title="Editar"
-            @click.stop="openRemoveCategory"
+            @click.stop="emit('remove-category', category)"
           >
             <IconTrash :font-controlled="false" class="size-3" />
           </button>
@@ -219,9 +478,9 @@ const openRemoveItem = (item: BudgetItem) => {
           class="text-grey-500 mt-5 hidden animate-fadeIn grid-cols-5 gap-3 pb-4 text-xs md:grid"
         >
           <div class="pl-6">Título</div>
-          <div>Estimado</div>
-          <div>Custo actual</div>
-          <div>Montante pago</div>
+          <div class="md:pl-3">Estimado</div>
+          <div class="md:pl-2">Custo actual</div>
+          <div class="md:pl-2">Montante pago</div>
           <div class="-ml-2">Montante devido</div>
         </div>
 
@@ -252,26 +511,169 @@ const openRemoveItem = (item: BudgetItem) => {
                   />
                 </button>
 
-                <span class="text-grey-900 text-sm font-medium">
-                  {{ item.title }}
+                <!-- Titulo -->
+                <div class="flex-1">
+                  <transition name="inline-edit" mode="out-in">
+                    <BaseInputCompact
+                      v-if="isEditing(item.id, 'title')"
+                      :id="`budget-item-title-${item.id}`"
+                      v-model="titleModel(item.id).value"
+                      type="text"
+                      align="left"
+                      :disabled="savingById[item.id]"
+                      @blur="
+                        saveNow(item.id);
+                        stopEdit();
+                      "
+                      @keydown="(e: KeyboardEvent) => onEditKeydown(e, item.id)"
+                    />
+
+                    <button
+                      v-else
+                      type="button"
+                      class="hover:bg-grey-50 group flex w-full items-center justify-between rounded-lg px-2 py-1 text-left transition"
+                      :class="
+                        savingById[item.id]
+                          ? 'cursor-not-allowed opacity-60'
+                          : 'cursor-text'
+                      "
+                      :disabled="savingById[item.id]"
+                      @click.stop="startEdit(item.id, 'title')"
+                    >
+                      <span
+                        class="text-grey-900 line-clamp-1 text-sm"
+                        :class="
+                          (item.title ?? '').trim()
+                            ? ''
+                            : 'text-grey-400 italic'
+                        "
+                      >
+                        {{
+                          (item.title ?? '').trim()
+                            ? item.title
+                            : 'Clique para escrever…'
+                        }}
+                      </span>
+
+                      <IconPencil
+                        :font-controlled="false"
+                        class="text-grey-400 ml-2 size-3 opacity-0 transition group-hover:opacity-100"
+                      />
+                    </button>
+                  </transition>
+                </div>
+              </div>
+
+              <!-- Estimated -->
+              <div>
+                <transition name="inline-edit" mode="out-in">
+                  <BaseInputCompact
+                    v-if="isEditing(item.id, 'estimated')"
+                    :id="`budget-item-est-${item.id}`"
+                    v-model="estimatedModel(item.id).value"
+                    type="number"
+                    align="left"
+                    :disabled="savingById[item.id]"
+                    step="0.01"
+                    min="0"
+                    @blur="
+                      saveNow(item.id);
+                      stopEdit();
+                    "
+                    @keydown="(e: KeyboardEvent) => onEditKeydown(e, item.id)"
+                  />
+
+                  <button
+                    v-else
+                    type="button"
+                    class="hover:bg-grey-50 group flex w-full items-center justify-between rounded-lg py-1 pr-2 transition"
+                    :class="
+                      savingById[item.id]
+                        ? 'cursor-not-allowed opacity-60'
+                        : 'cursor-text'
+                    "
+                    :disabled="savingById[item.id]"
+                    @click.stop="startEdit(item.id, 'estimated')"
+                  >
+                    <span class="text-grey-900 text-sm">
+                      {{
+                        formatMoney(getDraftEstimated(item), budget.currency)
+                      }}
+                    </span>
+
+                    <IconPencil
+                      :font-controlled="false"
+                      class="text-grey-400 ml-2 size-3 opacity-0 transition group-hover:opacity-100"
+                    />
+                  </button>
+                </transition>
+              </div>
+
+              <!-- Actual -->
+              <div>
+                <transition name="inline-edit" mode="out-in">
+                  <BaseInputCompact
+                    v-if="isEditing(item.id, 'actual')"
+                    :id="`budget-item-actual-${item.id}`"
+                    v-model="actualModel(item.id).value"
+                    type="number"
+                    align="left"
+                    :disabled="savingById[item.id]"
+                    step="0.01"
+                    min="0"
+                    @blur="
+                      saveNow(item.id);
+                      stopEdit();
+                    "
+                    @keydown="(e: KeyboardEvent) => onEditKeydown(e, item.id)"
+                  />
+
+                  <button
+                    v-else
+                    type="button"
+                    class="hover:bg-grey-50 group flex w-full items-center justify-between rounded-lg px-2 py-1 transition"
+                    :class="
+                      savingById[item.id]
+                        ? 'cursor-not-allowed opacity-60'
+                        : 'cursor-text'
+                    "
+                    :disabled="savingById[item.id]"
+                    @click.stop="startEdit(item.id, 'actual')"
+                  >
+                    <span class="text-grey-900 text-sm">
+                      {{ formatMoney(getDraftActual(item), budget.currency) }}
+                    </span>
+
+                    <IconPencil
+                      :font-controlled="false"
+                      class="text-grey-400 ml-2 size-3 opacity-0 transition group-hover:opacity-100"
+                    />
+                  </button>
+                </transition>
+              </div>
+
+              <button
+                type="button"
+                class="hover:bg-grey-50 group relative flex items-center justify-start gap-1 rounded-lg px-2 py-1 transition"
+                @click.stop="emit('open-installments', item)"
+              >
+                <span
+                  class="text-sm font-medium text-green-600 group-hover:underline"
+                >
+                  {{ formatMoney(getPaid(item), budget.currency) }}
                 </span>
-              </div>
 
-              <div class="text-grey-700 text-sm">
-                {{ formatMoney(getEstimated(item), budget.currency) }}
-              </div>
-
-              <div class="text-grey-700 text-sm">
-                {{ formatMoney(getActual(item), budget.currency) }}
-              </div>
-
-              <div class="text-sm text-green-700">
-                {{ formatMoney(getPaid(item), budget.currency) }}
-              </div>
+                <!-- Tooltip -->
+                <span
+                  class="bg-grey-900 pointer-events-none absolute -top-8 right-0 whitespace-nowrap rounded-md px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100"
+                >
+                  Verificar prestações
+                </span>
+              </button>
 
               <div class="flex items-center justify-between gap-2">
                 <span class="text-grey-900 text-sm">
-                  {{ formatMoney(getDue(item), budget.currency) }}
+                  {{ formatMoney(getDraftDue(item), budget.currency) }}
                 </span>
 
                 <div class="flex items-center gap-2">
@@ -279,7 +681,7 @@ const openRemoveItem = (item: BudgetItem) => {
                     type="button"
                     class="text-grey-500 hover:text-primary-700 transition"
                     title="Editar"
-                    @click.stop="openEditItem(item)"
+                    @click.stop="emit('edit-item', item)"
                   >
                     <IconPencil :font-controlled="false" class="size-4" />
                   </button>
@@ -288,7 +690,7 @@ const openRemoveItem = (item: BudgetItem) => {
                     type="button"
                     class="text-grey-500 transition hover:text-red-600"
                     title="Remover"
-                    @click.stop="openRemoveItem(item)"
+                    @click.stop="emit('remove-item', item)"
                   >
                     <IconTrash :font-controlled="false" class="size-4" />
                   </button>
@@ -302,7 +704,7 @@ const openRemoveItem = (item: BudgetItem) => {
         <button
           type="button"
           class="text-grey-300 hover:text-primary-700 group my-4 inline-flex items-center gap-1 text-sm transition"
-          @click="openCreateItem"
+          @click="emit('create-item', category)"
         >
           <IconPlusSimple
             :font-controlled="false"
@@ -333,57 +735,5 @@ const openRemoveItem = (item: BudgetItem) => {
         </div>
       </div>
     </transition>
-
-    <!-- Modals -->
-    <LazyBudgetCategoryFormModal
-      :show="isEditCategoryModalOpen"
-      mode="EVENT"
-      :parent-id="budget?.id ?? 0"
-      :category="category"
-      @close="isEditCategoryModalOpen = false"
-      @saved="emit('changed')"
-    />
-
-    <!-- Create item -->
-    <LazyBudgetItemFormModal
-      :show="isCreateItemModalOpen"
-      mode="EVENT"
-      :category-id="category.id"
-      :item="undefined"
-      @close="isCreateItemModalOpen = false"
-      @saved="emit('changed')"
-    />
-
-    <!-- Edit item -->
-    <LazyBudgetItemFormModal
-      :show="isEditItemModalOpen"
-      mode="EVENT"
-      :category-id="category.id"
-      :item="selectedItem"
-      @close="isEditItemModalOpen = false"
-      @saved="emit('changed')"
-    />
-
-    <!-- Remove Category -->
-    <LazyBudgetCategoryRemoveModal
-      :show="isRemoveCategoryModalOpen"
-      :category="category"
-      @close-modal="isRemoveCategoryModalOpen = false"
-      @success="emit('changed')"
-    />
-
-    <!-- Remove Budget Item -->
-    <LazyBudgetItemRemoveModal
-      :show="isRemoveItemModalOpen"
-      :item="selectedItemToRemove"
-      @close-modal="
-        isRemoveItemModalOpen = false;
-        selectedItemToRemove = undefined;
-      "
-      @success="
-        emit('changed');
-        selectedItemToRemove = undefined;
-      "
-    />
   </div>
 </template>

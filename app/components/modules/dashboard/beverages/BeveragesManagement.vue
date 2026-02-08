@@ -3,7 +3,6 @@ import BeveragePlanningManagement from './BeveragePlanningManagement.vue';
 import BeverageEventDayManagement from './BeverageEventDayManagement.vue';
 import { getBeverageService } from '~/services/beverageService';
 import { useToast } from 'vue-toastification';
-
 type BeverageTab = 'PLANNING' | 'EVENT_DAY';
 
 const activeTab = ref<BeverageTab>('PLANNING');
@@ -53,6 +52,10 @@ async function onToggleMode(next: boolean) {
     isLoadingMode.value = false;
   }
 }
+
+onMounted(async () => {
+  await loadMode();
+});
 </script>
 
 <template>

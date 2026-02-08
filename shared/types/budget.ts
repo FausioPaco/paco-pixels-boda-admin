@@ -73,7 +73,7 @@ export interface BudgetItemInput {
   title: string;
   estimatedAmount: number;
   actualCost: number;
-  paidAmount: number;
+  paidAmount?: number | null;
   notes?: string | null;
 }
 
@@ -119,6 +119,7 @@ export interface BudgetTemplate {
 }
 
 export interface BudgetTemplateCreateInput {
+  partnerId: number;
   eventTypeId: number;
   title: string;
   baseTotalBudget: number;
@@ -162,4 +163,40 @@ export const BUDGET_CONTROL_MODES = [
 export const BUDGET_CURRENCIES = [
   { id: 'MZN', value: 'MZN', name: 'Metical (MZN)' },
   { id: 'USD', value: 'USD', name: 'Dólar (USD)' },
+];
+
+export enum BudgetPaymentMethod {
+  Deposit = 1,
+  Cash = 2,
+}
+
+export interface BudgetItemInstallment {
+  id: number;
+  budgetItemId: number;
+  amount: number;
+  descriptive: string;
+  receiptDate?: string | undefined | null; // vem como ISO
+  paidInDate?: string | undefined | null; // vem como ISO
+  paymentMethod: BudgetPaymentMethod;
+}
+
+export interface BudgetItemInstallmentInput {
+  amount: number;
+  descriptive: string;
+  receiptDate?: string | undefined | null;
+  paidInDate?: string | undefined | null;
+  paymentMethod: BudgetPaymentMethod;
+}
+
+export const BUDGET_PAYMENT_METHODS = [
+  {
+    id: BudgetPaymentMethod.Deposit,
+    value: BudgetPaymentMethod.Deposit,
+    name: 'Depósito',
+  },
+  {
+    id: BudgetPaymentMethod.Cash,
+    value: BudgetPaymentMethod.Cash,
+    name: 'Dinheiro',
+  },
 ];
