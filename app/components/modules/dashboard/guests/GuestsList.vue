@@ -32,6 +32,7 @@ const showCancelArrivedModal = ref<boolean>(false);
 const guestSelected = ref<Guest | undefined>(undefined);
 const showExportFormatModal = ref<boolean>(false);
 const isExporting = ref<boolean>(false);
+
 const toast = useToast();
 
 const availabilityOptions: SelectOption[] = [
@@ -43,6 +44,7 @@ const availabilityOptions: SelectOption[] = [
   { id: 'Confirmed', value: 'Confirmed', name: 'Confirmados' },
   { id: 'NotConfirmed', value: 'NotConfirmed', name: 'Não confirmados' },
   { id: 'Arrived', value: 'Arrived', name: 'Já chegaram' },
+  { id: 'Absent', value: 'Absent', name: 'Ausentes' },
 ];
 
 const debouncedSearch = useDebounceFn(() => {
@@ -70,16 +72,6 @@ function onPageChange(newPage: number) {
 function onPageSelected(newPage: number) {
   queryParameters.pageNumber = newPage;
 }
-
-const confirmArrival = (guest: Guest) => {
-  guestSelected.value = guest;
-  showArrivedModal.value = true;
-};
-
-const cancelArrival = (guest: Guest) => {
-  guestSelected.value = guest;
-  showCancelArrivedModal.value = true;
-};
 
 const isFirstTime = computed(
   () =>
@@ -144,6 +136,29 @@ const exportGuestsToPdf = async () => {
     toast.error('Ocorreu um erro ao exportar os convidados');
     isExporting.value = false;
   }
+};
+
+const showManageModal = ref(false);
+
+const openConfirmModal = (g: Guest) => {
+  guestSelected.value = g;
+  showManageModal.value = true;
+};
+
+const openArrivedModal = (g: Guest) => {
+  guestSelected.value = g;
+  showArrivedModal.value = true;
+};
+
+const onGuestUpdated = () => {
+  refreshGuests({ force: true });
+  refreshDesks({ force: true });
+};
+const absenceRowClass = (g: Guest) => {
+  if (g.absence_Declared) {
+    return 'opacity-60 grayscale';
+  }
+  return '';
 };
 
 onMounted(() => {
@@ -297,49 +312,51 @@ onMounted(() => {
           </tr>
         </template>
         <template #tbody>
-          <tr v-for="guest in guests" :key="guest.id">
+          <tr
+            v-for="guest in guests"
+            :key="guest.id"
+            :class="absenceRowClass(guest)"
+          >
             <td>{{ `${eventInitials}-${guest.localId}` }}</td>
-            <td>
-              <span class="mr-2">{{ guest.name }}</span>
-              <BaseBadge
-                v-if="guest.arrived"
-                label="Chegou?"
-                text="Chegou"
-                type="success"
-              />
+            <td class="flex gap-2">
+              <GuestsStatusIcon :guest="guest" />
+              <span>{{ guest.name }}</span>
             </td>
             <td>{{ guest.people_Count }}</td>
             <td>
               {{ guest.deskName }}
             </td>
-            <td class="flex items-center space-x-2">
+            <td class="flex items-center gap-2">
+              <!-- Chegada -->
               <BaseButton
-                v-if="!guest.arrived"
                 btn-size="sm"
-                btn-type="primary"
-                @click.prevent="confirmArrival(guest)"
-              >
-                <span class="hidden md:block">Confirmar chegada</span>
-                <span class="block md:hidden">Chegou</span>
-              </BaseButton>
-
-              <BaseButton
-                v-if="guest.arrived"
                 btn-type="outline-primary"
-                btn-size="sm"
-                @click.prevent="cancelArrival(guest)"
+                :disabled="guest.absence_Declared"
+                :title="
+                  guest.absence_Declared
+                    ? 'Convidado marcado como ausente'
+                    : 'Confirmar chegada'
+                "
+                @click.prevent="openArrivedModal(guest)"
               >
-                <span class="hidden md:block">Cancelar chegada</span>
-                <span class="block md:hidden">Não chegou</span>
+                {{ guest.arrived ? 'Não chegou' : 'Chegou' }}
               </BaseButton>
 
+              <BaseButton
+                btn-size="sm"
+                btn-type="outline-primary"
+                @click.prevent="openConfirmModal(guest)"
+              >
+                RSVP
+              </BaseButton>
+
+              <!-- Ver detalhes -->
               <BaseButtonLink
                 :to="`/admin/convidados/${guest.id}`"
-                btn-type="outline-primary"
+                btn-type="primary"
                 btn-size="sm"
               >
-                <span class="hidden md:block">Ver detalhes</span>
-                <span class="block md:hidden">Ver</span>
+                Ver detalhes
               </BaseButtonLink>
             </td>
           </tr>
@@ -382,6 +399,14 @@ onMounted(() => {
       :show="showExportFormatModal"
       @close-modal="showExportFormatModal = false"
       @export="startExport"
+    />
+
+    <LazyGuestManageModal
+      :show="showManageModal"
+      :guest="guestSelected"
+      :event-initials="eventInitials"
+      @close="showManageModal = false"
+      @updated="onGuestUpdated"
     />
   </section>
 </template>

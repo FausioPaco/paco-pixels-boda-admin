@@ -1,88 +1,117 @@
-<script lang="ts" setup>
+<script setup lang="ts">
 import { useToast } from 'vue-toastification';
 import { getGuestService } from '~/services/guestService';
 
-interface IGuestArrivedForm {
-  show?: boolean;
-  guest?: Guest | undefined;
-}
+type Props = {
+  show: boolean;
+  guest: Guest | undefined;
+};
 
-const props = withDefaults(defineProps<IGuestArrivedForm>(), {
-  show: false,
-  guest: undefined,
-});
-const emit = defineEmits(['closeModal', 'success']);
+type Emits = {
+  (e: 'close-modal' | 'success'): void;
+};
+
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
+
+const toast = useToast();
 const nuxtApp = useNuxtApp();
 const guestService = getGuestService(nuxtApp.$api);
 
-const toast = useToast();
-const isSubmiting = ref<boolean>(false);
-const serverErrors = ref<ServerError>({
-  hasErrors: false,
-  message: '',
-});
+const isSubmitting = ref(false);
 
-const onSubmit = () => {
-  if (props.guest) {
-    isSubmiting.value = true;
-    guestService
-      .confirmArrival(props.guest.id)
-      .then(() => {
-        emit('closeModal');
-        emit('success');
-        toast.success('As alterações foram salvas com sucesso');
-      })
-      .catch((err) => {
-        console.log(err.data);
-        serverErrors.value.message = getServerErrors(err.data);
-        serverErrors.value.hasErrors = true;
-      })
-      .finally(() => {
-        isSubmiting.value = false;
-      });
+const close = () => emit('close-modal');
+
+const onError = (err: unknown, fallbackMessage: string) => {
+  if (isFetchErrorLike(err)) {
+    toast.error(getServerErrors(err?.data));
+    return;
+  }
+  toast.error(fallbackMessage);
+};
+
+const confirmArrival = async () => {
+  if (!props.guest) return;
+
+  try {
+    isSubmitting.value = true;
+    await guestService.confirmArrival(props.guest.id);
+    toast.success('Chegada confirmada.');
+    emit('success');
+    close();
+  } catch (err: unknown) {
+    onError(err, 'Ocorreu um erro ao confirmar chegada');
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+const cancelArrival = async () => {
+  if (!props.guest) return;
+
+  try {
+    isSubmitting.value = true;
+    await guestService.cancelArrival(props.guest.id);
+    toast.success('Chegada cancelada.');
+    emit('success');
+    close();
+  } catch (err: unknown) {
+    onError(err, 'Ocorreu um erro ao cancelar chegada');
+  } finally {
+    isSubmitting.value = false;
   }
 };
 </script>
-<template>
-  <BaseModal
-    title="Confirmar Chegada"
-    :show="show"
-    @close-modal="$emit('closeModal')"
-  >
-    <div v-if="props.guest" class="my-2 animate-fadeIn">
-      <p class="text-grey-600 text-center text-base md:text-lg">
-        Confirma a chegada de
-        <span class="font-bold">{{ props.guest.name }}</span
-        >?
-      </p>
 
-      <BaseError v-if="serverErrors.hasErrors">{{
-        serverErrors.message
-      }}</BaseError>
+<template>
+  <BaseModal :show="show" title="Chegada" @close-modal="close">
+    <div v-if="guest" class="space-y-4">
+      <div class="bg-grey-50 rounded-xl p-3">
+        <div class="text-grey-900 text-lg font-semibold">
+          {{ guest.name }}
+        </div>
+        <div class="text-grey-700 text-sm">
+          {{
+            guest.people_Count === 1
+              ? '1 pessoa'
+              : `${guest.people_Count} pessoas`
+          }}
+        </div>
+      </div>
 
       <div
-        class="my-4 flex animate-fadeIn items-center justify-center space-x-3"
+        v-if="guest.absence_Declared"
+        class="bg-warning-50 rounded-xl p-3 text-sm"
       >
+        Este convidado está marcado como ausente. A chegada está desactivada.
+      </div>
+
+      <div class="flex justify-end gap-2">
         <BaseButton
-          type="submit"
-          btn-type="primary"
-          class="my-1"
-          size="md"
-          :disabled="isSubmiting"
-          :loading="isSubmiting"
-          @click="onSubmit"
-          >Sim, chegou</BaseButton
+          btn-type="outline-primary"
+          :disabled="isSubmitting"
+          @click="close"
         >
+          Fechar
+        </BaseButton>
 
         <BaseButton
-          type="button"
-          btn-type="outline-primary"
-          class="my-1"
-          size="md"
-          :disabled="isSubmiting"
-          @click="$emit('closeModal')"
-          >Cancelar</BaseButton
+          v-if="!guest.arrived"
+          btn-type="primary"
+          :disabled="isSubmitting || !!guest.absence_Declared"
+          @click="confirmArrival"
         >
+          Confirmar chegada
+        </BaseButton>
+
+        <BaseButton
+          v-else
+          btn-type="outline-primary"
+          :disabled="isSubmitting || !!guest.absence_Declared"
+          @click="cancelArrival"
+        >
+          Cancelar chegada
+        </BaseButton>
       </div>
     </div>
   </BaseModal>

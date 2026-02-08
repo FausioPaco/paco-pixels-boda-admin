@@ -15,6 +15,8 @@ export interface Guest {
   people_Confirmed?: number;
   additional_Comments?: string;
   seatNumber?: number;
+  absence_Declared?: boolean;
+  absence_Declared_At?: string | Date | null;
   created_At: Date;
 }
 
@@ -58,3 +60,7 @@ export type ExportQROptions = {
   format: ExportFormat;
   color: ExportTextColor;
 };
+
+export interface DeclareAbsenceInput {
+  additional_Comments?: string;
+}
