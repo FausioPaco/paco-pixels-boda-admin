@@ -29,11 +29,11 @@ const showArrival = computed(() => !showAbsent.value && !!props.guest.arrived);
     <BaseTooltip v-if="showPresence" text="Presença confirmada" placement="top">
       <template #trigger>
         <span
-          class="bg-success-50 inline-flex items-center rounded-md px-1.5 py-1"
+          class="bg-primary-50 inline-flex items-center rounded-md px-1.5 py-1"
         >
           <IconCheckmark
             :font-controlled="false"
-            class="text-success-700 size-[14px]"
+            class="text-primary-700 size-[14px]"
           />
         </span>
       </template>
@@ -43,11 +43,11 @@ const showArrival = computed(() => !showAbsent.value && !!props.guest.arrived);
     <BaseTooltip v-if="showArrival" text="Chegada confirmada" placement="top">
       <template #trigger>
         <span
-          class="bg-primary-50 inline-flex items-center rounded-md px-1.5 py-1"
+          class="bg-success-50 inline-flex items-center rounded-md px-1.5 py-1"
         >
           <IconDoorEnter
             :font-controlled="false"
-            class="text-primary-700 size-[14px]"
+            class="text-success-700 size-[14px]"
           />
         </span>
       </template>

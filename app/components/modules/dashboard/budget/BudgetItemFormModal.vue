@@ -443,6 +443,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                     <th class="py-2 text-sm">Data do comprovativo</th>
                     <th class="py-2 text-sm">Data de entrada</th>
                     <th class="py-2 text-sm">Forma</th>
+                    <th class="py-2 text-sm">Acções</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -36,7 +36,7 @@ export interface GuestParameters {
 export interface GuestInput {
   eventId?: number;
   people_Count: number;
-  deskId: number;
+  deskId?: number;
   name: string;
   phone: string;
   categoryId: number;

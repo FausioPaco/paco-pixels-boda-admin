@@ -257,6 +257,7 @@ const declareAbsence = async () => {
             () => {
               emit('updated');
               close();
+              toast.success('Presença confirmada com sucesso.');
             }
           "
         />
