@@ -201,6 +201,7 @@ watch(
 
       <div class="mt-4 flex w-full justify-center gap-3">
         <BaseButton
+          type="button"
           btn-type="outline-primary"
           btn-size="md"
           :disabled="isSubmitting"

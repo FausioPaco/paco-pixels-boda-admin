@@ -178,7 +178,7 @@ watch(
     :title="isEditing ? 'Editar fornecedor' : 'Adicionar fornecedor'"
     @close-modal="close"
   >
-    <form @submit.prevent="onSubmit">
+    <form @keydown.enter.stop.prevent @submit="onSubmit">
       <BaseAutoCompleteInput
         id="supplierName"
         v-model="name"
@@ -247,6 +247,7 @@ watch(
         <BaseButton
           btn-type="outline-primary"
           btn-size="md"
+          type="button"
           :disabled="isSubmitting"
           @click.prevent="close"
         >
@@ -258,6 +259,7 @@ watch(
           :disabled="isSubmitting"
           :loading="isSubmitting"
           type="submit"
+          @click.prevent="onSubmit"
         >
           {{ isSubmitting ? 'A guardar...' : 'Guardar' }}
         </BaseButton>
