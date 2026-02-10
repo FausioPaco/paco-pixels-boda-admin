@@ -33,6 +33,18 @@ const schema = toTypedSchema(
       .min(2, 'O papel deve ter no mínimo 2 caractéres.'),
     phone: string().required('O telemóvel do fornecedor é obrigatório.'),
     isActive: boolean().default(true),
+    base_Price: string()
+      .nullable()
+      .test(
+        'is-valid-money',
+        'O preço deve ser um valor numérico válido.',
+        (v) => {
+          if (v == null) return true;
+          const t = String(v).trim();
+          if (t === '') return true;
+          return Number.isFinite(parseDecimal(t));
+        },
+      ),
   }),
 );
 
@@ -44,6 +56,7 @@ const { handleSubmit, resetForm, defineField, errors, isSubmitting } =
       job_Description: '',
       phone: '',
       isActive: true,
+      base_Price: null,
     },
   });
 
@@ -51,6 +64,7 @@ const [name, nameAttrs] = defineField('name');
 const [job_Description, jobAttrs] = defineField('job_Description');
 const [phone, phoneAttrs] = defineField('phone');
 const [isActive, isActiveAttrs] = defineField('isActive');
+const [base_Price, basePriceAttrs] = defineField('base_Price');
 
 const serverErrors = ref<ServerError>({ hasErrors: false, message: '' });
 
@@ -63,6 +77,7 @@ const getInitialFormValues = (): SupplierCatalogItemInput => {
     job_Description: it?.job_Description ?? '',
     phone: it?.phone ?? '',
     isActive: it?.isActive ?? true,
+    base_Price: it?.base_Price ?? null,
   };
 };
 
@@ -70,11 +85,16 @@ const onSubmit = handleSubmit(async (values) => {
   serverErrors.value = { hasErrors: false, message: '' };
 
   try {
+    const basePriceParsed = values.base_Price
+      ? parseDecimal(values.base_Price)
+      : NaN;
+
     const payload: SupplierCatalogItemInput = {
       name: values.name,
       job_Description: values.job_Description,
       phone: values.phone,
       isActive: values.isActive,
+      base_Price: Number.isFinite(basePriceParsed) ? basePriceParsed : null,
     };
 
     if (props.catalogItem?.id) {
@@ -119,7 +139,7 @@ watch(
     "
     @close-modal="close"
   >
-    <form @submit.prevent="onSubmit">
+    <form id="supplierCatalogForm" @submit.prevent="onSubmit">
       <BaseInput
         id="catalogName"
         v-model="name"
@@ -155,6 +175,18 @@ watch(
         :error-message="errors.phone"
       />
 
+      <BaseInput
+        id="catalogBasePrice"
+        v-model="base_Price"
+        v-bind="basePriceAttrs"
+        name="catalogBasePrice"
+        label="Preço base (opcional):"
+        placeholder="Ex: 2 500,00"
+        :readonly="isSubmitting"
+        :disabled="isSubmitting"
+        :error-message="errors.base_Price"
+      />
+
       <BaseToggle
         id="catalogActive"
         v-model="isActive"
@@ -182,6 +214,7 @@ watch(
           :disabled="isSubmitting"
           :loading="isSubmitting"
           type="submit"
+          @click.prevent="onSubmit"
         >
           {{ isSubmitting ? 'A guardar...' : 'Guardar' }}
         </BaseButton>

@@ -2,6 +2,12 @@
 import { useToast } from 'vue-toastification';
 import { getSupplierService } from '~/services/supplierService';
 
+type SupplierAction = 'confirm' | 'arrive' | 'absent' | 'reset';
+const actionLoading = ref<{
+  supplierId: number;
+  action: SupplierAction;
+} | null>(null);
+
 const toast = useToast();
 const nuxtApp = useNuxtApp();
 const supplierService = getSupplierService(nuxtApp.$api);
@@ -71,26 +77,68 @@ const openRemoveModal = (s: Supplier) => {
   showRemoveModal.value = true;
 };
 
-const isConfirming = ref<number | null>(null);
+const isLoading = (s: Supplier, action: SupplierAction) =>
+  actionLoading.value?.supplierId === Number(s.id) &&
+  actionLoading.value?.action === action;
 
-const onToggleConfirm = async (s: Supplier) => {
+const setLoading = (s: Supplier, action: SupplierAction) => {
+  actionLoading.value = { supplierId: Number(s.id), action };
+};
+const clearLoading = () => (actionLoading.value = null);
+
+const onConfirm = async (s: Supplier) => {
   try {
-    isConfirming.value = Number(s.id);
-
-    if (s.isConfirmed) {
-      await supplierService.unconfirmSupplier(s.id);
-      toast.success('Fornecedor desconfirmado com sucesso.');
-    } else {
-      await supplierService.confirmSupplier(s.id);
-      toast.success('Fornecedor confirmado com sucesso.');
-    }
-
+    setLoading(s, 'confirm');
+    await supplierService.confirmSupplier(s.id);
+    toast.success('Fornecedor confirmado com sucesso.');
     await refreshSuppliers({ force: true });
   } catch (e) {
     console.error(e);
-    toast.error('Não foi possível actualizar o estado do fornecedor.');
+    toast.error('Não foi possível confirmar o fornecedor.');
   } finally {
-    isConfirming.value = null;
+    clearLoading();
+  }
+};
+
+const onArrive = async (s: Supplier) => {
+  try {
+    setLoading(s, 'arrive');
+    await supplierService.arriveSupplier(s.id);
+    toast.success('Chegada registada com sucesso.');
+    await refreshSuppliers({ force: true });
+  } catch (e) {
+    console.error(e);
+    toast.error('Não foi possível registar a chegada.');
+  } finally {
+    clearLoading();
+  }
+};
+
+const onAbsent = async (s: Supplier) => {
+  try {
+    setLoading(s, 'absent');
+    await supplierService.absentSupplier(s.id);
+    toast.success('Ausência registada com sucesso.');
+    await refreshSuppliers({ force: true });
+  } catch (e) {
+    console.error(e);
+    toast.error('Não foi possível declarar ausência.');
+  } finally {
+    clearLoading();
+  }
+};
+
+const onReset = async (s: Supplier) => {
+  try {
+    setLoading(s, 'reset');
+    await supplierService.unconfirmSupplier(s.id);
+    toast.success('Fornecedor voltou ao estado pendente.');
+    await refreshSuppliers({ force: true });
+  } catch (e) {
+    console.error(e);
+    toast.error('Não foi possível repor o fornecedor para pendente.');
+  } finally {
+    clearLoading();
   }
 };
 </script>
@@ -187,7 +235,8 @@ const onToggleConfirm = async (s: Supplier) => {
           <tr>
             <th scope="col">Fornecedor</th>
             <th scope="col" class="hidden md:table-cell">Contacto</th>
-            <th scope="col">Confirmado</th>
+            <th scope="col" class="hidden lg:table-cell">Preço</th>
+            <th scope="col">Estado</th>
             <th scope="col">Acções</th>
           </tr>
         </template>
@@ -205,25 +254,97 @@ const onToggleConfirm = async (s: Supplier) => {
               {{ s.phone ?? '-' }}
             </td>
 
+            <td class="hidden lg:table-cell">
+              {{ s.price ? formatMoney(s.price, 'MZN') : '-' }}
+            </td>
+
             <td>
-              <BaseBadge
-                :type="s.isConfirmed ? 'success' : 'default'"
-                :text="s.isConfirmed ? 'Confirmado' : 'Não confirmado'"
-              />
+              <SuppliersStatusIcon :supplier="s" />
             </td>
 
             <td>
               <div class="my-2 flex items-center gap-3">
-                <BaseButton
-                  :btn-type="s.isConfirmed ? 'outline-primary' : 'primary'"
-                  btn-size="sm"
-                  :loading="isConfirming === Number(s.id)"
-                  :disabled="isConfirming === Number(s.id)"
-                  @click.stop="onToggleConfirm(s)"
-                >
-                  {{ s.isConfirmed ? 'Desconfirmar' : 'Confirmar presença' }}
-                </BaseButton>
+                <div class="flex items-center gap-2">
+                  <BaseTooltip
+                    v-if="!s.isConfirmed && !s.isAbsent"
+                    text="Confirmar presença"
+                    placement="top"
+                  >
+                    <template #trigger>
+                      <button
+                        type="button"
+                        class="bg-primary-50 hover:bg-primary-100 inline-flex items-center rounded-md px-1.5 py-1 transition disabled:opacity-50"
+                        :disabled="isLoading(s, 'confirm')"
+                        @click.stop="onConfirm(s)"
+                      >
+                        <IconCheckmark
+                          :font-controlled="false"
+                          class="text-primary-700 size-[14px]"
+                        />
+                      </button>
+                    </template>
+                  </BaseTooltip>
 
+                  <BaseTooltip
+                    v-if="!s.isArrived && !s.isAbsent"
+                    text="Registar chegada"
+                    placement="top"
+                  >
+                    <template #trigger>
+                      <button
+                        type="button"
+                        class="bg-success-50 hover:bg-success-100 inline-flex items-center rounded-md px-1.5 py-1 transition disabled:opacity-50"
+                        :disabled="isLoading(s, 'arrive')"
+                        @click.stop="onArrive(s)"
+                      >
+                        <IconDoorEnter
+                          :font-controlled="false"
+                          class="text-success-700 size-[14px]"
+                        />
+                      </button>
+                    </template>
+                  </BaseTooltip>
+
+                  <BaseTooltip
+                    v-if="!s.isAbsent"
+                    text="Declarar ausência"
+                    placement="top"
+                  >
+                    <template #trigger>
+                      <button
+                        type="button"
+                        class="bg-danger-50 hover:bg-danger-100 inline-flex items-center rounded-md px-1.5 py-1 transition disabled:opacity-50"
+                        :disabled="isLoading(s, 'absent')"
+                        @click.stop="onAbsent(s)"
+                      >
+                        <IconCloseSimple
+                          :font-controlled="false"
+                          class="text-danger-600 size-[14px]"
+                        />
+                      </button>
+                    </template>
+                  </BaseTooltip>
+
+                  <BaseTooltip
+                    v-if="s.isConfirmed || s.isArrived || s.isAbsent"
+                    text="Voltar a pendente"
+                    placement="top"
+                  >
+                    <template #trigger>
+                      <button
+                        type="button"
+                        class="bg-grey-50 hover:bg-grey-100 inline-flex items-center rounded-md px-1.5 py-1 transition disabled:opacity-50"
+                        :disabled="isLoading(s, 'reset')"
+                        @click.stop="onReset(s)"
+                      >
+                        <IconRefresh
+                          :font-controlled="false"
+                          class="text-grey-700 size-[14px]"
+                        />
+                      </button>
+                    </template>
+                  </BaseTooltip>
+                </div>
                 <BaseButton
                   btn-type="outline-primary"
                   icon="pencil"
