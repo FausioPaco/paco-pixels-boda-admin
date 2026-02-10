@@ -15,10 +15,14 @@ const showArrival = computed(
   <div class="flex items-center gap-2">
     <BaseTooltip v-if="showAbsent" text="Ausente" placement="top">
       <template #trigger>
-        <IconCloseSimple
-          :font-controlled="false"
-          class="text-danger-500 size-[16px]"
-        />
+        <span
+          class="bg-primary-50 inline-flex items-center rounded-md px-1.5 py-1"
+        >
+          <IconCloseSimple
+            :font-controlled="false"
+            class="text-danger-500 size-[12px]"
+          />
+        </span>
       </template>
     </BaseTooltip>
 

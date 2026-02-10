@@ -79,6 +79,7 @@ const getInitialFormValues = (): SupplierInput => {
     job_Description: s?.job_Description ?? '',
     phone: s?.phone ?? '',
     supplierCatalogItemId: s?.supplierCatalogItemId ?? null,
+    price: s?.price != null ? Number(s.price) : null,
   };
 };
 

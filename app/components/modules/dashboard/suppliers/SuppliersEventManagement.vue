@@ -2,7 +2,7 @@
 import { useToast } from 'vue-toastification';
 import { getSupplierService } from '~/services/supplierService';
 
-type SupplierAction = 'confirm' | 'arrive' | 'absent' | 'reset';
+type SupplierAction = 'confirm' | 'arrive' | 'absent' | 'unconfirm';
 const actionLoading = ref<{
   supplierId: number;
   action: SupplierAction;
@@ -128,18 +128,38 @@ const onAbsent = async (s: Supplier) => {
   }
 };
 
-const onReset = async (s: Supplier) => {
+const onUnconfirm = async (s: Supplier) => {
   try {
-    setLoading(s, 'reset');
+    setLoading(s, 'unconfirm');
     await supplierService.unconfirmSupplier(s.id);
-    toast.success('Fornecedor voltou ao estado pendente.');
+
+    if (s.isArrived) toast.success('Chegada removida com sucesso.');
+    else if (s.isConfirmed)
+      toast.success('Fornecedor desconfirmado com sucesso.');
+    else if (s.isAbsent) toast.success('Ausência removida com sucesso.');
+    else toast.success('Actualizado com sucesso.');
+
     await refreshSuppliers({ force: true });
   } catch (e) {
     console.error(e);
-    toast.error('Não foi possível repor o fornecedor para pendente.');
+    toast.error('Não foi possível actualizar o estado do fornecedor.');
   } finally {
     clearLoading();
   }
+};
+
+const unconfirmTooltip = (s: Supplier) => {
+  if (s.isArrived) return 'Remover chegada';
+  if (s.isConfirmed) return 'Desconfirmar presença';
+  if (s.isAbsent) return 'Remover ausência';
+  return 'Actualizar estado';
+};
+
+const absenceRowClass = (s: Supplier) => {
+  if (s.isAbsent) {
+    return 'opacity-60 grayscale';
+  }
+  return '';
 };
 </script>
 
@@ -236,18 +256,23 @@ const onReset = async (s: Supplier) => {
             <th scope="col">Fornecedor</th>
             <th scope="col" class="hidden md:table-cell">Contacto</th>
             <th scope="col" class="hidden lg:table-cell">Preço</th>
-            <th scope="col">Estado</th>
+            <th scope="col">Presença</th>
+            <th scope="col">Chegada</th>
             <th scope="col">Acções</th>
           </tr>
         </template>
 
         <template #tbody>
-          <tr v-for="s in suppliers" :key="s.id">
-            <td>
+          <tr v-for="s in suppliers" :key="s.id" :class="absenceRowClass(s)">
+            <td class="flex items-start gap-3">
               <div class="flex-col gap-1">
-                <p class="mb-0">{{ s.name }}</p>
+                <p class="mb-0">
+                  {{ s.name }}
+                </p>
+
                 <small class="text-grey-400">{{ s.job_Description }}</small>
               </div>
+              <SuppliersStatusIcon :supplier="s" />
             </td>
 
             <td class="hidden md:table-cell">
@@ -257,94 +282,99 @@ const onReset = async (s: Supplier) => {
             <td class="hidden lg:table-cell">
               {{ s.price ? formatMoney(s.price, 'MZN') : '-' }}
             </td>
-
             <td>
-              <SuppliersStatusIcon :supplier="s" />
+              <div class="flex items-center gap-2">
+                <!-- Confirmar presença -->
+                <BaseTooltip
+                  v-if="!s.isConfirmed && !s.isAbsent"
+                  text="Confirmar presença"
+                  placement="top"
+                >
+                  <template #trigger>
+                    <button
+                      type="button"
+                      class="bg-primary-50 hover:bg-primary-100 inline-flex items-center rounded-md px-3.5 py-2 transition disabled:opacity-50"
+                      :disabled="isLoading(s, 'confirm')"
+                      @click.stop="onConfirm(s)"
+                    >
+                      <IconCheckmark
+                        :font-controlled="false"
+                        class="text-primary-700 size-[14px]"
+                      />
+                    </button>
+                  </template>
+                </BaseTooltip>
+
+                <!-- Registar chegada -->
+                <BaseTooltip
+                  v-if="!s.isArrived && !s.isAbsent"
+                  text="Registar chegada"
+                  placement="top"
+                >
+                  <template #trigger>
+                    <button
+                      type="button"
+                      class="bg-success-50 hover:bg-success-100 inline-flex items-center rounded-md px-3.5 py-2 transition disabled:opacity-50"
+                      :disabled="isLoading(s, 'arrive')"
+                      @click.stop="onArrive(s)"
+                    >
+                      <IconDoorEnter
+                        :font-controlled="false"
+                        class="text-success-700 size-[14px]"
+                      />
+                    </button>
+                  </template>
+                </BaseTooltip>
+
+                <!-- Declarar ausência -->
+                <BaseTooltip
+                  v-if="!s.isAbsent"
+                  text="Declarar ausência"
+                  placement="top"
+                >
+                  <template #trigger>
+                    <button
+                      type="button"
+                      class="bg-danger-50 hover:bg-danger-100 inline-flex items-center rounded-md px-3.5 py-2 transition disabled:opacity-50"
+                      :disabled="isLoading(s, 'absent')"
+                      @click.stop="onAbsent(s)"
+                    >
+                      <IconCloseSimple
+                        :font-controlled="false"
+                        class="text-danger-600 size-[14px]"
+                      />
+                    </button>
+                  </template>
+                </BaseTooltip>
+
+                <!-- Desconfirmar (UNDO contextual) -->
+                <BaseTooltip
+                  v-if="s.isArrived || s.isConfirmed || s.isAbsent"
+                  :text="unconfirmTooltip(s)"
+                  placement="top"
+                >
+                  <template #trigger>
+                    <button
+                      type="button"
+                      class="bg-grey-50 hover:bg-grey-100 inline-flex items-center rounded-md px-3.5 py-2 transition disabled:opacity-50"
+                      :disabled="isLoading(s, 'unconfirm')"
+                      @click.stop="onUnconfirm(s)"
+                    >
+                      <IconRefresh
+                        :font-controlled="false"
+                        class="text-grey-700 size-[14px]"
+                      />
+                    </button>
+                  </template>
+                </BaseTooltip>
+              </div>
+            </td>
+            <td>
+              {{ s.arrived_At ? formatDateWithTime(s.arrived_At) : '-' }}
             </td>
 
             <td>
               <div class="my-2 flex items-center gap-3">
-                <div class="flex items-center gap-2">
-                  <BaseTooltip
-                    v-if="!s.isConfirmed && !s.isAbsent"
-                    text="Confirmar presença"
-                    placement="top"
-                  >
-                    <template #trigger>
-                      <button
-                        type="button"
-                        class="bg-primary-50 hover:bg-primary-100 inline-flex items-center rounded-md px-1.5 py-1 transition disabled:opacity-50"
-                        :disabled="isLoading(s, 'confirm')"
-                        @click.stop="onConfirm(s)"
-                      >
-                        <IconCheckmark
-                          :font-controlled="false"
-                          class="text-primary-700 size-[14px]"
-                        />
-                      </button>
-                    </template>
-                  </BaseTooltip>
-
-                  <BaseTooltip
-                    v-if="!s.isArrived && !s.isAbsent"
-                    text="Registar chegada"
-                    placement="top"
-                  >
-                    <template #trigger>
-                      <button
-                        type="button"
-                        class="bg-success-50 hover:bg-success-100 inline-flex items-center rounded-md px-1.5 py-1 transition disabled:opacity-50"
-                        :disabled="isLoading(s, 'arrive')"
-                        @click.stop="onArrive(s)"
-                      >
-                        <IconDoorEnter
-                          :font-controlled="false"
-                          class="text-success-700 size-[14px]"
-                        />
-                      </button>
-                    </template>
-                  </BaseTooltip>
-
-                  <BaseTooltip
-                    v-if="!s.isAbsent"
-                    text="Declarar ausência"
-                    placement="top"
-                  >
-                    <template #trigger>
-                      <button
-                        type="button"
-                        class="bg-danger-50 hover:bg-danger-100 inline-flex items-center rounded-md px-1.5 py-1 transition disabled:opacity-50"
-                        :disabled="isLoading(s, 'absent')"
-                        @click.stop="onAbsent(s)"
-                      >
-                        <IconCloseSimple
-                          :font-controlled="false"
-                          class="text-danger-600 size-[14px]"
-                        />
-                      </button>
-                    </template>
-                  </BaseTooltip>
-
-                  <BaseTooltip
-                    v-if="s.isConfirmed || s.isArrived || s.isAbsent"
-                    text="Voltar a pendente"
-                    placement="top"
-                  >
-                    <template #trigger>
-                      <button
-                        type="button"
-                        class="bg-grey-50 hover:bg-grey-100 inline-flex items-center rounded-md px-1.5 py-1 transition disabled:opacity-50"
-                        :disabled="isLoading(s, 'reset')"
-                        @click.stop="onReset(s)"
-                      >
-                        <IconRefresh
-                          :font-controlled="false"
-                          class="text-grey-700 size-[14px]"
-                        />
-                      </button>
-                    </template>
-                  </BaseTooltip>
-                </div>
                 <BaseButton
                   btn-type="outline-primary"
                   icon="pencil"
