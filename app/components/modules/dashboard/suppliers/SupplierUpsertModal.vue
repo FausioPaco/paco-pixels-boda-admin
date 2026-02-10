@@ -178,7 +178,7 @@ watch(
     :title="isEditing ? 'Editar fornecedor' : 'Adicionar fornecedor'"
     @close-modal="close"
   >
-    <form @keydown.enter.stop.prevent @submit="onSubmit">
+    <form @submit.prevent="onSubmit">
       <BaseAutoCompleteInput
         id="supplierName"
         v-model="name"
