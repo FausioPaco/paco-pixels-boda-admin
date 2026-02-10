@@ -273,6 +273,7 @@ onBeforeUnmount(() => {
         @keydown="onKeydown"
         @focus="onFocus"
         @blur="onBlur"
+        @keydown.enter.stop
       />
 
       <div

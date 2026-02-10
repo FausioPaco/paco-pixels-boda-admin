@@ -35,6 +35,18 @@ const schema = toTypedSchema(
       .min(2, 'O papel deve ter no mínimo 2 caractéres.'),
     phone: string().required('O telemóvel do fornecedor é obrigatório.'),
     supplierCatalogItemId: number().nullable(),
+    price: string()
+      .nullable()
+      .test(
+        'is-valid-money',
+        'O preço deve ser um valor numérico válido.',
+        (v) => {
+          if (v == null) return true;
+          const t = String(v).trim();
+          if (t === '') return true;
+          return Number.isFinite(parseDecimal(t));
+        },
+      ),
   }),
 );
 
@@ -46,6 +58,7 @@ const { handleSubmit, resetForm, defineField, errors, isSubmitting } =
       job_Description: '',
       phone: '',
       supplierCatalogItemId: null,
+      price: null,
     },
   });
 
@@ -53,6 +66,7 @@ const [name, nameAttrs] = defineField('name');
 const [job_Description, jobAttrs] = defineField('job_Description');
 const [phone, phoneAttrs] = defineField('phone');
 const [supplierCatalogItemId] = defineField('supplierCatalogItemId');
+const [price, priceAttrs] = defineField('price');
 
 const serverErrors = ref<ServerError>({ hasErrors: false, message: '' });
 
@@ -65,6 +79,7 @@ const getInitialFormValues = (): SupplierInput => {
     job_Description: s?.job_Description ?? '',
     phone: s?.phone ?? '',
     supplierCatalogItemId: s?.supplierCatalogItemId ?? null,
+    price: s?.price != null ? Number(s.price) : null,
   };
 };
 
@@ -110,12 +125,15 @@ const onSubmit = handleSubmit(async (values) => {
   serverErrors.value = { hasErrors: false, message: '' };
 
   try {
+    const priceParsed = values.price ? parseDecimal(values.price) : NaN;
+
     const payload: SupplierInput = {
       name: values.name,
       job_Description: values.job_Description,
       phone: values.phone,
       eventId: props.eventId,
       supplierCatalogItemId: values.supplierCatalogItemId ?? null,
+      price: Number.isFinite(priceParsed) ? priceParsed : null,
     };
 
     if (props.supplier?.id) {
@@ -208,6 +226,19 @@ watch(
         @keydown.enter.prevent="onSubmit"
       />
 
+      <BaseInput
+        id="supplierPrice"
+        v-model="price"
+        v-bind="priceAttrs"
+        name="supplierPrice"
+        label="Preço (opcional):"
+        type="number"
+        placeholder="Ex: 2 500,00"
+        :readonly="isSubmitting"
+        :disabled="isSubmitting"
+        :error-message="errors.price"
+      />
+
       <BaseError v-if="serverErrors.hasErrors">{{
         serverErrors.message
       }}</BaseError>
@@ -216,6 +247,7 @@ watch(
         <BaseButton
           btn-type="outline-primary"
           btn-size="md"
+          type="button"
           :disabled="isSubmitting"
           @click.prevent="close"
         >
@@ -227,6 +259,7 @@ watch(
           :disabled="isSubmitting"
           :loading="isSubmitting"
           type="submit"
+          @click.prevent="onSubmit"
         >
           {{ isSubmitting ? 'A guardar...' : 'Guardar' }}
         </BaseButton>

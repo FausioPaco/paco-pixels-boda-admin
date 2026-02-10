@@ -248,6 +248,7 @@ const addToEvent = async (it: SupplierCatalogItem) => {
           <tr>
             <th scope="col">Fornecedor</th>
             <th scope="col" class="hidden md:table-cell">Contacto</th>
+            <th scope="col" class="hidden md:table-cell">Preço base</th>
             <th scope="col">Estado</th>
             <th scope="col">Acções</th>
           </tr>
@@ -261,8 +262,10 @@ const addToEvent = async (it: SupplierCatalogItem) => {
                 <small class="text-grey-400">{{ it.job_Description }}</small>
               </div>
             </td>
-
             <td class="hidden md:table-cell">{{ it.phone ?? '-' }}</td>
+            <td class="hidden md:table-cell">
+              {{ it.base_Price ? formatMoney(it.base_Price, 'MZN') : '-' }}
+            </td>
 
             <td>
               <BaseBadge

@@ -5,11 +5,20 @@ export interface Supplier {
   phone: string;
   eventId?: number;
   eventName: string;
+  price?: number | null;
+
   isConfirmed: boolean;
   confirmed_At?: string | null;
   confirmed_By_Id?: number | null;
-  unconfirmed_At?: string | null;
-  unconfirmed_By_Id?: number | null;
+
+  isArrived: boolean;
+  arrived_At?: string | null;
+  arrived_By_Id?: number | null;
+
+  isAbsent: boolean;
+  absent_At?: string | null;
+  absent_By_Id?: number | null;
+
   supplierCatalogItemId?: number | null;
 }
 
@@ -19,6 +28,7 @@ export interface SupplierInput {
   phone: string;
   eventId?: number;
   supplierCatalogItemId?: number | null;
+  price?: number | null;
 }
 
 export interface SupplierParameters {
@@ -36,6 +46,7 @@ export interface SupplierCatalogItem {
   job_Description: string;
   phone: string;
   isActive: boolean;
+  base_Price?: number | null;
 }
 
 export interface SupplierCatalogItemInput {
@@ -43,6 +54,7 @@ export interface SupplierCatalogItemInput {
   job_Description: string;
   phone: string;
   isActive?: boolean;
+  base_Price?: number | null;
 }
 
 export interface SupplierCatalogParameters {

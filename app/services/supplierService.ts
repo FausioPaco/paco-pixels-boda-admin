@@ -58,6 +58,18 @@ export const getSupplierService = <T>(
     });
   },
 
+  async arriveSupplier(supplierId: number | string): Promise<unknown> {
+    return $fetch<unknown>(`${EVENT_RESOURCE}/${supplierId}/Arrive`, {
+      method: 'post',
+    });
+  },
+
+  async absentSupplier(supplierId: number | string): Promise<unknown> {
+    return $fetch<unknown>(`${EVENT_RESOURCE}/${supplierId}/Absent`, {
+      method: 'post',
+    });
+  },
+
   // =======================
   // Supplier Catalog
   // =======================
