@@ -5,14 +5,17 @@ import { useToast } from 'vue-toastification';
 import { number, object, string } from 'yup';
 import { getBeverageService } from '~/services/beverageService';
 
-const props = withDefaults(
-  defineProps<{
-    show?: boolean;
-    eventId: number;
-    beverage?: EventBeverage | null | undefined;
-  }>(),
-  { show: false, beverage: undefined },
-);
+type Props = {
+  show?: boolean;
+  eventId: number;
+  estimate?: EventBeverageEstimate | null | undefined;
+  moduleStatus: EventBeverageStatus;
+};
+
+const props = withDefaults(defineProps<Props>(), {
+  show: false,
+  estimate: undefined,
+});
 
 const emit = defineEmits<{
   (e: 'closeModal' | 'success'): void;
@@ -29,6 +32,12 @@ const { categories, refreshCategories } = await useBeverageCategoriesList({
 onMounted(async () => {
   await refreshCategories({ force: true });
 });
+
+const isBlocked = computed(
+  () => props.moduleStatus === 'EventDay' || props.moduleStatus === 'Closed',
+);
+
+const isConfirmed = computed(() => !!props.estimate?.confirmed);
 
 const purchaseModeOptions = computed<SelectOption[]>(() => [
   { id: BeveragePurchaseMode.Unit, name: 'Unidade' },
@@ -88,46 +97,47 @@ const schema = toTypedSchema(
       }),
     initialUnits: number()
       .nullable()
-      .typeError('Estoque inicial deve ser um número.')
+      .typeError('Quantidade deve ser um número.')
       .when('purchaseMode', {
         is: (v: unknown) => Number(v) === BeveragePurchaseMode.Unit,
         then: (s) =>
           s
-            .required('Estoque inicial é obrigatório.')
+            .required('Quantidade é obrigatória.')
             .min(0, 'Não pode ser negativo.'),
         otherwise: (s) => s.nullable(),
       }),
     minimumUnits: number()
       .nullable()
-      .typeError('Estoque mínimo deve ser um número.')
+      .typeError('Mínimo deve ser um número.')
       .when('purchaseMode', {
         is: (v: unknown) => Number(v) === BeveragePurchaseMode.Box,
         then: (s) =>
-          s
-            .required('Estoque mínimo é obrigatório.')
-            .min(0, 'Não pode ser negativo.'),
+          s.required('Mínimo é obrigatório.').min(0, 'Não pode ser negativo.'),
         otherwise: (s) => s.nullable().min(0, 'Não pode ser negativo.'),
       }),
-    notes: string().nullable(),
-    unitPrice: number()
+    unitPriceEstimate: number()
       .nullable()
-      .typeError('Preço unitário deve ser um número.')
+      .typeError('Preço unitário estimado deve ser um número.')
       .min(0, 'Não pode ser negativo.'),
+    beverageCatalogItemId: number().nullable(),
+    notes: string().nullable(),
   }),
 );
 
 const { handleSubmit, resetForm, defineField, errors, isSubmitting } =
-  useForm<EventBeverageCreateInput>({
+  useForm<EventBeverageEstimateCreateInput>({
     validationSchema: schema,
     initialValues: {
       name: '',
+      beverageCategoryId: undefined,
       purchaseMode: BeveragePurchaseMode.Unit,
       unitsPerBox: null,
       boxesQty: null,
       initialUnits: null,
       minimumUnits: undefined,
+      unitPriceEstimate: null,
+      beverageCatalogItemId: null,
       notes: '',
-      unitPrice: null,
     },
   });
 
@@ -139,85 +149,98 @@ const [unitsPerBox, unitsPerBoxAttrs] = defineField('unitsPerBox');
 const [boxesQty, boxesQtyAttrs] = defineField('boxesQty');
 const [initialUnits, initialUnitsAttrs] = defineField('initialUnits');
 const [minimumUnits, minimumUnitsAttrs] = defineField('minimumUnits');
+const [unitPriceEstimate, unitPriceEstimateAttrs] =
+  defineField('unitPriceEstimate');
+const [beverageCatalogItemId] = defineField('beverageCatalogItemId');
 const [notes, notesAttrs] = defineField('notes');
-const [unitPrice, unitPriceAttrs] = defineField('unitPrice');
+
 const minimumBoxes = ref<number | null>(null);
 
-const serverErrors = ref<ServerError>({
-  hasErrors: false,
-  message: '',
-});
-
-const isEditing = computed(() => !!props.beverage?.id);
+const isEditingLocal = computed(() => !!props.estimate?.id);
 const purchaseModeNumber = computed(() => Number(purchaseMode.value));
 const isBoxMode = computed(
   () => purchaseModeNumber.value === BeveragePurchaseMode.Box,
 );
 
-const onSubmit = handleSubmit(async (values) => {
-  serverErrors.value = { hasErrors: false, message: '' };
+const calcUnitsFromBoxes = () => {
+  const upb = Number(unitsPerBox.value);
+  const bq = Number(boxesQty.value);
 
-  const finalValues: EventBeverageCreateInput = {
-    ...values,
-    purchaseMode: Number(values.purchaseMode) as BeveragePurchaseMode,
-  };
+  if (!upb || upb <= 0) return null;
+  if (!bq || bq <= 0) return 0;
 
-  if (Number(finalValues.purchaseMode) === BeveragePurchaseMode.Box) {
-    const upb = Number(unitsPerBox.value);
-    const mb = Number(minimumBoxes.value);
-
-    if (upb > 0 && mb > 0) {
-      finalValues.minimumUnits = mb * upb;
-    }
-  }
-
-  try {
-    if (props.beverage?.id) {
-      // Edit
-      await beverageService.updateEventBeverage(
-        props.eventId,
-        props.beverage.id,
-        finalValues,
-      );
-      toast.success('Bebida actualizada com sucesso.');
-    } else {
-      // Create
-      await beverageService.createEventBeverage(props.eventId, finalValues);
-      toast.success('Bebida criada com sucesso.');
-    }
-
-    emit('success');
-    close();
-  } catch (err: unknown) {
-    console.error(err);
-    if (isFetchErrorLike(err)) {
-      serverErrors.value.message = getServerErrors(err.data);
-    } else {
-      serverErrors.value.message = 'Ocorreu um erro ao abastecer';
-    }
-    serverErrors.value.hasErrors = true;
-  }
-});
-
-const getInitialFormValues = (): EventBeverageCreateInput => {
-  const b = props.beverage;
-  return {
-    name: b?.name ?? '',
-    beverageCategoryId: b?.beverageCategoryId ?? undefined,
-    purchaseMode: b?.purchaseMode ?? BeveragePurchaseMode.Unit,
-    unitsPerBox: b?.unitsPerBox ?? null,
-    boxesQty: b?.boxesQty ?? null,
-    initialUnits: b?.initialUnits ?? null,
-    minimumUnits: b?.minimumUnits ?? undefined,
-    notes: b?.notes ?? '',
-    unitPrice: b?.unitPrice ?? null,
-  };
+  return bq * upb;
 };
+
+watch(
+  () => purchaseModeNumber.value,
+  (next, prev) => {
+    if (next === prev) return;
+
+    // Unidade -> Caixa
+    if (next === BeveragePurchaseMode.Box) {
+      // converter a quantidade em unidades para caixas (se tiver unitsPerBox)
+      const currentUnits = Number(initialUnits.value ?? 0);
+
+      // limpa campos de Unit (o input desaparece, mas o state tem de ser limpo)
+      initialUnits.value = null;
+
+      // se já tiver unitsPerBox, tenta converter unidades -> caixas
+      const upb = Number(unitsPerBox.value);
+      if (upb > 0 && currentUnits > 0) {
+        boxesQty.value = Math.max(1, Math.ceil(currentUnits / upb));
+      }
+
+      // garante coerência do payload: em modo Caixa, mantém initialUnits calculado
+      const computed = calcUnitsFromBoxes();
+      if (computed !== null) initialUnits.value = computed;
+
+      // se ainda não houver mínimo em caixas, dá default
+      minimumBoxes.value = minimumBoxes.value ?? 1;
+      return;
+    }
+
+    // Caixa -> Unidade
+    if (next === BeveragePurchaseMode.Unit) {
+      // converter caixas -> unidades (se tiver dados)
+      const computed = calcUnitsFromBoxes();
+      initialUnits.value = computed ?? initialUnits.value ?? null;
+
+      // limpar campos de Box (para não enviar lixo no payload)
+      unitsPerBox.value = null;
+      boxesQty.value = null;
+      minimumBoxes.value = null;
+      return;
+    }
+  },
+);
+
+const serverErrors = ref<ServerError>({ hasErrors: false, message: '' });
 
 const close = () => emit('closeModal');
 
+const getInitialFormValues = (): EventBeverageEstimateCreateInput => {
+  const e = props.estimate;
+  return {
+    name: e?.name ?? '',
+    beverageCategoryId: e?.beverageCategoryId ?? undefined,
+    purchaseMode: e?.purchaseMode ?? BeveragePurchaseMode.Unit,
+    unitsPerBox: e?.unitsPerBox ?? null,
+    boxesQty: e?.boxesQty ?? null,
+    initialUnits: e?.initialUnits ?? null,
+    minimumUnits: e?.minimumUnits ?? undefined,
+    unitPriceEstimate: e?.unitPriceEstimate ?? null,
+    beverageCatalogItemId: e?.beverageCatalogItemId ?? null,
+    notes: e?.notes ?? '',
+  };
+};
+
+/**
+ * ===== Autocomplete (igual ao BeverageUpsertModal) =====
+ */
 const catalogSuggestions = ref<BeverageCatalogItem[]>([]);
 const isSearchingCatalog = ref(false);
+
 const searchCatalog = useDebounceFn(async (q: string) => {
   const query = q.trim();
   if (query.length < 2) {
@@ -228,12 +251,6 @@ const searchCatalog = useDebounceFn(async (q: string) => {
   try {
     isSearchingCatalog.value = true;
 
-    // // se quiseres filtrar por categoria seleccionada, usa beverageCategoryId.value quando > 0
-    // const categoryId =
-    //   beverageCategoryId.value && Number(beverageCategoryId.value) > 0
-    //     ? Number(beverageCategoryId.value)
-    //     : null;
-
     const result = await beverageService.search({
       q: query,
       categoryId: null,
@@ -242,7 +259,6 @@ const searchCatalog = useDebounceFn(async (q: string) => {
 
     catalogSuggestions.value = result ?? [];
   } catch {
-    // aqui prefiro não mostrar toast a cada keypress.
     catalogSuggestions.value = [];
   } finally {
     isSearchingCatalog.value = false;
@@ -254,28 +270,31 @@ const onCatalogSearch = (q: string) => {
 };
 
 const onCatalogSelect = (item: BeverageCatalogItem) => {
-  // 1) nome (já vai ser preenchido pelo componente, mas garantimos)
+  // 1) nome
   name.value = item.name;
 
-  // 2) categoria (se fizer sentido e se o user ainda não escolheu)
+  // 2) categoria (não aceitar vazio)
   if (item.beverageCategoryId) {
     beverageCategoryId.value = item.beverageCategoryId;
   }
 
-  // 3) defaults do catálogo
+  // 3) guardar ligação ao catálogo
+  beverageCatalogItemId.value = item.id;
+
+  // 4) defaults do catálogo (igual ao upsert)
   if (item.defaultPurchaseMode === 'Box') {
     purchaseMode.value = BeveragePurchaseMode.Box;
     unitsPerBox.value = item.defaultUnitsPerBox ?? null;
     minimumBoxes.value = minimumBoxes.value ?? 1;
 
-    // se muda para box, evita ficar com campos de Unit preenchidos indevidamente
+    // evita ficar com campos de Unit preenchidos indevidamente
     initialUnits.value = null;
   }
 
   if (item.defaultPurchaseMode === 'Unit') {
     purchaseMode.value = BeveragePurchaseMode.Unit;
 
-    // se muda para unit, limpa campos de Box para não confundir
+    // limpa campos de Box
     unitsPerBox.value = null;
     boxesQty.value = null;
   }
@@ -299,20 +318,21 @@ const totalUnitsEquivalent = computed(() => {
   if (!boxesQty.value || boxesQty.value <= 0) return 0;
 
   const result = Number(boxesQty.value) * Number(unitsPerBox.value);
-
   return result <= 0 ? null : result;
 });
 
 watch(
-  [isBoxMode, unitsPerBox, minimumBoxes],
+  [isBoxMode, unitsPerBox, boxesQty, minimumBoxes],
   () => {
     if (!isBoxMode.value) return;
 
-    const eq = minimumUnitsEquivalent.value;
+    // 1) mínimo em unidades
+    const eqMin = minimumUnitsEquivalent.value;
+    if (eqMin !== null) minimumUnits.value = eqMin;
 
-    if (eq === null) return;
-
-    minimumUnits.value = eq;
+    // 2) stock inicial em unidades
+    const computed = calcUnitsFromBoxes();
+    if (computed !== null) initialUnits.value = computed;
   },
   { immediate: true },
 );
@@ -326,16 +346,15 @@ watch(
       return;
     }
 
-    resetForm({
-      values: getInitialFormValues(),
-    });
+    serverErrors.value = { hasErrors: false, message: '' };
+    resetForm({ values: getInitialFormValues() });
 
+    // se abrir em modo Box, inferir minimumBoxes a partir de minimumUnits (igual ao upsert)
     if (Number(purchaseMode.value) === BeveragePurchaseMode.Box) {
       const upb = Number(unitsPerBox.value);
       const minU = Number(minimumUnits.value);
 
       if (upb > 0 && minU >= 0) {
-        // se não for múltiplo, usamos ceil para não ficar abaixo do mínimo real
         minimumBoxes.value = Math.ceil(minU / upb);
       } else {
         minimumBoxes.value = null;
@@ -347,50 +366,104 @@ watch(
   { immediate: true },
 );
 
-const pricePerUnit = computed(() => Number(unitPrice.value ?? 0));
+const onSubmit = handleSubmit(async (values) => {
+  if (isBlocked.value) return;
+  if (isConfirmed.value) return;
+
+  serverErrors.value = { hasErrors: false, message: '' };
+
+  const finalValues: EventBeverageEstimateCreateInput = {
+    ...values,
+    purchaseMode: Number(values.purchaseMode) as BeveragePurchaseMode,
+  };
+
+  if (Number(finalValues.purchaseMode) === BeveragePurchaseMode.Box) {
+    const computed = calcUnitsFromBoxes();
+    finalValues.initialUnits = computed ?? 0;
+  } else {
+    finalValues.unitsPerBox = null;
+    finalValues.boxesQty = null;
+  }
+
+  try {
+    if (props.estimate?.id) {
+      await beverageService.updateEventBeverageEstimate(
+        props.eventId,
+        props.estimate.id,
+        finalValues,
+      );
+      toast.success('Estimativa actualizada com sucesso.');
+    } else {
+      await beverageService.createEventBeverageEstimate(
+        props.eventId,
+        finalValues,
+      );
+      toast.success('Estimativa criada com sucesso.');
+    }
+
+    emit('success');
+    close();
+  } catch (err: unknown) {
+    console.error(err);
+    if (isFetchErrorLike(err)) {
+      serverErrors.value.message = getServerErrors(err.data);
+    } else {
+      serverErrors.value.message = 'Ocorreu um erro ao guardar a estimativa';
+    }
+    serverErrors.value.hasErrors = true;
+  }
+});
+
+const pricePerUnit = computed(() => Number(unitPriceEstimate.value ?? 0));
 const upbNumber = computed(() => Number(unitsPerBox.value ?? 0));
 const boxesQtyNumber = computed(() => Number(boxesQty.value ?? 0));
 
-const pricePerBox = computed(() => {
+const pricePerBoxEstimate = computed(() => {
   if (!isBoxMode.value) return null;
   if (pricePerUnit.value <= 0) return null;
   if (upbNumber.value <= 0) return null;
   return pricePerUnit.value * upbNumber.value;
 });
 
-const totalPrice = computed(() => {
+const totalPriceEstimate = computed(() => {
+  if (!isBoxMode.value) return null;
   if (pricePerUnit.value <= 0) return null;
-
-  // se em Box mode, calcula via caixas
-  if (isBoxMode.value) {
-    if (upbNumber.value <= 0) return null;
-    if (boxesQtyNumber.value <= 0) return 0;
-    return pricePerUnit.value * upbNumber.value * boxesQtyNumber.value;
-  }
-
-  // se em Unit mode, usa unidades (ajusta o campo certo: initialUnits/currentUnits)
-  const units = Number(initialUnits.value ?? 0);
-  if (units <= 0) return 0;
-  return pricePerUnit.value * units;
+  if (upbNumber.value <= 0) return null;
+  if (boxesQtyNumber.value <= 0) return 0;
+  return pricePerUnit.value * upbNumber.value * boxesQtyNumber.value;
 });
 </script>
 
 <template>
   <BaseModal
     :show="props.show"
-    :title="isEditing ? 'Editar bebida' : 'Adicionar bebida'"
+    :title="isEditingLocal ? 'Editar estimativa' : 'Adicionar estimativa'"
     @close-modal="close"
   >
     <form @submit.prevent="onSubmit">
+      <BaseAlert
+        :show="isBlocked"
+        title="Estimativas em modo apenas de leitura"
+        message="Este módulo está em modo apenas leitura."
+        type="informative"
+      />
+
+      <BaseAlert
+        :show="isConfirmed"
+        title="Esta estimativa já foi confirmada."
+        message="Para alterar, desconfirme primeiro (rollback) ou edite directamente nas bebidas."
+        type="informative"
+      />
+
       <BaseAutoCompleteInput
-        id="bevName"
+        id="estimateName"
         v-model="name"
         v-bind="nameAttrs"
-        name="bevName"
+        name="estimateName"
         label="Nome:"
-        placeholder="Ex: Coca-Cola"
-        :readonly="isSubmitting"
-        :disabled="isSubmitting"
+        placeholder="Ex.: Heineken"
+        :readonly="isSubmitting || isBlocked || isConfirmed"
+        :disabled="isSubmitting || isBlocked || isConfirmed"
         :error-message="errors.name"
         :items="catalogSuggestions"
         item-label="name"
@@ -403,25 +476,23 @@ const totalPrice = computed(() => {
       />
 
       <BaseSelect
-        id="bevCategory"
+        id="estimateCategory"
         v-model="beverageCategoryId"
         v-bind="beverageCategoryIdAttrs"
-        :error-message="errors.beverageCategoryId"
-        name="bevCategory"
         label="Categoria:"
         :options="categoryOptions"
-        :disabled="isSubmitting"
+        :error-message="errors.beverageCategoryId"
+        :disabled="isSubmitting || isBlocked || isConfirmed"
       />
 
       <BaseSelect
-        id="purchaseMode"
+        id="estimatePurchaseMode"
         v-model="purchaseMode"
         v-bind="purchaseModeAttrs"
-        :error-message="errors.purchaseMode"
-        name="purchaseMode"
         label="Modo de compra:"
         :options="purchaseModeOptions"
-        :disabled="isSubmitting"
+        :error-message="errors.purchaseMode"
+        :disabled="isSubmitting || isBlocked || isConfirmed"
         disable-empty
         as-number
       />
@@ -429,25 +500,25 @@ const totalPrice = computed(() => {
       <div v-if="isBoxMode" class="animate-fadeIn">
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <BaseInput
-            id="unitsPerBox"
+            id="estimateUnitsPerBox"
             v-model="unitsPerBox"
             v-bind="unitsPerBoxAttrs"
-            :error-message="errors.unitsPerBox"
-            name="unitsPerBox"
+            name="estimateUnitsPerBox"
             label="Por caixa (unidades):"
             type="number"
-            :readonly="isSubmitting"
+            :error-message="errors.unitsPerBox"
+            :readonly="isSubmitting || isBlocked || isConfirmed"
           />
 
           <BaseInput
-            id="boxesQty"
+            id="estimateBoxesQty"
             v-model="boxesQty"
             v-bind="boxesQtyAttrs"
-            :error-message="errors.boxesQty"
-            name="boxesQty"
+            name="estimateBoxesQty"
             label="Estoque inicial (caixas):"
             type="number"
-            :readonly="isSubmitting"
+            :error-message="errors.boxesQty"
+            :readonly="isSubmitting || isBlocked || isConfirmed"
             :helper-text="
               totalUnitsEquivalent
                 ? `Equivale a ${totalUnitsEquivalent} unidades.`
@@ -457,13 +528,13 @@ const totalPrice = computed(() => {
         </div>
 
         <BaseInput
-          id="minimumBoxes"
+          id="estimateMinimumBoxes"
           v-model="minimumBoxes"
-          :error-message="errors.minimumUnits"
-          name="minimumBoxes"
-          label="Estoque mínimo (caixas):"
+          name="estimateMinimumBoxes"
+          label="Mínimo (caixas):"
           type="number"
-          :readonly="isSubmitting"
+          :readonly="isSubmitting || isBlocked || isConfirmed"
+          :error-message="errors.minimumUnits"
           :helper-text="
             minimumUnitsEquivalent
               ? `Equivale a ${minimumUnitsEquivalent} unidades.`
@@ -474,65 +545,67 @@ const totalPrice = computed(() => {
 
       <div v-else class="grid animate-fadeIn grid-cols-1 gap-4 md:grid-cols-2">
         <BaseInput
-          id="initialUnits"
+          id="estimateInitialUnits"
           v-model="initialUnits"
           v-bind="initialUnitsAttrs"
-          :error-message="errors.initialUnits"
-          name="initialUnits"
-          label="Estoque inicial:"
+          name="estimateInitialUnits"
+          label="Quantidade:"
           type="number"
-          :readonly="isSubmitting"
+          :error-message="errors.initialUnits"
+          :readonly="isSubmitting || isBlocked || isConfirmed"
         />
 
         <BaseInput
-          id="minimumUnits"
+          id="estimateMinimumUnits"
           v-model="minimumUnits"
           v-bind="minimumUnitsAttrs"
-          :error-message="errors.minimumUnits"
-          name="minimumUnits"
-          label="Estoque mínimo:"
+          name="estimateMinimumUnits"
+          label="Mínimo:"
           type="number"
-          :readonly="isSubmitting"
+          :error-message="errors.minimumUnits"
+          :readonly="isSubmitting || isBlocked || isConfirmed"
         />
       </div>
 
       <BaseInput
-        id="beverageUnitPrice"
-        v-model="unitPrice"
-        v-bind="unitPriceAttrs"
-        name="beverageUnitPrice"
-        label="Preço unitário (MZN):"
+        id="estimateUnitPrice"
+        v-model="unitPriceEstimate"
+        v-bind="unitPriceEstimateAttrs"
+        name="estimateUnitPrice"
+        label="Preço unitário estimado (MZN):"
         type="number"
-        :error-message="errors.unitPrice"
-        :readonly="isSubmitting"
+        :error-message="errors.unitPriceEstimate"
+        :readonly="isSubmitting || isBlocked || isConfirmed"
         :helper-text="
           isBoxMode
             ? [
-                pricePerBox != null ? `Por caixa: ${pricePerBox} MZN.` : '',
-                totalPrice != null ? `Total: ${totalPrice} MZN.` : '',
+                pricePerBoxEstimate != null
+                  ? `Por caixa: ${formatMoney(pricePerBoxEstimate)}`
+                  : '',
+                totalPriceEstimate != null
+                  ? `Total estimado: ${formatMoney(totalPriceEstimate)}`
+                  : '',
               ]
                 .filter(Boolean)
-                .join(' ')
-            : totalPrice != null
-              ? `Total: ${totalPrice} MZN.`
-              : ''
+                .join(' | ')
+            : ''
         "
       />
 
       <BaseTextArea
-        id="notes"
+        id="estimateNotes"
         v-model="notes"
         v-bind="notesAttrs"
-        :error-message="errors.notes"
-        name="notes"
+        name="estimateNotes"
         label="Notas:"
         placeholder="Opcional"
-        :readonly="isSubmitting"
+        :error-message="errors.notes"
+        :readonly="isSubmitting || isBlocked || isConfirmed"
       />
 
-      <BaseError v-if="serverErrors.hasErrors">{{
-        serverErrors.message
-      }}</BaseError>
+      <BaseError v-if="serverErrors.hasErrors">
+        {{ serverErrors.message }}
+      </BaseError>
 
       <div class="mt-4 flex w-full justify-center gap-3">
         <BaseButton
@@ -546,7 +619,7 @@ const totalPrice = computed(() => {
         <BaseButton
           btn-type="primary"
           btn-size="md"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || isBlocked || isConfirmed"
           :loading="isSubmitting"
           type="submit"
         >

@@ -7,8 +7,7 @@ export type ApiServerError =
   | { errors?: Record<string, string> };
 
 export const getServerErrors = (error: ApiServerError) => {
-  let errorMessage =
-    'Ocorreu um erro ao enviar o seu pedido. Tente novamente. \n';
+  let errorMessage = 'Ocorreu um erro ao enviar o seu pedido: \n';
 
   if (error) {
     if (typeof error === 'string') {
@@ -18,8 +17,8 @@ export const getServerErrors = (error: ApiServerError) => {
     } else if ('message' in error) {
       errorMessage = error.message;
     } else if ('errors' in error && error.errors) {
-      for (const [key, value] of Object.entries(error.errors)) {
-        errorMessage += `${key}: ${value}\n`;
+      for (const [_, value] of Object.entries(error.errors)) {
+        errorMessage += `${value}\n`;
       }
     }
   }

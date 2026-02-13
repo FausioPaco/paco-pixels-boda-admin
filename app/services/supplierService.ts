@@ -70,6 +70,10 @@ export const getSupplierService = <T>(
     });
   },
 
+  async exportSuppliersAsPdf(parameters: SupplierParameters): Promise<Blob> {
+    return $fetch<Blob>(`${EVENT_RESOURCE}/ExportPdf`, { params: parameters });
+  },
+
   // =======================
   // Supplier Catalog
   // =======================

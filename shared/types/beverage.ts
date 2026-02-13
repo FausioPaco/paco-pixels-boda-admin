@@ -91,6 +91,8 @@ export interface EventBeverage {
   currentUnits: number;
   status: EventBeverageStockStatus;
   notes: string | null | undefined;
+  unitPrice: number | null | undefined;
+  beverageCatalogItemId: number | null | undefined;
 }
 
 export interface EventBeveragesParameters {
@@ -113,6 +115,7 @@ export interface EventBeverageCreateInput {
   initialUnits?: number | null | undefined;
   minimumUnits: number | undefined;
   notes?: string | null | undefined;
+  unitPrice?: number | null | undefined;
 }
 
 export interface EventBeverageUpdateInput {
@@ -191,4 +194,98 @@ export interface BeverageStockReportParameters {
   endDate: string;
   pageNumber: number;
   pageSize: number;
+}
+
+/**
+ * ===== Estimativas de Bebidas (Planeamento) =====
+ */
+
+export interface EventBeverageEstimate {
+  id: number;
+  eventId: number;
+
+  name: string;
+
+  beverageCategoryId: number;
+  beverageCategoryName: string;
+
+  purchaseMode: BeveragePurchaseMode;
+
+  unitsPerBox: number | null | undefined;
+  boxesQty: number | null | undefined;
+
+  initialUnits: number;
+  minimumUnits: number;
+
+  notes: string | null | undefined;
+
+  unitPriceEstimate: number | null | undefined;
+  beverageCatalogItemId: number | null | undefined;
+
+  confirmed: boolean;
+  confirmed_At: string | null | undefined;
+  confirmed_By_Id: number | null | undefined;
+  confirmed_EventBeverageId: number | null | undefined;
+}
+
+export interface EventBeverageEstimatesParameters {
+  eventId?: number;
+  searchQuery?: string;
+  categoryId?: number | null | undefined;
+  includeConfirmed?: boolean;
+  pageNumber?: number;
+  pageSize?: number;
+}
+
+export interface EventBeverageEstimateCreateInput {
+  name: string;
+  beverageCategoryId: number | undefined;
+  purchaseMode: BeveragePurchaseMode;
+
+  unitsPerBox?: number | null | undefined;
+  boxesQty?: number | null | undefined;
+  initialUnits?: number | null | undefined;
+
+  minimumUnits: number | undefined;
+
+  notes?: string | null | undefined;
+
+  unitPriceEstimate?: number | null | undefined;
+  beverageCatalogItemId?: number | null | undefined;
+}
+
+export interface EventBeverageEstimateUpdateInput {
+  name: string;
+  beverageCategoryId: number | undefined;
+  purchaseMode: BeveragePurchaseMode;
+
+  unitsPerBox?: number | null | undefined;
+  boxesQty?: number | null | undefined;
+  initialUnits?: number | null | undefined;
+
+  minimumUnits: number | null | undefined;
+
+  notes?: string | null | undefined;
+
+  unitPriceEstimate?: number | null | undefined;
+  beverageCatalogItemId?: number | null | undefined;
+}
+
+export interface ConfirmSelectedEventBeverageEstimatesInput {
+  estimateIds: number[];
+}
+
+export interface UnconfirmSelectedEventBeverageEstimatesInput {
+  estimateIds: number[];
+}
+
+export interface ConfirmEventBeverageEstimatesResult {
+  createdCount: number;
+  createdEventBeverageIds: number[];
+}
+
+export interface UnconfirmEventBeverageEstimatesResult {
+  unconfirmedCount: number;
+  notConfirmedCount: number;
+  notFoundCount: number;
 }

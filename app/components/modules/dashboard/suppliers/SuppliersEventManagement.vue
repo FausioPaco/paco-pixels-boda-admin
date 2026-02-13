@@ -161,6 +161,33 @@ const absenceRowClass = (s: Supplier) => {
   }
   return '';
 };
+
+const { eventInitials } = useEventStore();
+const isExporting = ref<boolean>(false);
+
+const exportSuppliersToPdf = async () => {
+  try {
+    isExporting.value = true;
+    const blob = await supplierService.exportSuppliersAsPdf(queryParameters);
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+
+    const fileName = `Fornecedores_${eventInitials}_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')}.pdf`;
+    link.setAttribute('download', fileName);
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    isExporting.value = false;
+  } catch (err) {
+    console.error('Erro ao exportar os fornecedores:', err);
+    toast.error('Ocorreu um erro ao exportar os fornecedores');
+    isExporting.value = false;
+  }
+};
 </script>
 
 <template>
@@ -207,8 +234,20 @@ const absenceRowClass = (s: Supplier) => {
           class="flex w-full flex-col justify-start gap-4 lg:w-1/2 lg:flex-row lg:items-end lg:justify-end lg:gap-2 lg:pt-5"
         >
           <BaseButton
+            v-if="(suppliers?.length ?? 0) > 0"
+            btn-size="sm"
+            icon="download"
+            btn-type="outline-primary"
+            :loading="isExporting"
+            :disabled="isExporting"
+            @click="exportSuppliersToPdf"
+          >
+            Exportar para PDF
+          </BaseButton>
+
+          <BaseButton
             icon="add"
-            size="md"
+            btn-size="sm"
             btn-type="primary"
             @click.prevent="openCreateModal"
           >
