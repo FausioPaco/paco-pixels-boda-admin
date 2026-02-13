@@ -20,7 +20,7 @@ const showEventDayAlert = ref(isBlocked.value);
 const queryParameters = reactive<EventBeverageEstimatesParameters>({
   eventId: eventId!,
   categoryId: undefined,
-  includeConfirmed: false,
+  includeConfirmed: true,
   searchQuery: '',
   pageNumber: 1,
   pageSize: 8,
@@ -146,6 +146,38 @@ const openRemoveModal = (item: EventBeverageEstimate) => {
 
 // Confirm/Unconfirm actions
 const isBulkWorking = ref(false);
+
+const isExporting = ref(false);
+
+const exportEstimates = async () => {
+  try {
+    isExporting.value = true;
+
+    const blob =
+      await beverageService.exportEventBeverageEstimates(queryParameters);
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+
+    const fileName = `Estimativas_${new Date()
+      .toISOString()
+      .slice(0, 19)
+      .replace(/[-:T]/g, '')}.xlsx`;
+
+    link.setAttribute('download', fileName);
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Erro ao exportar as estimativas:', err);
+    toast.error('Ocorreu um erro ao exportar as estimativas');
+  } finally {
+    isExporting.value = false;
+  }
+};
 
 const confirmSelected = async () => {
   if (isBlocked.value) return;
@@ -329,16 +361,29 @@ watch(isBlocked, (newVal) => {
               </h3>
             </div>
           </div>
+
+          <BaseButton
+            v-if="(estimates?.length ?? 0) > 0"
+            btn-type="outline-primary"
+            btn-size="sm"
+            icon="download"
+            :disabled="isRefreshing || isExporting"
+            class="my-4 w-fit"
+            @click="exportEstimates"
+          >
+            {{ isExporting ? 'A exportar...' : 'Exportar estimativas' }}
+          </BaseButton>
         </div>
 
         <div
-          class="flex w-full flex-col justify-start gap-4 lg:w-1/2 lg:flex-row lg:items-end lg:justify-end lg:gap-2 lg:pt-5"
+          class="mt-4 flex w-full flex-col gap-4 lg:mt-2 lg:max-w-[60%] lg:items-end"
         >
           <BaseButton
             icon="add"
-            size="md"
+            btn-size="sm"
             btn-type="primary"
             :disabled="isBlocked || isRefreshing"
+            class="w-fit"
             @click.prevent="openCreateModal"
           >
             Adicionar estimativa
@@ -346,14 +391,15 @@ watch(isBlocked, (newVal) => {
 
           <BaseButton
             btn-type="outline-primary"
-            btn-size="md"
-            icon="check"
+            btn-size="sm"
+            icon="double-check"
             :disabled="
               isBlocked ||
               isRefreshing ||
               isBulkWorking ||
               (selectedIds?.length ?? 0) === 0
             "
+            class="w-fit"
             :loading="isBulkWorking"
             @click="confirmSelected"
           >
@@ -362,8 +408,8 @@ watch(isBlocked, (newVal) => {
 
           <BaseButton
             btn-type="outline-primary"
-            btn-size="md"
-            icon="undo"
+            btn-size="sm"
+            icon="refresh"
             :disabled="
               isBlocked ||
               isRefreshing ||
@@ -371,6 +417,7 @@ watch(isBlocked, (newVal) => {
               (selectedIds?.length ?? 0) === 0
             "
             :loading="isBulkWorking"
+            class="w-fit"
             @click="unconfirmSelected"
           >
             Desconfirmar seleccionadas
@@ -459,8 +506,9 @@ watch(isBlocked, (newVal) => {
 
             <td>
               <BaseBadge
-                :type="item.confirmed ? 'success' : 'warning'"
+                :type="item.confirmed ? 'success' : 'default'"
                 :text="item.confirmed ? 'Confirmada' : 'Por confirmar'"
+                :icon="item.confirmed ? 'checkmark' : undefined"
               />
             </td>
 
@@ -494,7 +542,7 @@ watch(isBlocked, (newVal) => {
                   :disabled="isBlocked || isBulkWorking"
                   @click.stop="confirmSingle(item)"
                 >
-                  <IconCheck :font-controlled="false" class="size-4" />
+                  <IconCheckmark :font-controlled="false" class="size-4" />
                 </button>
 
                 <button

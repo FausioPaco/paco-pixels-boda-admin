@@ -91,6 +91,8 @@ export interface EventBeverage {
   currentUnits: number;
   status: EventBeverageStockStatus;
   notes: string | null | undefined;
+  unitPrice: number | null | undefined;
+  beverageCatalogItemId: number | null | undefined;
 }
 
 export interface EventBeveragesParameters {
@@ -113,6 +115,7 @@ export interface EventBeverageCreateInput {
   initialUnits?: number | null | undefined;
   minimumUnits: number | undefined;
   notes?: string | null | undefined;
+  unitPrice?: number | null | undefined;
 }
 
 export interface EventBeverageUpdateInput {

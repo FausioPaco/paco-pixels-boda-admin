@@ -109,6 +109,10 @@ const schema = toTypedSchema(
         otherwise: (s) => s.nullable().min(0, 'Não pode ser negativo.'),
       }),
     notes: string().nullable(),
+    unitPrice: number()
+      .nullable()
+      .typeError('Preço unitário deve ser um número.')
+      .min(0, 'Não pode ser negativo.'),
   }),
 );
 
@@ -123,6 +127,7 @@ const { handleSubmit, resetForm, defineField, errors, isSubmitting } =
       initialUnits: null,
       minimumUnits: undefined,
       notes: '',
+      unitPrice: null,
     },
   });
 
@@ -135,6 +140,7 @@ const [boxesQty, boxesQtyAttrs] = defineField('boxesQty');
 const [initialUnits, initialUnitsAttrs] = defineField('initialUnits');
 const [minimumUnits, minimumUnitsAttrs] = defineField('minimumUnits');
 const [notes, notesAttrs] = defineField('notes');
+const [unitPrice, unitPriceAttrs] = defineField('unitPrice');
 const minimumBoxes = ref<number | null>(null);
 
 const serverErrors = ref<ServerError>({
@@ -204,6 +210,7 @@ const getInitialFormValues = (): EventBeverageCreateInput => {
     initialUnits: b?.initialUnits ?? null,
     minimumUnits: b?.minimumUnits ?? undefined,
     notes: b?.notes ?? '',
+    unitPrice: b?.unitPrice ?? null,
   };
 };
 
@@ -339,6 +346,33 @@ watch(
   },
   { immediate: true },
 );
+
+const pricePerUnit = computed(() => Number(unitPrice.value ?? 0));
+const upbNumber = computed(() => Number(unitsPerBox.value ?? 0));
+const boxesQtyNumber = computed(() => Number(boxesQty.value ?? 0));
+
+const pricePerBox = computed(() => {
+  if (!isBoxMode.value) return null;
+  if (pricePerUnit.value <= 0) return null;
+  if (upbNumber.value <= 0) return null;
+  return pricePerUnit.value * upbNumber.value;
+});
+
+const totalPrice = computed(() => {
+  if (pricePerUnit.value <= 0) return null;
+
+  // se em Box mode, calcula via caixas
+  if (isBoxMode.value) {
+    if (upbNumber.value <= 0) return null;
+    if (boxesQtyNumber.value <= 0) return 0;
+    return pricePerUnit.value * upbNumber.value * boxesQtyNumber.value;
+  }
+
+  // se em Unit mode, usa unidades (ajusta o campo certo: initialUnits/currentUnits)
+  const units = Number(initialUnits.value ?? 0);
+  if (units <= 0) return 0;
+  return pricePerUnit.value * units;
+});
 </script>
 
 <template>
@@ -461,6 +495,29 @@ watch(
           :readonly="isSubmitting"
         />
       </div>
+
+      <BaseInput
+        id="beverageUnitPrice"
+        v-model="unitPrice"
+        v-bind="unitPriceAttrs"
+        name="beverageUnitPrice"
+        label="Preço unitário (MZN):"
+        type="number"
+        :error-message="errors.unitPrice"
+        :readonly="isSubmitting"
+        :helper-text="
+          isBoxMode
+            ? [
+                pricePerBox != null ? `Por caixa: ${pricePerBox} MZN.` : '',
+                totalPrice != null ? `Total: ${totalPrice} MZN.` : '',
+              ]
+                .filter(Boolean)
+                .join(' ')
+            : totalPrice != null
+              ? `Total: ${totalPrice} MZN.`
+              : ''
+        "
+      />
 
       <BaseTextArea
         id="notes"

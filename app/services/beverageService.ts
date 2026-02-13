@@ -196,6 +196,14 @@ export const getBeverageService = <T>(
     });
   },
 
+  async exportEventBeverageEstimates(
+    parameters: EventBeverageEstimatesParameters,
+  ): Promise<Blob> {
+    return $fetch<Blob>(`${EVENT_BEVERAGE_ESTIMATE_RESOURCE}/Export`, {
+      params: parameters,
+    });
+  },
+
   async getEventBeverageEstimates(
     parameters: EventBeverageEstimatesParameters,
   ): Promise<Pagination<EventBeverageEstimate>> {

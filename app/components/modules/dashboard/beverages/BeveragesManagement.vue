@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import BeveragePlanningManagement from './BeveragePlanningManagement.vue';
 import BeverageEventDayManagement from './BeverageEventDayManagement.vue';
+import BeverageEstimatesManagement from './BeverageEstimatesManagement.vue';
 import { getBeverageService } from '~/services/beverageService';
 import { useToast } from 'vue-toastification';
-import BeverageEstimatesManagement from './BeverageEstimatesManagement.vue';
 
 type BeverageTab = 'ESTIMATES' | 'PLANNING' | 'EVENT_DAY';
 
