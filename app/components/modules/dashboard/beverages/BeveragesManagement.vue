@@ -3,9 +3,11 @@ import BeveragePlanningManagement from './BeveragePlanningManagement.vue';
 import BeverageEventDayManagement from './BeverageEventDayManagement.vue';
 import { getBeverageService } from '~/services/beverageService';
 import { useToast } from 'vue-toastification';
-type BeverageTab = 'PLANNING' | 'EVENT_DAY';
+import BeverageEstimatesManagement from './BeverageEstimatesManagement.vue';
 
-const activeTab = ref<BeverageTab>('PLANNING');
+type BeverageTab = 'ESTIMATES' | 'PLANNING' | 'EVENT_DAY';
+
+const activeTab = ref<BeverageTab>('ESTIMATES');
 const { eventId } = useEventStore();
 
 const moduleStatus = ref<EventBeverageStatus>('Planning');
@@ -88,12 +90,24 @@ onMounted(async () => {
 
     <BaseTab>
       <BaseTabItem
+        id="beverages-estimates"
+        icon="planning"
+        :tab-position="1"
+        :total-tabs="3"
+        :is-active="activeTab === 'ESTIMATES'"
+        class="w-full md:w-1/3"
+        @click="activeTab = 'ESTIMATES'"
+      >
+        Estimativas
+      </BaseTabItem>
+
+      <BaseTabItem
         id="beverages-planning"
         icon="beverage-stock"
-        :tab-position="1"
-        :total-tabs="2"
+        :tab-position="2"
+        :total-tabs="3"
         :is-active="activeTab === 'PLANNING'"
-        class="w-full md:w-1/2"
+        class="w-full md:w-1/3"
         @click="activeTab = 'PLANNING'"
       >
         Registo e inventário
@@ -102,10 +116,10 @@ onMounted(async () => {
       <BaseTabItem
         id="beverages-event"
         icon="beverage-event"
-        :tab-position="2"
-        :total-tabs="2"
+        :tab-position="3"
+        :total-tabs="3"
         :is-active="activeTab === 'EVENT_DAY'"
-        class="w-full md:w-1/2"
+        class="w-full md:w-1/3"
         @click="activeTab = 'EVENT_DAY'"
       >
         Dia do evento
@@ -115,9 +129,11 @@ onMounted(async () => {
     <transition name="fade" mode="out-in">
       <component
         :is="
-          activeTab === 'PLANNING'
-            ? BeveragePlanningManagement
-            : BeverageEventDayManagement
+          activeTab === 'ESTIMATES'
+            ? BeverageEstimatesManagement
+            : activeTab === 'PLANNING'
+              ? BeveragePlanningManagement
+              : BeverageEventDayManagement
         "
         :event-id="eventId"
         :module-status="moduleStatus"

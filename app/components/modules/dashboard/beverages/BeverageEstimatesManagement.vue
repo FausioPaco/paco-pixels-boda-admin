@@ -505,7 +505,7 @@ watch(isBlocked, (newVal) => {
                   :disabled="isBlocked || isBulkWorking"
                   @click.stop="unconfirmSingle(item)"
                 >
-                  <IconUndo :font-controlled="false" class="size-4" />
+                  <IconRefresh :font-controlled="false" class="size-4" />
                 </button>
               </div>
             </td>
