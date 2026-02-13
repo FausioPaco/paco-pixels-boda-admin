@@ -2,6 +2,7 @@ import type { NitroFetchRequest, $Fetch } from 'nitropack';
 
 const BEVERAGE_RESOURCE = '/BeverageCatalog';
 const EVENT_BEVERAGE_RESOURCE = '/EventBeverages';
+const EVENT_BEVERAGE_ESTIMATE_RESOURCE = '/EventBeverageEstimates';
 
 export const getBeverageService = <T>(
   $fetch: $Fetch<T, NitroFetchRequest>,
@@ -193,5 +194,93 @@ export const getBeverageService = <T>(
     return $fetch<Blob>(`${EVENT_BEVERAGE_RESOURCE}/Export`, {
       params: parameters,
     });
+  },
+
+  async getEventBeverageEstimates(
+    parameters: EventBeverageEstimatesParameters,
+  ): Promise<Pagination<EventBeverageEstimate>> {
+    return fetchWithPagination<EventBeverageEstimate>(
+      $fetch,
+      `${EVENT_BEVERAGE_ESTIMATE_RESOURCE}/GetAll`,
+      { query: parameters },
+    );
+  },
+
+  async createEventBeverageEstimate(
+    eventId: number,
+    input: EventBeverageEstimateCreateInput,
+  ): Promise<EventBeverageEstimate> {
+    return $fetch<EventBeverageEstimate>(
+      `${EVENT_BEVERAGE_ESTIMATE_RESOURCE}/Create`,
+      {
+        method: 'post',
+        query: { eventId },
+        body: input,
+      },
+    );
+  },
+
+  async updateEventBeverageEstimate(
+    eventId: number,
+    estimateId: number,
+    input: EventBeverageEstimateUpdateInput,
+  ): Promise<void> {
+    await $fetch(`${EVENT_BEVERAGE_ESTIMATE_RESOURCE}/Update/${estimateId}`, {
+      method: 'put',
+      query: { eventId },
+      body: input,
+    });
+  },
+
+  async removeEventBeverageEstimate(
+    eventId: number,
+    estimateId: number,
+  ): Promise<void> {
+    await $fetch(`${EVENT_BEVERAGE_ESTIMATE_RESOURCE}/Remove/${estimateId}`, {
+      method: 'delete',
+      query: { eventId },
+    });
+  },
+
+  async confirmAllEventBeverageEstimates(
+    eventId: number,
+  ): Promise<ConfirmEventBeverageEstimatesResult> {
+    return $fetch<ConfirmEventBeverageEstimatesResult>(
+      `${EVENT_BEVERAGE_ESTIMATE_RESOURCE}/Confirm`,
+      { method: 'post', query: { eventId } },
+    );
+  },
+
+  async confirmSelectedEventBeverageEstimates(
+    eventId: number,
+    input: ConfirmSelectedEventBeverageEstimatesInput,
+  ): Promise<ConfirmEventBeverageEstimatesResult> {
+    return $fetch<ConfirmEventBeverageEstimatesResult>(
+      `${EVENT_BEVERAGE_ESTIMATE_RESOURCE}/ConfirmSelected`,
+      { method: 'post', query: { eventId }, body: input },
+    );
+  },
+
+  async unconfirmEventBeverageEstimate(
+    eventId: number,
+    estimateId: number,
+  ): Promise<void> {
+    await $fetch(
+      `${EVENT_BEVERAGE_ESTIMATE_RESOURCE}/Unconfirm/${estimateId}`,
+      {
+        method: 'post',
+        query: { eventId },
+      },
+    );
+  },
+
+  async unconfirmSelectedEventBeverageEstimates(
+    eventId: number,
+    input: UnconfirmSelectedEventBeverageEstimatesInput,
+  ): Promise<UnconfirmEventBeverageEstimatesResult> {
+    return $fetch<UnconfirmEventBeverageEstimatesResult>(
+      `${EVENT_BEVERAGE_ESTIMATE_RESOURCE}/UnconfirmSelected`,
+      { method: 'post', query: { eventId }, body: input },
+    );
   },
 });
