@@ -99,6 +99,7 @@ const cancelArrival = async () => {
           v-if="!guest.arrived"
           btn-type="primary"
           :disabled="isSubmitting || !!guest.absence_Declared"
+          :loading="isSubmitting"
           @click="confirmArrival"
         >
           Confirmar chegada
@@ -108,6 +109,7 @@ const cancelArrival = async () => {
           v-else
           btn-type="outline-primary"
           :disabled="isSubmitting || !!guest.absence_Declared"
+          :loading="isSubmitting"
           @click="cancelArrival"
         >
           Cancelar chegada

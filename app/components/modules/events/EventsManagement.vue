@@ -10,7 +10,7 @@ const queryParameters = reactive<EventParameters>({
   startDate: '',
   endDate: '',
   pageNumber: 1,
-  pageSize: 20,
+  pageSize: 40,
 });
 
 const { events, pagination, isRefreshing, isError, refreshEvents } =

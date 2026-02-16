@@ -37,6 +37,7 @@ export const useGuestsList = async (
       queryParameters.guestLocalId,
       queryParameters.categoryId,
       queryParameters.availability_Type,
+      queryParameters.giftBrought,
       queryParameters.searchQuery,
       queryParameters.startDate,
       queryParameters.endDate,

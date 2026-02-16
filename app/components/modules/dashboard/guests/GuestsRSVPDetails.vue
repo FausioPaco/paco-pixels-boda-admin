@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/yup';
 import { useForm } from 'vee-validate';
-import { number, object, string } from 'yup';
+import { boolean, number, object, string } from 'yup';
 import { getGuestService } from '~/services/guestService';
 
 interface IConfirmationDetailsForm {
@@ -11,7 +11,7 @@ interface IConfirmationDetailsForm {
 const props = defineProps<IConfirmationDetailsForm>();
 const emit = defineEmits(['previousStep', 'nextStep']);
 
-const { defineField, handleSubmit, errors } = useForm({
+const { defineField, setFieldValue, handleSubmit, errors } = useForm({
   validationSchema: toTypedSchema(
     object({
       peopleConfirmed: number()
@@ -24,12 +24,27 @@ const { defineField, handleSubmit, errors } = useForm({
       additional_Comments: string()
         .max(250, 'A nota não pode exceder 250 caracteres')
         .default(''),
+      gift_Brought: boolean()
+        .nullable()
+        .transform((value, originalValue) => {
+          // quando vem do BaseSelect sem selecção
+          if (originalValue === '' || originalValue === undefined) return null;
+
+          // quando o select devolve string
+          if (originalValue === 'true') return true;
+          if (originalValue === 'false') return false;
+
+          // quando já vem boolean
+          return value;
+        })
+        .default(null),
     }),
   ),
 });
 
 const [peopleConfirmed, peopleConfirmedAttrs] = defineField('peopleConfirmed');
 const [note, noteAttrs] = defineField('additional_Comments');
+const [giftBrought, giftBroughtAttrs] = defineField('gift_Brought');
 
 const nuxtApp = useNuxtApp();
 const guestService = getGuestService(nuxtApp.$api);
@@ -44,6 +59,7 @@ const onSubmit = handleSubmit((values) => {
   const payload: ConfirmPresenceInput = {
     peopleConfirmed: values.peopleConfirmed,
     additional_Comments: values.additional_Comments,
+    gift_Brought: values.gift_Brought ?? null,
   };
 
   isSubmiting.value = true;
@@ -62,6 +78,21 @@ const onSubmit = handleSubmit((values) => {
       isSubmiting.value = false;
     });
 });
+
+watch(
+  () => props.guest,
+  (g) => {
+    if (!g) return;
+
+    const safePeopleConfirmed =
+      g.people_Confirmed && g.people_Confirmed >= 1 ? g.people_Confirmed : 1;
+
+    setFieldValue('peopleConfirmed', safePeopleConfirmed);
+    setFieldValue('additional_Comments', g.additional_Comments ?? '');
+    setFieldValue('gift_Brought', g.gift_Brought ?? null);
+  },
+  { immediate: true },
+);
 </script>
 <template>
   <div class="w-full px-1 text-left">
@@ -80,6 +111,20 @@ const onSubmit = handleSubmit((values) => {
           }))
         "
         :helper-text="`Este convite foi preparado para até ${props.guest?.people_Count ?? 1} ${props.guest?.people_Count === 1 ? 'pessoa' : 'pessoas'}.`"
+      />
+
+      <BaseSelect
+        id="giftBrought"
+        v-model="giftBrought"
+        v-bind="giftBroughtAttrs"
+        :error-message="errors.gift_Brought"
+        label="Levou presente?"
+        :options="[
+          { id: '', name: 'Não registado', value: null },
+          { id: 'true', name: 'Sim', value: true },
+          { id: 'false', name: 'Não', value: false },
+        ]"
+        disable-empty
       />
 
       <BaseTextArea
@@ -102,8 +147,17 @@ const onSubmit = handleSubmit((values) => {
           Voltar
         </BaseButton>
 
-        <BaseButton type="submit" btn-type="primary" size="md">
-          Confirmar Presença
+        <BaseButton
+          type="submit"
+          btn-type="primary"
+          size="md"
+          :loading="isSubmiting"
+        >
+          {{
+            props.guest?.presence_Confirmed
+              ? 'Actualizar confirmação'
+              : 'Confirmar Presença'
+          }}
         </BaseButton>
       </div>
     </form>

@@ -15,6 +15,7 @@ export interface Guest {
   people_Confirmed?: number;
   additional_Comments?: string;
   seatNumber?: number;
+  gift_Brought?: boolean | null;
   absence_Declared?: boolean;
   absence_Declared_At?: string | Date | null;
   created_At: Date;
@@ -26,6 +27,7 @@ export interface GuestParameters {
   guestLocalId?: number;
   categoryId?: number;
   availability_Type: string;
+  giftBrought?: boolean;
   searchQuery: string;
   startDate: string;
   endDate: string;
@@ -50,6 +52,7 @@ export interface GuestCategory {
 export interface ConfirmPresenceInput {
   peopleConfirmed: number;
   additional_Comments?: string;
+  gift_Brought?: boolean | null;
 }
 
 export type ExportFormat = 'png' | 'pdf';
