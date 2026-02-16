@@ -73,4 +73,29 @@ export function formatRangeInput(
   return '';
 }
 
+export function getMonthKey(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+const MONTHS_PT = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+];
+
+export function getMonthYearLabel(date: Date) {
+  return `${MONTHS_PT[date.getMonth()]} (${date.getFullYear()})`;
+}
+
 export const datePickerOptions = {};

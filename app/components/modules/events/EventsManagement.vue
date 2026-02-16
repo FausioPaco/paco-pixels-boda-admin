@@ -1,9 +1,18 @@
 <script setup lang="ts">
+type DatePeriodOption =
+  | ''
+  | 'lastYear'
+  | 'last6Months'
+  | 'last3Months'
+  | 'custom';
+
 const showFormModal = ref<boolean>(false);
 const showRemoveModal = ref<boolean>(false);
 
 const selectedEvent = ref<BodaEvent | null>(null);
 const eventToRemove = ref<BodaEvent | null>(null);
+const period = ref<DatePeriodOption>('');
+const customRange = ref<[Date | null, Date | null]>([null, null]);
 
 const queryParameters = reactive<EventParameters>({
   searchQuery: '',
@@ -27,9 +36,7 @@ watch(searchQuery, () => {
   debouncedSearch();
 });
 
-watch(queryParameters, () => {
-  refreshEvents();
-});
+watch(queryParameters, () => refreshEvents(), { deep: true });
 
 function onPageChange(newPage: number) {
   queryParameters.pageNumber = newPage;
@@ -77,9 +84,138 @@ const onRemoveSuccess = async () => {
 
 const eventStore = useEventStore();
 
+function getEventMainDate(e: BodaEvent) {
+  const raw = e.event_Date ?? e.created_At;
+  return raw ? new Date(raw as Date) : null;
+}
+
+// agrupamento + ordenação
+const groupedEventsByMonth = computed(() => {
+  const list = [...events.value];
+
+  list.sort((a, b) => {
+    const da = getEventMainDate(a)?.getTime() ?? 0;
+    const db = getEventMainDate(b)?.getTime() ?? 0;
+    return db - da;
+  });
+
+  const map = new Map<
+    string,
+    { key: string; label: string; dateRef: Date; items: BodaEvent[] }
+  >();
+
+  for (const e of list) {
+    const d = getEventMainDate(e);
+
+    if (!d) {
+      if (!map.has('no-date')) {
+        map.set('no-date', {
+          key: 'no-date',
+          label: 'Sem data',
+          dateRef: new Date(0),
+          items: [],
+        });
+      }
+
+      map.get('no-date')!.items.push(e);
+      continue;
+    }
+
+    const key = getMonthKey(d);
+
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        label: getMonthYearLabel(d),
+        dateRef: new Date(d.getFullYear(), d.getMonth(), 1),
+        items: [],
+      });
+    }
+
+    map.get(key)!.items.push(e);
+  }
+
+  return Array.from(map.values()).sort(
+    (a, b) => b.dateRef.getTime() - a.dateRef.getTime(),
+  );
+});
+
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function endOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(23, 59, 59, 999);
+  return x;
+}
+
+function setApiDateRange(start: Date | null, end: Date | null) {
+  queryParameters.startDate = start ? formatDDMMYYYY(start) : '';
+  queryParameters.endDate = end ? formatDDMMYYYY(end) : '';
+  queryParameters.pageNumber = 1;
+}
+
+function applyPeriodFilter() {
+  const now = new Date();
+
+  if (period.value === 'lastYear') {
+    const y = now.getFullYear() - 1;
+    setApiDateRange(new Date(y, 0, 1), new Date(y, 11, 31));
+    return;
+  }
+
+  if (period.value === 'last6Months') {
+    const start = new Date(
+      now.getFullYear(),
+      now.getMonth() - 6,
+      now.getDate(),
+    );
+    setApiDateRange(startOfDay(start), endOfDay(now));
+    return;
+  }
+
+  if (period.value === 'last3Months') {
+    const start = new Date(
+      now.getFullYear(),
+      now.getMonth() - 3,
+      now.getDate(),
+    );
+    setApiDateRange(startOfDay(start), endOfDay(now));
+    return;
+  }
+
+  // custom
+  const [start, end] = customRange.value ?? [null, null];
+  if (start && end) {
+    setApiDateRange(startOfDay(start), endOfDay(end));
+  } else {
+    // ainda incompleto -> não filtra
+    setApiDateRange(null, null);
+  }
+}
+
+// quando muda o período: aplica (ou limpa) e força refresh via watch(queryParameters)
+watch(period, () => {
+  if (period.value !== 'custom') {
+    customRange.value = [null, null];
+  }
+  applyPeriodFilter();
+});
+
+// quando muda o range custom: aplica só se tiver as 2 datas
+watch(
+  customRange,
+  () => {
+    if (period.value === 'custom') applyPeriodFilter();
+  },
+  { deep: true },
+);
+
 onMounted(() => {
   eventStore.clearSelectedEvent();
-  refreshEvents({ force: true });
 });
 </script>
 <template>
@@ -97,11 +233,9 @@ onMounted(() => {
 
     <section
       id="events"
-      class="relative flex w-full flex-col items-center px-4 py-5"
+      class="relative flex w-full max-w-full flex-col items-center px-4 py-5 md:px-10"
     >
-      <div
-        class="flex min-w-full flex-col items-stretch justify-stretch md:min-w-[45vw] md:max-w-[1400px] lg:min-w-[65vw] xl:min-w-[75vw]"
-      >
+      <div class="flex min-w-full flex-col items-stretch justify-stretch">
         <!-- Filters & Counter -->
         <div
           v-if="!isRefreshing"
@@ -118,6 +252,49 @@ onMounted(() => {
               placeholder="Pesquise o nome do evento"
               :readonly="isRefreshing"
             />
+
+            <BaseSelect
+              id="eventsPeriod"
+              v-model="period"
+              label="Período"
+              :options="[
+                { id: '', name: 'Todos', value: '' },
+                { id: 'lastYear', name: 'Ano Passado', value: 'lastYear' },
+                {
+                  id: 'last6Months',
+                  name: 'Últimos 6 meses',
+                  value: 'last6Months',
+                },
+                {
+                  id: 'last3Months',
+                  name: 'Últimos 3 meses',
+                  value: 'last3Months',
+                },
+                { id: 'custom', name: 'Customizado', value: 'custom' },
+              ]"
+              disable-empty
+            />
+
+            <div v-if="period === 'custom'">
+              <label class="mb-1 block text-sm font-medium"
+                >Intervalo de datas</label
+              >
+
+              <DatePicker
+                v-model="customRange"
+                locale="pt-PT"
+                :enable-time-picker="false"
+                :clearable="true"
+                :teleport="true"
+                :format="'dd/MM/yyyy'"
+                :auto-apply="true"
+                :disabled="isRefreshing"
+                range
+                placeholder="Selecione início e fim"
+                select-text="Selecionar"
+                cancel-text="Cancelar"
+              />
+            </div>
 
             <!-- Counter & Limit -->
             <div v-if="!isRefreshing" class="flex items-center justify-between">
@@ -184,15 +361,51 @@ onMounted(() => {
         <!-- Data -->
         <div
           v-if="!isRefreshing && !isError && events.length > 0"
-          class="my-4 flex flex-col flex-wrap gap-4 md:flex-row"
+          class="my-6 flex w-full animate-fadeIn flex-col gap-6"
         >
-          <EventItem
-            v-for="event in events"
-            :key="event.id"
-            :event="event"
-            @update="onEventUpdate"
-            @remove="onEventRemove"
-          />
+          <section
+            v-for="group in groupedEventsByMonth"
+            :key="group.key"
+            class="w-full"
+          >
+            <!-- Month Header -->
+            <div
+              class="sticky top-0 z-10 -mx-2 mb-3 flex items-center justify-between rounded-xl border border-white/10 bg-white/60 px-4 py-3 shadow-sm backdrop-blur md:mx-0 dark:bg-slate-900/60"
+            >
+              <div class="flex items-center gap-3">
+                <ClientOnly>
+                  <IconCalendar
+                    :font-controlled="false"
+                    class="text-primary-700 block h-7 w-7"
+                  />
+                  <template #fallback>
+                    <span class="block h-7 w-7"></span>
+                  </template>
+                </ClientOnly>
+                <h3 class="text-base font-semibold capitalize md:text-lg">
+                  {{ group.label }}
+                </h3>
+              </div>
+
+              <div
+                class="bg-grey-50 text-grey-700 dark:text-primary-200 rounded-full px-3 py-1 text-sm font-medium dark:bg-slate-800"
+              >
+                {{ group.items.length }}
+                {{ group.items.length === 1 ? 'evento' : 'eventos' }}
+              </div>
+            </div>
+
+            <!-- Events Grid -->
+            <div class="flex flex-col gap-4 md:flex-row md:flex-wrap">
+              <EventItem
+                v-for="event in group.items"
+                :key="event.id"
+                :event="event"
+                @update="onEventUpdate"
+                @remove="onEventRemove"
+              />
+            </div>
+          </section>
         </div>
 
         <!-- Pagination -->
