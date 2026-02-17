@@ -11,6 +11,7 @@ const queryParameters = reactive<GuestParameters>({
   searchQuery: '',
   startDate: '',
   endDate: '',
+  giftBrought: undefined,
   pageNumber: 1,
   pageSize: 10,
 });
@@ -47,6 +48,11 @@ const availabilityOptions: SelectOption[] = [
   { id: 'Absent', value: 'Absent', name: 'Ausentes' },
 ];
 
+const giftOptions: SelectOption[] = [
+  { id: 'true', value: true, name: 'Levou presente' },
+  { id: 'false', value: false, name: 'Não levou presente' },
+];
+
 const debouncedSearch = useDebounceFn(() => {
   queryParameters.searchQuery = searchQuery.value;
   queryParameters.guestLocalId = searchId.value;
@@ -59,10 +65,6 @@ watch(searchQuery, () => {
 
 watch(searchId, () => {
   debouncedSearch();
-});
-
-watch(queryParameters, () => {
-  refreshGuests();
 });
 
 function onPageChange(newPage: number) {
@@ -164,7 +166,6 @@ const absenceRowClass = (g: Guest) => {
 onMounted(() => {
   refreshCategories({ force: true });
   refreshDesks({ force: true });
-  refreshGuests({ force: true });
 });
 </script>
 <template>
@@ -176,9 +177,9 @@ onMounted(() => {
     <div
       class="flex min-w-full max-w-full flex-col items-stretch justify-stretch"
     >
-      <!-- Filters & Counter -->
+      <!-- Filters -->
       <div
-        class="flex w-full max-w-full animate-fadeIn flex-col md:flex-row md:justify-between"
+        class="flex w-full max-w-full animate-fadeIn flex-col gap-2 md:flex-row md:justify-between md:gap-20"
       >
         <div class="w-full md:w-1/2">
           <BaseInputGroup
@@ -215,7 +216,8 @@ onMounted(() => {
               }))
             "
           />
-
+        </div>
+        <div class="w-full md:w-1/2">
           <BaseSelect
             id="avaliability"
             v-model="queryParameters.availability_Type"
@@ -224,27 +226,37 @@ onMounted(() => {
             empty-message="Todas disponibilidades"
           />
 
-          <!-- Counter & Limit -->
-          <div v-if="!isRefreshing" class="flex items-center justify-between">
-            <div class="my-4 flex items-center space-x-2">
-              <icon-funnel
-                :font-controlled="false"
-                class="text-primary-700 block h-7 w-7"
-              ></icon-funnel>
-              <h3 class="text-primary-700 text-2xl font-bold">
-                {{
-                  pagination?.totalPeopleCount === 1
-                    ? '1 Convidado'
-                    : `${pagination ? pagination.totalPeopleCount : 0} Convidados`
-                }}
-              </h3>
-            </div>
-          </div>
+          <BaseSelect
+            id="giftBrought"
+            v-model="queryParameters.giftBrought"
+            label="Presentes: "
+            :options="giftOptions"
+            empty-message="Todos"
+          />
+        </div>
+      </div>
+
+      <!-- Counter & Actions -->
+      <div
+        class="my-2 flex w-full flex-wrap justify-start gap-2 md:items-end md:justify-between"
+      >
+        <!-- Counter -->
+        <div v-if="!isRefreshing" class="flex items-end justify-between gap-2">
+          <icon-funnel
+            :font-controlled="false"
+            class="text-primary-700 block h-7 w-7"
+          ></icon-funnel>
+          <h3 class="text-primary-700 text-2xl font-bold">
+            {{
+              pagination?.totalPeopleCount === 1
+                ? '1 Convidado'
+                : `${pagination ? pagination.totalPeopleCount : 0} Convidados`
+            }}
+          </h3>
         </div>
 
-        <div
-          class="flex w-full flex-col justify-start gap-4 md:w-1/2 md:flex-row md:items-end md:justify-end md:gap-2 md:pt-5"
-        >
+        <!-- Actions -->
+        <div class="flex flex-wrap gap-2">
           <BaseButton
             icon="add"
             size="md"

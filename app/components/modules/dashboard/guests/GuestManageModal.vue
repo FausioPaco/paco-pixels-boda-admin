@@ -257,7 +257,11 @@ const declareAbsence = async () => {
             () => {
               emit('updated');
               close();
-              toast.success('Presença confirmada com sucesso.');
+              toast.success(
+                props.guest?.presence_Confirmed
+                  ? 'Presença actualizada'
+                  : 'Presença confirmada',
+              );
             }
           "
         />

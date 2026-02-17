@@ -1,14 +1,14 @@
 export interface SelectOption {
   id: string | number;
   name: string;
-  value?: string | number;
+  value?: string | number | boolean | null;
 }
 
 export interface ISelectProps {
   id: string;
   options: SelectOption[];
   label?: string;
-  modelValue: string | number | undefined | null;
+  modelValue: string | number | boolean | undefined | null;
   helperText?: string;
   errorMessage?: string;
   success?: boolean;
