@@ -140,6 +140,12 @@ const groupedEventsByMonth = computed(() => {
   );
 });
 
+function addDays(base: Date, days: number) {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
 function startOfDay(d: Date) {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
@@ -201,7 +207,24 @@ function applyPeriodFilter() {
 watch(period, () => {
   if (period.value !== 'custom') {
     customRange.value = [null, null];
+    applyPeriodFilter();
+    return;
   }
+
+  // entrou em custom:
+  const [start, end] = customRange.value ?? [null, null];
+
+  // se ainda não tem range, mete default: semana passada -> hoje
+  if (!start || !end) {
+    const now = new Date();
+    const defaultEnd = endOfDay(now);
+    const defaultStart = startOfDay(addDays(now, -7));
+
+    customRange.value = [defaultStart, defaultEnd];
+
+    return;
+  }
+
   applyPeriodFilter();
 });
 
