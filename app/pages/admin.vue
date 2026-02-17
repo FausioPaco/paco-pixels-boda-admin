@@ -13,6 +13,7 @@ definePageMeta({
   name: 'Visão Geral',
   pageName: 'Visão Geral',
   middleware: ['require-event'],
+  layout: 'dashboard',
 });
 
 const { startHeartbeat, stopHeartbeat } = useUserHeartbeat();
@@ -27,8 +28,6 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div>
-    <NuxtLayout name="dashboard">
-      <NuxtPage />
-    </NuxtLayout>
+    <NuxtPage />
   </div>
 </template>

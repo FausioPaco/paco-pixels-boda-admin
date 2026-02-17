@@ -1,6 +1,7 @@
 <script setup lang="ts">
 type DatePeriodOption =
-  | ''
+  | 'all'
+  | 'thisYear'
   | 'lastYear'
   | 'last6Months'
   | 'last3Months'
@@ -11,8 +12,17 @@ const showRemoveModal = ref<boolean>(false);
 
 const selectedEvent = ref<BodaEvent | null>(null);
 const eventToRemove = ref<BodaEvent | null>(null);
-const period = ref<DatePeriodOption>('');
+const period = ref<DatePeriodOption>('thisYear');
 const customRange = ref<[Date | null, Date | null]>([null, null]);
+
+const periodOptions = [
+  { id: 'all', name: 'Todos' },
+  { id: 'thisYear', name: 'Este ano' },
+  { id: 'last6Months', name: 'Últimos 6 meses' },
+  { id: 'last3Months', name: 'Últimos 3 meses' },
+  { id: 'lastYear', name: 'Ano passado' },
+  { id: 'custom', name: 'Customizado' },
+];
 
 const queryParameters = reactive<EventParameters>({
   searchQuery: '',
@@ -25,18 +35,15 @@ const queryParameters = reactive<EventParameters>({
 const { events, pagination, isRefreshing, isError, refreshEvents } =
   await useEventsList(queryParameters);
 
+watch(
+  queryParameters,
+  () => {
+    refreshEvents();
+  },
+  { deep: true },
+);
+
 const searchQuery = ref('');
-
-const debouncedSearch = useDebounceFn(() => {
-  queryParameters.searchQuery = searchQuery.value;
-  queryParameters.pageNumber = 1;
-}, 600);
-
-watch(searchQuery, () => {
-  debouncedSearch();
-});
-
-watch(queryParameters, () => refreshEvents(), { deep: true });
 
 function onPageChange(newPage: number) {
   queryParameters.pageNumber = newPage;
@@ -96,7 +103,7 @@ const groupedEventsByMonth = computed(() => {
   list.sort((a, b) => {
     const da = getEventMainDate(a)?.getTime() ?? 0;
     const db = getEventMainDate(b)?.getTime() ?? 0;
-    return db - da;
+    return da - db;
   });
 
   const map = new Map<
@@ -136,7 +143,7 @@ const groupedEventsByMonth = computed(() => {
   }
 
   return Array.from(map.values()).sort(
-    (a, b) => b.dateRef.getTime() - a.dateRef.getTime(),
+    (a, b) => a.dateRef.getTime() - b.dateRef.getTime(),
   );
 });
 
@@ -159,76 +166,97 @@ function endOfDay(d: Date) {
 }
 
 function setApiDateRange(start: Date | null, end: Date | null) {
-  queryParameters.startDate = start ? formatDDMMYYYY(start) : '';
-  queryParameters.endDate = end ? formatDDMMYYYY(end) : '';
-  queryParameters.pageNumber = 1;
+  Object.assign(queryParameters, {
+    startDate: start ? formatDDMMYYYY(start) : '',
+    endDate: end ? formatDDMMYYYY(end) : '',
+    pageNumber: 1,
+  });
 }
 
 function applyPeriodFilter() {
   const now = new Date();
 
-  if (period.value === 'lastYear') {
-    const y = now.getFullYear() - 1;
-    setApiDateRange(new Date(y, 0, 1), new Date(y, 11, 31));
-    return;
-  }
+  switch (period.value) {
+    case 'all':
+      setApiDateRange(null, null);
+      return;
 
-  if (period.value === 'last6Months') {
-    const start = new Date(
-      now.getFullYear(),
-      now.getMonth() - 6,
-      now.getDate(),
-    );
-    setApiDateRange(startOfDay(start), endOfDay(now));
-    return;
-  }
+    case 'thisYear': {
+      const y = now.getFullYear();
+      setApiDateRange(new Date(y, 0, 1), new Date(y, 11, 31));
+      return;
+    }
 
-  if (period.value === 'last3Months') {
-    const start = new Date(
-      now.getFullYear(),
-      now.getMonth() - 3,
-      now.getDate(),
-    );
-    setApiDateRange(startOfDay(start), endOfDay(now));
-    return;
-  }
+    case 'last6Months': {
+      const start = new Date(
+        now.getFullYear(),
+        now.getMonth() - 6,
+        now.getDate(),
+      );
+      setApiDateRange(startOfDay(start), endOfDay(now));
+      return;
+    }
 
-  // custom
-  const [start, end] = customRange.value ?? [null, null];
-  if (start && end) {
-    setApiDateRange(startOfDay(start), endOfDay(end));
-  } else {
-    // ainda incompleto -> não filtra
-    setApiDateRange(null, null);
+    case 'last3Months': {
+      const start = new Date(
+        now.getFullYear(),
+        now.getMonth() - 3,
+        now.getDate(),
+      );
+      setApiDateRange(startOfDay(start), endOfDay(now));
+      return;
+    }
+
+    case 'lastYear': {
+      const y = now.getFullYear() - 1;
+      setApiDateRange(new Date(y, 0, 1), new Date(y, 11, 31));
+      return;
+    }
+
+    case 'custom': {
+      const [start, end] = customRange.value ?? [null, null];
+      if (start && end) setApiDateRange(startOfDay(start), endOfDay(end));
+      else setApiDateRange(null, null);
+      return;
+    }
   }
 }
 
-// quando muda o período: aplica (ou limpa) e força refresh via watch(queryParameters)
+const debouncedSearch = useDebounceFn(() => {
+  queryParameters.searchQuery = searchQuery.value;
+  queryParameters.pageNumber = 1;
+}, 600);
+
+watch(searchQuery, () => {
+  debouncedSearch();
+});
+
 watch(period, () => {
+  if (period.value === 'all') {
+    customRange.value = [null, null];
+    setApiDateRange(null, null);
+    return;
+  }
+
   if (period.value !== 'custom') {
     customRange.value = [null, null];
     applyPeriodFilter();
     return;
   }
 
-  // entrou em custom:
+  // custom
   const [start, end] = customRange.value ?? [null, null];
-
-  // se ainda não tem range, mete default: semana passada -> hoje
   if (!start || !end) {
     const now = new Date();
     const defaultEnd = endOfDay(now);
     const defaultStart = startOfDay(addDays(now, -7));
-
     customRange.value = [defaultStart, defaultEnd];
-
     return;
   }
 
   applyPeriodFilter();
 });
 
-// quando muda o range custom: aplica só se tiver as 2 datas
 watch(
   customRange,
   () => {
@@ -254,205 +282,195 @@ onMounted(() => {
       </p>
     </div>
 
-    <section
-      id="events"
-      class="relative flex w-full max-w-full flex-col items-center px-4 py-5 md:px-10"
-    >
-      <div class="flex min-w-full flex-col items-stretch justify-stretch">
-        <!-- Filters & Counter -->
-        <div
-          v-if="!isRefreshing"
-          class="flex w-full animate-fadeIn flex-col md:flex-row md:items-start md:justify-between"
-        >
-          <div class="w-full md:w-1/2">
-            <BaseInput
-              id="eventName"
-              v-model="searchQuery"
-              autocomplete="name"
-              type="search"
-              name="eventName"
-              label="Pesquisa:"
-              placeholder="Pesquise o nome do evento"
-              :readonly="isRefreshing"
-            />
-
-            <BaseSelect
-              id="eventsPeriod"
-              v-model="period"
-              label="Período"
-              :options="[
-                { id: '', name: 'Todos', value: '' },
-                { id: 'lastYear', name: 'Ano Passado', value: 'lastYear' },
-                {
-                  id: 'last6Months',
-                  name: 'Últimos 6 meses',
-                  value: 'last6Months',
-                },
-                {
-                  id: 'last3Months',
-                  name: 'Últimos 3 meses',
-                  value: 'last3Months',
-                },
-                { id: 'custom', name: 'Customizado', value: 'custom' },
-              ]"
-              disable-empty
-            />
-
-            <div v-if="period === 'custom'">
-              <label class="mb-1 block text-sm font-medium"
-                >Intervalo de datas</label
-              >
-
-              <DatePicker
-                v-model="customRange"
-                locale="pt-PT"
-                :enable-time-picker="false"
-                :clearable="true"
-                :teleport="true"
-                :format="'dd/MM/yyyy'"
-                :auto-apply="true"
-                :disabled="isRefreshing"
-                range
-                placeholder="Selecione início e fim"
-                select-text="Selecionar"
-                cancel-text="Cancelar"
+    <ClientOnly>
+      <section
+        id="events"
+        class="relative flex w-full max-w-full flex-col items-center px-4 py-5 md:px-10"
+      >
+        <div class="flex min-w-full flex-col items-stretch justify-stretch">
+          <!-- Filters & Counter -->
+          <div
+            class="flex w-full animate-fadeIn flex-col md:flex-row md:items-start md:justify-between"
+          >
+            <div class="w-full md:w-1/2">
+              <BaseInput
+                id="eventName"
+                v-model="searchQuery"
+                autocomplete="name"
+                type="search"
+                name="eventName"
+                label="Pesquisa:"
+                placeholder="Pesquise o nome do evento"
+                :readonly="isRefreshing"
               />
-            </div>
 
-            <!-- Counter & Limit -->
-            <div v-if="!isRefreshing" class="flex items-center justify-between">
-              <div class="my-4 flex items-center space-x-2">
-                <icon-funnel
-                  :font-controlled="false"
-                  class="text-primary-700 block h-7 w-7"
-                ></icon-funnel>
-                <h3 class="text-primary-700 text-2xl font-bold">
-                  {{
-                    pagination?.totalCount === 1
-                      ? '1 Evento'
-                      : `${pagination ? pagination.totalCount : 0} Eventos`
-                  }}
-                </h3>
+              <BaseSelect
+                id="eventsPeriod"
+                v-model="period"
+                label="Período"
+                :options="periodOptions"
+                :readonly="isRefreshing"
+                disable-empty
+              />
+
+              <div v-if="period === 'custom'">
+                <label class="mb-1 block text-sm font-medium"
+                  >Intervalo de datas</label
+                >
+
+                <DatePicker
+                  v-model="customRange"
+                  locale="pt-PT"
+                  :enable-time-picker="false"
+                  :clearable="true"
+                  :teleport="true"
+                  :format="'dd/MM/yyyy'"
+                  :auto-apply="true"
+                  :disabled="isRefreshing"
+                  range
+                  placeholder="Selecione início e fim"
+                  select-text="Selecionar"
+                  cancel-text="Cancelar"
+                />
+              </div>
+
+              <!-- Counter & Limit -->
+              <div
+                v-if="!isRefreshing"
+                class="flex items-center justify-between"
+              >
+                <div class="my-4 flex items-center space-x-2">
+                  <icon-funnel
+                    :font-controlled="false"
+                    class="text-primary-700 block h-7 w-7"
+                  ></icon-funnel>
+                  <h3 class="text-primary-700 text-2xl font-bold">
+                    {{
+                      pagination?.totalCount === 1
+                        ? '1 Evento'
+                        : `${pagination ? pagination.totalCount : 0} Eventos`
+                    }}
+                  </h3>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div
-            class="flex h-fit w-full flex-col justify-start gap-4 md:w-1/2 md:flex-row md:justify-end md:gap-2 md:pt-6"
-          >
-            <BaseButton
-              icon="add"
-              size="md"
-              btn-type="primary"
-              @click.prevent="onCreateEvent"
-            >
-              Criar Evento
-            </BaseButton>
-          </div>
-        </div>
-
-        <!-- Loading -->
-        <BaseTableLoading v-if="isRefreshing" class="hidden md:block" />
-
-        <BaseLoading
-          v-if="isRefreshing"
-          size="lg"
-          orientation="vertical"
-          class="block md:hidden"
-        />
-
-        <!-- SearchNotFound -->
-        <BaseSearchNotFound
-          v-if="!isFirstTime && events.length === 0"
-          @fallback="refreshEvents"
-        >
-          Infelizmente, não encontramos mesas para o filtro aplicado
-        </BaseSearchNotFound>
-
-        <!-- No desk: first Time -->
-        <LazyBaseFirstEmptyState
-          v-if="isFirstTime"
-          icon="icon-event-wedding"
-          title="Ainda não criou evento"
-          description="Crie o seu primeiro evento para começar a organizar os lugares dos seus convidados de forma mais eficiente."
-          button-label="Criar primero evento"
-          button-icon="add"
-          show-button
-          @action="onCreateEvent"
-        />
-
-        <!-- Data -->
-        <div
-          v-if="!isRefreshing && !isError && events.length > 0"
-          class="my-6 flex w-full animate-fadeIn flex-col gap-6"
-        >
-          <section
-            v-for="group in groupedEventsByMonth"
-            :key="group.key"
-            class="w-full"
-          >
-            <!-- Month Header -->
             <div
-              class="sticky top-0 z-10 -mx-2 mb-3 flex items-center justify-between rounded-xl border border-white/10 bg-white/60 px-4 py-3 shadow-sm backdrop-blur md:mx-0 dark:bg-slate-900/60"
+              class="flex h-fit w-full flex-col justify-start gap-4 md:w-1/2 md:flex-row md:justify-end md:gap-2 md:pt-6"
             >
-              <div class="flex items-center gap-3">
-                <ClientOnly>
+              <BaseButton
+                icon="add"
+                size="md"
+                btn-type="primary"
+                @click.prevent="onCreateEvent"
+              >
+                Criar Evento
+              </BaseButton>
+            </div>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="isRefreshing" class="my-6">
+            <BaseLoading size="lg" orientation="vertical" />
+          </div>
+
+          <!-- SearchNotFound -->
+          <BaseSearchNotFound
+            v-if="
+              !isFirstTime && events.length === 0 && !isRefreshing && !isError
+            "
+            @fallback="refreshEvents({ force: true })"
+          >
+            Infelizmente, não encontramos mesas para o filtro aplicado
+          </BaseSearchNotFound>
+
+          <!-- No desk: first Time -->
+          <LazyBaseFirstEmptyState
+            v-if="isFirstTime"
+            icon="icon-event-wedding"
+            title="Ainda não criou evento"
+            description="Crie o seu primeiro evento para começar a organizar os lugares dos seus convidados de forma mais eficiente."
+            button-label="Criar primero evento"
+            button-icon="add"
+            show-button
+            @action="onCreateEvent"
+          />
+
+          <!-- Data -->
+          <div
+            v-if="!isRefreshing && !isError && events.length > 0"
+            class="my-6 flex w-full animate-fadeIn flex-col gap-6"
+          >
+            <section
+              v-for="group in groupedEventsByMonth"
+              :key="group.key"
+              class="w-full"
+            >
+              <!-- Month Header -->
+              <div
+                class="sticky top-0 z-10 -mx-2 mb-3 flex items-center justify-between rounded-xl border border-white/10 bg-white/60 px-4 py-3 shadow-sm backdrop-blur md:mx-0 dark:bg-slate-900/60"
+              >
+                <div class="flex items-center gap-3">
                   <IconCalendar
                     :font-controlled="false"
                     class="text-primary-700 block h-7 w-7"
                   />
-                  <template #fallback>
-                    <span class="block h-7 w-7"></span>
-                  </template>
-                </ClientOnly>
-                <h3 class="text-base font-semibold capitalize md:text-lg">
-                  {{ group.label }}
-                </h3>
+                  <h3 class="text-base font-semibold capitalize md:text-lg">
+                    {{ group.label }}
+                  </h3>
+                </div>
+
+                <div
+                  class="bg-grey-50 text-grey-700 dark:text-primary-200 rounded-full px-3 py-1 text-sm font-medium dark:bg-slate-800"
+                >
+                  {{ group.items.length }}
+                  {{ group.items.length === 1 ? 'evento' : 'eventos' }}
+                </div>
               </div>
 
-              <div
-                class="bg-grey-50 text-grey-700 dark:text-primary-200 rounded-full px-3 py-1 text-sm font-medium dark:bg-slate-800"
-              >
-                {{ group.items.length }}
-                {{ group.items.length === 1 ? 'evento' : 'eventos' }}
+              <!-- Events Grid -->
+              <div class="flex flex-col gap-4 md:flex-row md:flex-wrap">
+                <EventItem
+                  v-for="event in group.items"
+                  :key="event.id"
+                  :event="event"
+                  @update="onEventUpdate"
+                  @remove="onEventRemove"
+                />
               </div>
-            </div>
+            </section>
+          </div>
 
-            <!-- Events Grid -->
-            <div class="flex flex-col gap-4 md:flex-row md:flex-wrap">
-              <EventItem
-                v-for="event in group.items"
-                :key="event.id"
-                :event="event"
-                @update="onEventUpdate"
-                @remove="onEventRemove"
-              />
-            </div>
-          </section>
+          <!-- Pagination -->
+          <LazyBasePagination
+            v-if="pagination && pagination.totalPages > 1"
+            :pagination-data="pagination"
+            @page-change="onPageChange"
+            @page-selected="onPageSelected"
+          />
         </div>
 
-        <!-- Pagination -->
-        <BasePagination
-          v-if="pagination && pagination.totalPages > 1"
-          :pagination-data="pagination"
-          @page-change="onPageChange"
-          @page-selected="onPageSelected"
+        <LazyEventFormModal
+          :show="showFormModal"
+          :event="selectedEvent"
+          @close-modal="showFormModal = false"
+          @success="onFormSuccess"
         />
-      </div>
 
-      <LazyEventFormModal
-        :show="showFormModal"
-        :event="selectedEvent"
-        @close-modal="showFormModal = false"
-        @success="onFormSuccess"
-      />
-
-      <LazyEventRemoveModal
-        :show="showRemoveModal"
-        :event="eventToRemove"
-        @close-modal="showRemoveModal = false"
-        @success="onRemoveSuccess"
-      />
-    </section>
+        <LazyEventRemoveModal
+          :show="showRemoveModal"
+          :event="eventToRemove"
+          @close-modal="showRemoveModal = false"
+          @success="onRemoveSuccess"
+        />
+      </section>
+      <template #fallback>
+        <div
+          class="my-6 flex w-full animate-fadeIn items-center justify-center"
+        >
+          <BaseLoading size="lg" orientation="vertical" />
+        </div>
+      </template>
+    </ClientOnly>
   </div>
 </template>

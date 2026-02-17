@@ -14,12 +14,9 @@ useHead({
 definePageMeta({
   name: 'Eventos',
   middleware: ['auth', 'administrator'],
+  layout: 'events',
 });
 </script>
 <template>
-  <div>
-    <NuxtLayout name="events">
-      <NuxtPage />
-    </NuxtLayout>
-  </div>
+  <div><NuxtPage /></div>
 </template>

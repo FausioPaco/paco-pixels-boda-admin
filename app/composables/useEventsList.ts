@@ -1,11 +1,8 @@
 import { getEventService } from '~/services/eventService';
 
-export const useEventsList = async (params?: EventParameters | undefined) => {
-  const events = useState<BodaEvent[]>('events-list', () => []);
-  const pagination = useState<PaginationData<BodaEvent> | null>(
-    'events-pagination',
-    () => null,
-  );
+export const useEventsList = async (params?: EventParameters) => {
+  const events = ref<BodaEvent[]>([]);
+  const pagination = ref<PaginationData<BodaEvent> | null>(null);
 
   const queryParameters =
     params ??
@@ -17,16 +14,7 @@ export const useEventsList = async (params?: EventParameters | undefined) => {
       pageSize: 10,
     } as EventParameters);
 
-  const key = computed(() =>
-    [
-      'events-list',
-      queryParameters.searchQuery,
-      queryParameters.startDate,
-      queryParameters.endDate,
-      queryParameters.pageNumber,
-      queryParameters.pageSize,
-    ].join('|'),
-  );
+  const key = 'events-list';
 
   const nuxtApp = useNuxtApp();
 
@@ -36,11 +24,7 @@ export const useEventsList = async (params?: EventParameters | undefined) => {
     {
       transform(input) {
         const { data, ...paginationData } = input;
-        return {
-          eventsList: data,
-          pagination: paginationData,
-          fetchedAt: new Date(),
-        };
+        return { eventsList: data, pagination: paginationData };
       },
       getCachedData(key) {
         const cached = nuxtApp.payload.data[key] || nuxtApp.static.data[key];
@@ -52,26 +36,21 @@ export const useEventsList = async (params?: EventParameters | undefined) => {
   );
 
   watchEffect(() => {
-    if (data.value) {
-      events.value = data.value.eventsList;
-      pagination.value = data.value.pagination;
-    }
+    if (!data.value) return;
+    events.value = data.value.eventsList;
+    pagination.value = data.value.pagination;
   });
 
   const refreshEvents = async (opts?: { force?: boolean }) => {
-    if (opts?.force) {
-      clearNuxtData(key.value);
-    }
+    if (opts?.force) clearNuxtData(key);
     await refresh();
   };
 
   return {
     events,
     pagination,
-    isIdle: status.value === 'idle',
-    isRefreshing: status.value === 'pending',
-    isError: status.value === 'error',
-    isSuccess: status.value === 'success',
+    isRefreshing: computed(() => status.value === 'pending'),
+    isError: computed(() => status.value === 'error'),
     refreshEvents,
   };
 };
