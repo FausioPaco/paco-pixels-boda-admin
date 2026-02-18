@@ -62,18 +62,31 @@ watch(errorMessage, (val) => {
       class="flex min-w-full max-w-full flex-col items-stretch justify-stretch"
     >
       <div
-        class="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
+        class="flex flex-col justify-start gap-3 md:flex-row md:items-center md:justify-between"
       >
-        <div class="flex items-center gap-2">
-          <h2 class="text-primary-700 text-2xl font-bold">
-            {{ isInternal ? 'Programa interno' : 'Programa para convidados' }}
-          </h2>
+        <!-- Tabs -->
+        <div class="mt-4 md:w-[75%] lg:w-1/2">
+          <BaseMiniSwitch
+            :model-value="program?.mode ?? 'manual'"
+            :items="[
+              { value: 'manual', label: 'Criar lista', icon: 'document' },
+              {
+                value: 'upload',
+                label: 'Carregar o seu programa',
+                icon: 'upload',
+              },
+            ]"
+            :disabled="isPersisting"
+            size="sm"
+            @update:model-value="setMode($event as any)"
+          />
         </div>
 
-        <div class="flex gap-2">
+        <!-- Refresh Program -->
+        <div class="flex gap-2 md:w-1/2 md:justify-end">
           <BaseButton
             btn-type="outline-primary"
-            size="md"
+            btn-size="sm"
             :disabled="isRefreshing || isPersisting"
             icon="refresh"
             @click="refreshEventProgram"
@@ -84,7 +97,7 @@ watch(errorMessage, (val) => {
           <BaseButton
             v-if="program?.mode === 'manual'"
             btn-type="primary"
-            size="md"
+            btn-size="sm"
             icon="download"
             :disabled="isPersisting"
             @click="
@@ -94,29 +107,6 @@ watch(errorMessage, (val) => {
             Gerar PDF
           </BaseButton>
         </div>
-      </div>
-
-      <!-- Tabs -->
-      <div class="mt-4 flex w-full flex-col gap-2 lg:flex-row">
-        <BaseButton
-          btn-type="primary"
-          size="md"
-          :disabled="isPersisting"
-          :class="program?.mode === 'manual' ? '' : 'opacity-60'"
-          @click="setMode('manual')"
-        >
-          Criar lista
-        </BaseButton>
-
-        <BaseButton
-          btn-type="outline-primary"
-          size="md"
-          :disabled="isPersisting"
-          :class="program?.mode === 'upload' ? '' : 'opacity-60'"
-          @click="setMode('upload')"
-        >
-          Carregar o seu programa
-        </BaseButton>
       </div>
 
       <!-- Loading -->

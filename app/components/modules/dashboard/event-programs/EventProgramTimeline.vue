@@ -51,9 +51,9 @@ const move = async (
 
     <div v-if="items.length === 0" class="mt-6">
       <LazyBaseFirstEmptyState
-        icon="icon-checklist"
+        icon="icon-dashboard-program"
         title="Ainda não criou nenhum item"
-        description="Crie o seu primeiro item para começar a montar o cronograma do evento."
+        description="Crie o seu primeiro item para começar a montar o programa do evento."
         :show-button="true"
         button-label="Criar primeiro item"
         button-icon="add"

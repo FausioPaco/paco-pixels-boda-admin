@@ -25,15 +25,6 @@ const showFileUploadAlert = ref(true);
           para ser partilhado com os convidados.
         </p>
       </div>
-
-      <BaseButton
-        btn-type="primary"
-        size="md"
-        icon="upload"
-        @click="$emit('upload')"
-      >
-        Carregar agora
-      </BaseButton>
     </div>
 
     <div class="mt-5">
@@ -53,11 +44,21 @@ const showFileUploadAlert = ref(true);
       <BaseAlert
         v-else
         :show="showFileUploadAlert"
-        title="Modo Planeamento Activo"
+        title="Sem ficheiro carregado"
         message=" Ainda não foi carregado nenhum ficheiro."
         type="informative"
         @close="showFileUploadAlert = !showFileUploadAlert"
       />
     </div>
+
+    <BaseButton
+      btn-type="primary"
+      btn-size="sm"
+      icon="upload"
+      class="my-5"
+      @click="$emit('upload')"
+    >
+      Carregar agora
+    </BaseButton>
   </div>
 </template>

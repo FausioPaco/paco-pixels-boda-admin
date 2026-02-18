@@ -266,6 +266,8 @@ watch(
 );
 
 onMounted(() => {
+  applyPeriodFilter();
+  refreshEvents({ force: true });
   eventStore.clearSelectedEvent();
 });
 </script>

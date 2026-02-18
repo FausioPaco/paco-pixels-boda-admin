@@ -6,7 +6,7 @@ const { isMultiEventStaffUser } = useAuthStore();
 
 <template>
   <BaseCard
-    title="Programa do Evento"
+    title="Gestão do Programa do Evento"
     description="Gestão do programa para convidados e programa interno"
   >
     <BaseTab v-if="isMultiEventStaffUser">
@@ -19,7 +19,7 @@ const { isMultiEventStaffUser } = useAuthStore();
         class="w-full md:w-1/2"
         @click="activeTab = 'GUESTS'"
       >
-        Convidados
+        Para Convidados
       </BaseTabItem>
 
       <BaseTabItem
@@ -31,7 +31,7 @@ const { isMultiEventStaffUser } = useAuthStore();
         class="w-full md:w-1/2"
         @click="activeTab = 'INTERNAL'"
       >
-        Interno
+        Para Equipa Interna
       </BaseTabItem>
     </BaseTab>
 

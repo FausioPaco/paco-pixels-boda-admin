@@ -156,7 +156,7 @@ const onSubmit = handleSubmit(async (values) => {
         placeholder="Ex.: Cerimónia"
       />
 
-      <BaseTextarea
+      <BaseTextArea
         id="programDescription"
         v-model="description"
         v-bind="descriptionAttrs"
