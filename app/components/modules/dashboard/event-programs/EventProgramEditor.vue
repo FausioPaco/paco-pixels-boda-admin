@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { useToast } from 'vue-toastification';
 
+const props = defineProps<{
+  isInternal?: boolean;
+}>();
+
 const toast = useToast();
 const { eventId } = useEventStore();
 
 if (!eventId) {
   toast.error('O evento não foi encontrado.');
 }
+
+const isInternal = computed(() => props.isInternal ?? false);
 
 const {
   program,
@@ -17,7 +23,10 @@ const {
   refreshEventProgram,
   updateMode,
   reorderItems,
-} = await useEventProgram(eventId!, { immediate: false });
+} = await useEventProgram(eventId!, {
+  immediate: false,
+  isInternal: isInternal.value,
+});
 
 onMounted(() => {
   refreshEventProgram();
@@ -57,7 +66,7 @@ watch(errorMessage, (val) => {
       >
         <div class="flex items-center gap-2">
           <h2 class="text-primary-700 text-2xl font-bold">
-            Programa do evento
+            {{ isInternal ? 'Programa interno' : 'Programa para convidados' }}
           </h2>
         </div>
 
@@ -146,6 +155,7 @@ watch(errorMessage, (val) => {
     <!-- Modals -->
     <LazyEventProgramUploadModal
       :show="showUploadModal"
+      :is-internal="isInternal"
       @close-modal="showUploadModal = false"
       @success="
         showUploadModal = false;
@@ -156,6 +166,7 @@ watch(errorMessage, (val) => {
     <LazyEventProgramItemFormModal
       :show="showItemModal"
       :item="selectedItem"
+      :is-internal="isInternal"
       @close-modal="
         showItemModal = false;
         selectedItem = undefined;

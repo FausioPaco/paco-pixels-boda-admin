@@ -8,11 +8,13 @@ import { getEventProgramService } from '~/services/eventProgramService';
 interface Props {
   show?: boolean;
   item?: EventProgramItem | undefined;
+  isInternal?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   show: false,
   item: undefined,
+  isInternal: false,
 });
 
 const emit = defineEmits(['closeModal', 'success']);
@@ -94,10 +96,15 @@ const onSubmit = handleSubmit(async (values) => {
 
   try {
     if (!props.item) {
-      await eventProgramService.addItem(eventId, payload);
+      await eventProgramService.addItem(eventId, payload, props.isInternal);
       showSuccess('O item foi criado com sucesso');
     } else {
-      await eventProgramService.updateItem(eventId, props.item.id, payload);
+      await eventProgramService.updateItem(
+        eventId,
+        props.item.id,
+        payload,
+        props.isInternal,
+      );
       showSuccess('O item foi actualizado com sucesso');
     }
 

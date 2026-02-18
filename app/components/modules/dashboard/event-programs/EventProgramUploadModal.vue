@@ -4,9 +4,13 @@ import { getEventProgramService } from '~/services/eventProgramService';
 
 interface Props {
   show?: boolean;
+  isInternal?: boolean;
 }
 
-withDefaults(defineProps<Props>(), { show: false });
+const props = withDefaults(defineProps<Props>(), {
+  show: false,
+  isInternal: false,
+});
 const emit = defineEmits(['closeModal', 'success']);
 
 const toast = useToast();
@@ -75,7 +79,11 @@ const onSubmit = async () => {
     isSubmiting.value = true;
     serverErrors.value = { hasErrors: false, message: '' };
 
-    await eventProgramService.uploadProgramFile(eventId, file);
+    await eventProgramService.uploadProgramFile(
+      eventId,
+      file,
+      props.isInternal,
+    );
 
     toast.success('Ficheiro carregado com sucesso.');
     emit('success');
