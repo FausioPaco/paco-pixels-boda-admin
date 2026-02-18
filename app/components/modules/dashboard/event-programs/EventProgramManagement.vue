@@ -23,7 +23,7 @@ const activeTab = ref<ProgramTab>('GUESTS');
 
       <BaseTabItem
         id="internal"
-        icon="dashboard-settings"
+        icon="program-staff"
         :tab-position="2"
         :total-tabs="2"
         :is-active="activeTab === 'INTERNAL'"

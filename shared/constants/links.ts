@@ -55,6 +55,12 @@ export const ADMIN_EXPERIENCE_LINKS: AdminLink[] = [
     icon: 'calendar',
     restricted: false,
   },
+  {
+    label: 'Programa do Evento',
+    link: '/admin/programa',
+    icon: 'dashboard-program',
+    restricted: false,
+  },
 
   // {
   //   label: 'Menu',
