@@ -1,6 +1,7 @@
 <script setup lang="ts">
 type ProgramTab = 'GUESTS' | 'INTERNAL';
 const activeTab = ref<ProgramTab>('GUESTS');
+const { isMultiEventStaffUser } = useAuthStore();
 </script>
 
 <template>
@@ -8,7 +9,7 @@ const activeTab = ref<ProgramTab>('GUESTS');
     title="Programa do Evento"
     description="Gestão do programa para convidados e programa interno"
   >
-    <BaseTab>
+    <BaseTab v-if="isMultiEventStaffUser">
       <BaseTabItem
         id="guests"
         icon="dashboard-program"
