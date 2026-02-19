@@ -56,4 +56,18 @@ export const getMenuService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
       method: 'delete',
     });
   },
+
+  async reorderMenuItems(
+    menuId: number,
+    menuCategoryId: number,
+    payload: { itemIds: number[] },
+  ): Promise<unknown> {
+    return $fetch<unknown>(
+      `${RESOURCE}/ReorderItems/${menuId}/${menuCategoryId}`,
+      {
+        method: 'put',
+        body: payload,
+      },
+    );
+  },
 });

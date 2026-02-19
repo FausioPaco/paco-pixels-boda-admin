@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useToast } from 'vue-toastification';
+import { getMenuService } from '~/services/menuService';
+
 const { menu, isRefreshing, isError, refreshMenu } = await useMenu();
 const { categories } = await useMenuCategories();
 const { isAdministrator, isSuperAdministrator } = useAuthStore();
@@ -41,6 +44,36 @@ const getMenuCategoryName = computed(() => {
 
   return categories.value.find((c) => c.id === selectedCategoryId.value)?.title;
 });
+
+const nuxtApp = useNuxtApp();
+const menuService = getMenuService(nuxtApp.$api);
+const toast = useToast();
+const isReorderingItems = ref(false);
+
+const handleReorderItems = async (
+  menuCategoryId: number,
+  orderedItemIds: number[],
+) => {
+  if (!menu.value) return;
+
+  isReorderingItems.value = true;
+
+  try {
+    // chamada ao backend (reorder por categoria)
+    await menuService.reorderMenuItems(menu.value.id, menuCategoryId, {
+      itemIds: orderedItemIds,
+    });
+
+    // refresh para garantir consistência (e resolver possíveis diferenças de order do backend)
+    await refreshMenu();
+  } catch (error) {
+    console.error('Erro ao reordenar itens do menu', error);
+    toast.error('Não foi possível reordenar os itens. Tente novamente.');
+    await refreshMenu();
+  } finally {
+    isReorderingItems.value = false;
+  }
+};
 </script>
 <template>
   <section
@@ -94,10 +127,12 @@ const getMenuCategoryName = computed(() => {
         v-for="category in categories"
         :key="category.id"
         :menu-category="category"
+        :menu-id="menu.id"
         :items="menu.items"
         @add="handleAddItem"
         @remove="handleRemoveItem"
         @update="handleUpdateItem"
+        @reorder="handleReorderItems"
       />
     </div>
 
