@@ -129,6 +129,7 @@ const handleReorderItems = async (
         :menu-category="category"
         :menu-id="menu.id"
         :items="menu.items"
+        :is-reordering="isReorderingItems"
         @add="handleAddItem"
         @remove="handleRemoveItem"
         @update="handleUpdateItem"

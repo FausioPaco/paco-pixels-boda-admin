@@ -47,16 +47,23 @@ watch(
   { immediate: true },
 );
 
+const beforeDragIds = ref<number[]>([]);
+
 function onDragStart(evt: SortableEvent) {
   const el = evt.item as HTMLElement;
   const id = Number(el?.dataset?.id);
   draggingId.value = Number.isFinite(id) ? id : null;
+
+  beforeDragIds.value = localItems.value.map((i) => i.id);
 }
 
 function onDragEnd() {
   draggingId.value = null;
 
   const orderedIds = localItems.value.map((i) => i.id);
+
+  if (orderedIds.join(',') === beforeDragIds.value.join(',')) return;
+
   emit('reorder', props.menuCategory.id, orderedIds);
 }
 </script>
