@@ -40,6 +40,8 @@ const setMode = async (mode: 'manual' | 'upload') => {
 const showUploadModal = ref(false);
 const showItemModal = ref(false);
 const selectedItem = ref<EventProgramItem | undefined>(undefined);
+const showRemoveModal = ref(false);
+const itemToRemove = ref<EventProgramItem | undefined>(undefined);
 
 const openCreateItemModal = () => {
   selectedItem.value = undefined;
@@ -49,6 +51,11 @@ const openCreateItemModal = () => {
 const openEditItemModal = (item: EventProgramItem) => {
   selectedItem.value = item;
   showItemModal.value = true;
+};
+
+const openRemoveItemModal = (item: EventProgramItem) => {
+  itemToRemove.value = item;
+  showRemoveModal.value = true;
 };
 
 watch(errorMessage, (val) => {
@@ -140,6 +147,7 @@ watch(errorMessage, (val) => {
           @add="openCreateItemModal"
           @edit="openEditItemModal"
           @reorder="reorderItems"
+          @remove="openRemoveItemModal"
         />
       </div>
     </div>
@@ -166,6 +174,22 @@ watch(errorMessage, (val) => {
       @success="
         showItemModal = false;
         selectedItem = undefined;
+        refreshEventProgram();
+      "
+    />
+
+    <LazyEventProgramItemRemoveModal
+      :show="showRemoveModal"
+      :event-id="eventId!"
+      :item="itemToRemove"
+      :is-internal="isInternal"
+      @close-modal="
+        showRemoveModal = false;
+        itemToRemove = undefined;
+      "
+      @success="
+        showRemoveModal = false;
+        itemToRemove = undefined;
         refreshEventProgram();
       "
     />

@@ -4,7 +4,7 @@ defineProps<{
   isPersisting: boolean;
 }>();
 
-const emit = defineEmits(['add', 'edit', 'reorder']);
+const emit = defineEmits(['add', 'edit', 'remove', 'reorder']);
 
 const move = async (
   items: EventProgramItem[],
@@ -62,25 +62,54 @@ const move = async (
     </div>
 
     <ol v-else class="relative mt-6 space-y-6">
-      <!-- Linha vertical (coluna do timeline) -->
-      <div
-        v-if="items.length > 1"
-        class="bg-primary-200 pointer-events-none absolute bottom-4 left-10 top-4 w-px"
-      ></div>
-
       <li v-for="(it, index) in items" :key="it.id" class="relative">
-        <div class="flex flex-wrap gap-4">
+        <div class="flex flex-wrap gap-2 pl-4">
           <!-- Coluna do ícone (fixa) -->
           <div class="w-20 shrink-0">
-            <div class="flex justify-center">
+            <div class="relative flex justify-center">
+              <!-- Linha vertical (só se não for último) -->
+              <div
+                v-if="items.length > 1 && index !== items.length - 1"
+                class="bg-primary-200 absolute left-1/2 top-14 hidden w-px -translate-x-1/2 md:block"
+                style="height: calc(100% + 1.5rem)"
+              ></div>
+
               <div
                 class="border-primary-200 flex h-14 w-14 items-center justify-center rounded-full border-2 bg-white shadow-sm"
               >
                 <component
-                  :is="it.iconKey"
+                  :is="`icon-${it.iconKey}`"
                   :font-controlled="false"
                   class="text-primary-700 h-7 w-7"
                 />
+              </div>
+
+              <!-- Controlos de ordem (ícones) -->
+              <div
+                v-if="items.length > 1"
+                class="absolute -left-6 top-1/2 hidden -translate-y-1/2 flex-col gap-1 md:flex"
+              >
+                <button
+                  type="button"
+                  class="border-primary-200 text-primary-700 hover:bg-primary-50 flex h-7 w-7 items-center justify-center rounded-lg border bg-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-40"
+                  :disabled="isPersisting || index === 0"
+                  aria-label="Subir"
+                  title="Subir"
+                  @click="move(items, it.id, -1)"
+                >
+                  <IconChevronUp :font-controlled="false" class="h-4 w-4" />
+                </button>
+
+                <button
+                  type="button"
+                  class="border-primary-200 text-primary-700 hover:bg-primary-50 flex h-7 w-7 items-center justify-center rounded-lg border bg-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-40"
+                  :disabled="isPersisting || index === items.length - 1"
+                  aria-label="Descer"
+                  title="Descer"
+                  @click="move(items, it.id, 1)"
+                >
+                  <IconChevronDown :font-controlled="false" class="h-4 w-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -128,25 +157,13 @@ const move = async (
                   <BaseButton
                     btn-type="outline-primary"
                     btn-size="sm"
-                    icon="chevron-up"
+                    icon="trash"
                     :icon-size="12"
                     class="w-full sm:w-auto"
-                    :disabled="isPersisting || index === 0"
-                    @click="move(items, it.id, -1)"
+                    :disabled="isPersisting"
+                    @click="$emit('remove', it)"
                   >
-                    Subir
-                  </BaseButton>
-
-                  <BaseButton
-                    btn-type="outline-primary"
-                    btn-size="sm"
-                    icon="chevron-down"
-                    :icon-size="12"
-                    class="w-full sm:w-auto"
-                    :disabled="isPersisting || index === items.length - 1"
-                    @click="move(items, it.id, 1)"
-                  >
-                    Descer
+                    Remover
                   </BaseButton>
                 </div>
               </div>
