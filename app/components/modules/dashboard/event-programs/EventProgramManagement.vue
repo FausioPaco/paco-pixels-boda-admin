@@ -1,5 +1,6 @@
 <script setup lang="ts">
 type ProgramTab = 'GUESTS' | 'INTERNAL';
+
 const activeTab = ref<ProgramTab>('GUESTS');
 const { isMultiEventStaffUser } = useAuthStore();
 </script>

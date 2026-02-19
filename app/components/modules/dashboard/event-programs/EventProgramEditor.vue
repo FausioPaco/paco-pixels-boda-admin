@@ -89,6 +89,7 @@ watch(errorMessage, (val) => {
             btn-size="sm"
             :disabled="isRefreshing || isPersisting"
             icon="refresh"
+            :icon-size="16"
             @click="refreshEventProgram"
           >
             Actualizar
@@ -99,6 +100,7 @@ watch(errorMessage, (val) => {
             btn-type="primary"
             btn-size="sm"
             icon="download"
+            :icon-size="16"
             :disabled="isPersisting"
             @click="
               toast.info('Exportação para PDF será ligada no próximo passo.')

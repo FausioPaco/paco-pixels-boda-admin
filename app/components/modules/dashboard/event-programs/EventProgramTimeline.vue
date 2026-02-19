@@ -61,57 +61,97 @@ const move = async (
       />
     </div>
 
-    <ol v-else class="mt-6 space-y-3">
-      <li
-        v-for="it in items"
-        :key="it.id"
-        class="flex flex-col gap-3 rounded-xl border p-4 lg:flex-row lg:items-start lg:justify-between"
-      >
-        <div class="flex gap-4">
-          <div class="text-primary-700 min-w-[64px] text-lg font-bold">
-            {{ it.time }}
-          </div>
+    <ol v-else class="relative mt-6 space-y-6">
+      <!-- Linha vertical (coluna do timeline) -->
+      <div
+        v-if="items.length > 1"
+        class="bg-primary-200 pointer-events-none absolute bottom-4 left-10 top-4 w-px"
+      ></div>
 
-          <div class="space-y-1">
-            <div class="text-primary-700 font-semibold">{{ it.title }}</div>
-            <div v-if="it.description" class="text-sm text-gray-600">
-              {{ it.description }}
+      <li v-for="(it, index) in items" :key="it.id" class="relative">
+        <div class="flex flex-wrap gap-4">
+          <!-- Coluna do ícone (fixa) -->
+          <div class="w-20 shrink-0">
+            <div class="flex justify-center">
+              <div
+                class="border-primary-200 flex h-14 w-14 items-center justify-center rounded-full border-2 bg-white shadow-sm"
+              >
+                <component
+                  :is="it.iconKey"
+                  :font-controlled="false"
+                  class="text-primary-700 h-7 w-7"
+                />
+              </div>
             </div>
-
-            <div class="text-xs text-gray-500">icon_key: {{ it.iconKey }}</div>
           </div>
-        </div>
 
-        <div class="flex flex-wrap gap-2">
-          <BaseButton
-            btn-type="outline-primary"
-            btn-size="sm"
-            icon="edit"
-            :disabled="isPersisting"
-            @click="$emit('edit', it)"
+          <!-- Card -->
+          <div
+            class="border-primary-100 flex-1 rounded-2xl border bg-white px-6 py-5 shadow-sm"
           >
-            Editar
-          </BaseButton>
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div class="min-w-0">
+                <!-- Time + título (mesma linha como no PDF) -->
+                <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  <div class="text-primary-700 text-xl font-bold">
+                    {{ it.time }}
+                  </div>
+                  <div class="truncate text-xl font-semibold text-gray-900">
+                    {{ it.title }}
+                  </div>
+                </div>
 
-          <BaseButton
-            btn-type="outline-primary"
-            btn-size="sm"
-            icon="arrow-up"
-            :disabled="isPersisting"
-            @click="move(items, it.id, -1)"
-          >
-            Subir
-          </BaseButton>
+                <div v-if="it.description" class="mt-2 text-base text-gray-500">
+                  {{ it.description }}
+                </div>
+              </div>
 
-          <BaseButton
-            btn-type="outline-primary"
-            btn-size="sm"
-            icon="arrow-down"
-            :disabled="isPersisting"
-            @click="move(items, it.id, 1)"
-          >
-            Descer
-          </BaseButton>
+              <!-- Acções no canto superior direito -->
+              <div
+                class="mt-4 flex w-full flex-col gap-2 sm:mt-0 sm:w-auto sm:flex-row sm:items-center sm:gap-2"
+              >
+                <div
+                  class="flex flex-col flex-wrap gap-2 sm:items-center md:flex-row"
+                >
+                  <BaseButton
+                    btn-type="outline-primary"
+                    btn-size="sm"
+                    icon="pencil"
+                    :icon-size="12"
+                    class="w-full sm:w-auto"
+                    :disabled="isPersisting"
+                    @click="$emit('edit', it)"
+                  >
+                    Editar
+                  </BaseButton>
+
+                  <BaseButton
+                    btn-type="outline-primary"
+                    btn-size="sm"
+                    icon="chevron-up"
+                    :icon-size="12"
+                    class="w-full sm:w-auto"
+                    :disabled="isPersisting || index === 0"
+                    @click="move(items, it.id, -1)"
+                  >
+                    Subir
+                  </BaseButton>
+
+                  <BaseButton
+                    btn-type="outline-primary"
+                    btn-size="sm"
+                    icon="chevron-down"
+                    :icon-size="12"
+                    class="w-full sm:w-auto"
+                    :disabled="isPersisting || index === items.length - 1"
+                    @click="move(items, it.id, 1)"
+                  >
+                    Descer
+                  </BaseButton>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </li>
     </ol>
