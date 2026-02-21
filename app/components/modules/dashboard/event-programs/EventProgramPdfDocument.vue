@@ -1,7 +1,7 @@
 <script setup lang="ts">
 defineProps<{
   coupleName: string;
-  documentTitle: string; // ex: "Programa do Evento"
+  documentTitle: string;
   items: EventProgramItem[];
 }>();
 </script>
