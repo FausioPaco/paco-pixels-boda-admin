@@ -63,7 +63,7 @@ const move = async (
 
     <ol v-else class="relative mt-6 space-y-6">
       <li v-for="(it, index) in items" :key="it.id" class="relative">
-        <div class="flex flex-wrap gap-2 pl-4">
+        <div class="flex flex-col flex-wrap gap-2 pl-4 md:flex-row">
           <!-- Coluna do ícone (fixa) -->
           <div class="w-20 shrink-0">
             <div class="relative flex justify-center">

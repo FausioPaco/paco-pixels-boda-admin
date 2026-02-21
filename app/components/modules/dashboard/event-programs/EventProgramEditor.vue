@@ -6,13 +6,64 @@ const props = defineProps<{
 }>();
 
 const toast = useToast();
-const { eventId } = useEventStore();
-
-if (!eventId) {
-  toast.error('O evento não foi encontrado.');
-}
+const { eventId, eventName, eventSlug } = useEventStore();
 
 const isInternal = computed(() => props.isInternal ?? false);
+const pdfRef = ref<HTMLElement | null>(null);
+const getCoupleName = () => {
+  return eventName ?? 'Noivos';
+};
+
+const nuxtApp = useNuxtApp();
+
+const generatePdf = async () => {
+  if (!pdfRef.value) return;
+  if (!program?.value?.items?.length) {
+    toast.info('Ainda não existem items no programa.');
+    return;
+  }
+
+  try {
+    const canvas = await nuxtApp.$html2canvas(pdfRef.value, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+
+    const doc = new nuxtApp.$jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'a4',
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+      doc.addPage();
+      position -= pageHeight;
+      doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    const suffix = isInternal.value ? 'interno' : 'convidados';
+    doc.save(`programa-evento-${eventSlug}-${suffix}.pdf`);
+  } catch (e) {
+    console.error(e);
+    toast.error('Não foi possível gerar o PDF.');
+  }
+};
 
 const {
   program,
@@ -109,9 +160,7 @@ watch(errorMessage, (val) => {
             icon="download"
             :icon-size="16"
             :disabled="isPersisting"
-            @click="
-              toast.info('Exportação para PDF será ligada no próximo passo.')
-            "
+            @click="generatePdf"
           >
             Gerar PDF
           </BaseButton>
@@ -193,5 +242,15 @@ watch(errorMessage, (val) => {
         refreshEventProgram();
       "
     />
+
+    <div class="fixed left-[-99999px] top-0">
+      <div ref="pdfRef">
+        <EventProgramPdfDocument
+          :couple-name="getCoupleName()"
+          document-title="Programa do Evento"
+          :items="program?.items ?? []"
+        />
+      </div>
+    </div>
   </section>
 </template>
