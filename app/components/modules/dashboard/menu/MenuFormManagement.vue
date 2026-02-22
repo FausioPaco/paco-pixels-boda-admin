@@ -23,7 +23,7 @@ const handleUpdateItem = (item: MenuItem, menuCategoryId: number) => {
 };
 
 const resetAllValues = () => {
-  refreshMenu();
+  refreshMenu({ force: true });
   resetValues();
 };
 

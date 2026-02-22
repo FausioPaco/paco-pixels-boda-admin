@@ -6,9 +6,10 @@ export const useMenu = async () => {
 
   const eventStore = useEventStore();
   const eventId = eventStore.ensureSelected();
+  const key = 'get-menu-' + eventId;
 
   const { data, refresh, status } = await useAsyncData(
-    'event-menu-' + eventId,
+    key,
     () => getMenuService(nuxtApp.$api).getMenuByEvent(Number(eventId)),
     {
       transform(input) {
@@ -26,6 +27,13 @@ export const useMenu = async () => {
     },
   );
 
+  const refreshMenu = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key);
+    }
+    await refresh();
+  };
+
   watchEffect(() => {
     if (data.value) {
       menu.value = data.value.menu;
@@ -36,6 +44,6 @@ export const useMenu = async () => {
     menu,
     isRefreshing: status.value === 'pending',
     isError: status.value === 'error',
-    refreshMenu: refresh,
+    refreshMenu,
   };
 };

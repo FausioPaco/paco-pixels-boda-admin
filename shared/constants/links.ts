@@ -62,10 +62,10 @@ export const ADMIN_EXPERIENCE_LINKS: AdminLink[] = [
     restricted: false,
   },
 
-  // {
-  //   label: 'Menu',
-  //   link: '/admin/menu',
-  //   icon: 'online-support',
-  //   restricted: false,
-  // },
+  {
+    label: 'Menu',
+    link: '/admin/menu',
+    icon: 'dashboard-menu',
+    restricted: false,
+  },
 ];

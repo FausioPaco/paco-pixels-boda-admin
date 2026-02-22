@@ -6,7 +6,6 @@ interface IMenuCreateModal {
   show?: boolean;
 }
 
-const { siteConfig } = await useClientConfig();
 withDefaults(defineProps<IMenuCreateModal>(), {
   show: false,
 });
@@ -22,13 +21,13 @@ const serverErrors = ref<ServerError>({
 
 const nuxtApp = useNuxtApp();
 const menuService = getMenuService(nuxtApp.$api);
-const { EVENT_ID } = useRuntimeConfig().public;
+const { eventId, eventName } = useEventStore();
 
 const onSubmit = () => {
   isSubmiting.value = true;
   const menuInput: MenuInput = {
-    title: `Menu do casamento de ${siteConfig.coupleNames}`,
-    eventId: Number(EVENT_ID),
+    title: `Menu do evento: ${eventName}`,
+    eventId: Number(eventId),
   };
 
   menuService
@@ -50,11 +49,7 @@ const onSubmit = () => {
 };
 </script>
 <template>
-  <BaseModal
-    title="Remover Mesa"
-    :show="show"
-    @close-modal="$emit('closeModal')"
-  >
+  <BaseModal title="Criar Menu" :show="show" @close-modal="$emit('closeModal')">
     <div class="my-2">
       <p class="text-grey-600 mb-4 text-center text-base md:text-lg">
         Iremos criar um novo menu. Em seguida, será necessário adicionar os
@@ -62,15 +57,9 @@ const onSubmit = () => {
         <b>Tem a certeza de que pretende criar o menu?</b>
       </p>
 
-      <div class="w-full">
-        <div v-if="isSubmiting" class="mt-4 flex items-center justify-center">
-          <BaseLoading size="md" orientation="horizontal" />
-        </div>
-
-        <BaseError v-if="serverErrors.hasErrors">{{
-          serverErrors.message
-        }}</BaseError>
-      </div>
+      <BaseError v-if="serverErrors.hasErrors">{{
+        serverErrors.message
+      }}</BaseError>
     </div>
     <div class="flex w-full justify-center gap-3">
       <BaseButton
