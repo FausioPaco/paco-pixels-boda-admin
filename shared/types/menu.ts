@@ -10,6 +10,7 @@ export interface MenuItem {
   name: string;
   menuId: number;
   menuCategory: MenuCategory;
+  order?: number;
 }
 
 export interface MenuCategory {

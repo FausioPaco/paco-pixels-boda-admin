@@ -3,6 +3,7 @@ import { getEventProgramService } from '~/services/eventProgramService';
 
 type Options = {
   immediate?: boolean;
+  isInternal?: boolean;
 };
 
 export const useEventProgram = async (
@@ -11,6 +12,8 @@ export const useEventProgram = async (
 ) => {
   const nuxtApp = useNuxtApp();
   const service = getEventProgramService(nuxtApp.$api);
+
+  const isInternal = opts.isInternal ?? false;
 
   const program = ref<EventProgram | null>(null);
 
@@ -39,7 +42,7 @@ export const useEventProgram = async (
     clearError();
 
     try {
-      program.value = await service.getByEvent(eventId);
+      program.value = await service.getByEvent(eventId, isInternal);
     } catch (err) {
       setError('Não foi possível carregar o programa do evento.', err);
     } finally {
@@ -59,7 +62,7 @@ export const useEventProgram = async (
     clearError();
 
     try {
-      program.value = await service.updateMode(eventId, { mode });
+      program.value = await service.updateMode(eventId, { mode }, isInternal);
     } catch (err) {
       setError('Não foi possível actualizar o modo do programa.', err);
       throw err;
@@ -75,7 +78,11 @@ export const useEventProgram = async (
     clearError();
 
     try {
-      program.value = await service.uploadProgramFile(eventId, file);
+      program.value = await service.uploadProgramFile(
+        eventId,
+        file,
+        isInternal,
+      );
     } catch (err) {
       setError('Não foi possível carregar o ficheiro do programa.', err);
       throw err;
@@ -93,7 +100,7 @@ export const useEventProgram = async (
     clearError();
 
     try {
-      const created = await service.addItem(eventId, input);
+      const created = await service.addItem(eventId, input, isInternal);
 
       if (program.value) {
         const next = [...(program.value.items ?? []), created];
@@ -122,7 +129,12 @@ export const useEventProgram = async (
     clearError();
 
     try {
-      const updated = await service.updateItem(eventId, itemId, input);
+      const updated = await service.updateItem(
+        eventId,
+        itemId,
+        input,
+        isInternal,
+      );
 
       if (program.value) {
         const next = (program.value.items ?? []).map((x) =>
@@ -150,7 +162,7 @@ export const useEventProgram = async (
     clearError();
 
     try {
-      await service.deleteItem(eventId, itemId);
+      await service.deleteItem(eventId, itemId, isInternal);
 
       if (program.value) {
         const next = (program.value.items ?? []).filter((x) => x.id !== itemId);
@@ -173,7 +185,11 @@ export const useEventProgram = async (
     clearError();
 
     try {
-      program.value = await service.reorderItems(eventId, { orderedItemIds });
+      program.value = await service.reorderItems(
+        eventId,
+        { orderedItemIds },
+        isInternal,
+      );
     } catch (err) {
       setError('Não foi possível reordenar os itens.', err);
       throw err;

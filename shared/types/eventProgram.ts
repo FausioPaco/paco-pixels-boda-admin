@@ -4,8 +4,9 @@ export type EventProgramFileType = 'pdf' | 'image';
 export type EventProgramFile = {
   id: number;
   programId: number;
+  isInternal: boolean;
   fileUrl?: string;
-  format?: EventProgramFileType;
+  fileType?: EventProgramFileType;
   originalFileName?: string | null;
   mimeType?: string | null;
   sizeInBytes?: number | null;
