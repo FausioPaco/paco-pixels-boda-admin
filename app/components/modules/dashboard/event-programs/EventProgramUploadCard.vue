@@ -10,7 +10,7 @@ const fileUrl = computed(() => {
 });
 
 const fileName = computed(() => props.program?.file?.originalFileName ?? null);
-const mimeType = computed(() => props.program?.file?.mimeType ?? null);
+const mimeType = computed(() => props.program?.file?.format ?? null);
 
 const downloadFile = () => {
   if (!fileUrl.value) return;
@@ -27,7 +27,11 @@ const downloadFile = () => {
 
 const openFileInNewTab = () => {
   if (!fileUrl.value) return;
-  window.open(fileUrl.value, '_blank', 'noopener,noreferrer');
+  window.open(
+    `${apiImageUrl}${fileUrl.value}`,
+    '_blank',
+    'noopener,noreferrer',
+  );
 };
 
 const showFileUploadAlert = ref(true);
@@ -49,7 +53,7 @@ const isPdf = computed(
   <div class="w-full rounded-2xl border bg-white p-5">
     <!-- Header -->
     <div
-      class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+      class="flex flex-col flex-wrap gap-3 md:flex-row md:items-start md:justify-between"
     >
       <div class="space-y-1">
         <h3 class="text-primary-700 text-xl font-bold">
@@ -87,9 +91,9 @@ const isPdf = computed(
               <component
                 :is="
                   isPdf
-                    ? 'icon-file-text'
+                    ? 'icon-document'
                     : isImage
-                      ? 'icon-gallery'
+                      ? 'icon-menu-gallery'
                       : 'icon-document'
                 "
                 :font-controlled="false"
@@ -102,7 +106,7 @@ const isPdf = computed(
                 {{ fileName ?? 'Ficheiro do programa' }}
               </p>
               <p class="text-grey-400 mt-0.5 text-xs">
-                {{ mimeType ?? 'Formato desconhecido' }}
+                {{ mimeType?.toUpperCase() ?? 'Formato desconhecido' }}
               </p>
             </div>
           </div>
@@ -131,27 +135,6 @@ const isPdf = computed(
               Abrir
             </BaseButton>
           </div>
-        </div>
-
-        <!-- Preview -->
-        <div
-          v-if="isImage"
-          class="bg-grey-50 mt-4 overflow-hidden rounded-2xl border"
-        >
-          <img
-            :src="`${apiImageUrl}/${fileUrl}`"
-            alt="Pré-visualização do programa do evento"
-            class="h-[360px] w-full object-cover"
-            loading="lazy"
-          />
-        </div>
-
-        <!-- Nota para PDF -->
-        <div v-else-if="isPdf" class="bg-grey-50 mt-4 rounded-2xl border p-4">
-          <p class="text-grey-500 text-sm">
-            Pré-visualização indisponível para PDF. Use <b>“Abrir”</b> ou
-            <b>“Baixar”</b>.
-          </p>
         </div>
       </div>
 

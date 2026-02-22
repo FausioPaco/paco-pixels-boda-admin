@@ -175,8 +175,8 @@ const onSubmit = async () => {
             class="hover:border-primary-200 hover:bg-primary-50 group flex w-full items-center justify-center overflow-hidden rounded-3xl p-2 transition"
             :class="
               hasFile
-                ? undefined
-                : 'border-grey-200 bg-primary-50 border-2 border-dashed'
+                ? 'bg-primary-50'
+                : 'border-grey-200 bg-grey-50 border-2 border-dashed'
             "
             :disabled="isSubmiting"
             @click="openFileDialog"
@@ -230,6 +230,17 @@ const onSubmit = async () => {
             </div>
           </button>
 
+          <!-- Alter ficheiro -->
+          <div v-if="hasFile" class="flex w-full animate-fadeIn justify-center">
+            <BaseButton
+              btn-type="outline-primary"
+              :disabled="isSubmiting"
+              @click="openFileDialog"
+            >
+              Alterar ficheiro
+            </BaseButton>
+          </div>
+
           <p class="text-grey-500 text-xs">
             Formatos permitidos:
             <b class="text-primary-800">PDF, JPG, PNG ou WEBP</b>
@@ -249,14 +260,6 @@ const onSubmit = async () => {
           </div>
 
           <div class="flex flex-wrap items-center gap-3 pt-2">
-            <BaseButton
-              v-if="hasFile"
-              btn-type="outline-primary"
-              :disabled="isSubmiting"
-              @click="openFileDialog"
-            >
-              Alterar ficheiro
-            </BaseButton>
             <BaseButton
               v-if="hasFile"
               btn-type="primary"
