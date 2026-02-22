@@ -10,7 +10,10 @@ const fileUrl = computed(() => {
 });
 
 const fileName = computed(() => props.program?.file?.originalFileName ?? null);
-const mimeType = computed(() => props.program?.file?.format ?? null);
+const mimeType = computed(() => {
+  if (!props.program?.file) return null;
+  return props.program.file.mimeType === 'application/pdf' ? 'PDF' : 'Imagem';
+});
 
 const downloadFile = () => {
   if (!fileUrl.value) return;
@@ -106,7 +109,7 @@ const isPdf = computed(
                 {{ fileName ?? 'Ficheiro do programa' }}
               </p>
               <p class="text-grey-400 mt-0.5 text-xs">
-                {{ mimeType?.toUpperCase() ?? 'Formato desconhecido' }}
+                {{ mimeType ?? 'Formato desconhecido' }}
               </p>
             </div>
           </div>

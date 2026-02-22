@@ -168,12 +168,11 @@ watch(errorMessage, (val) => {
       </div>
 
       <!-- Loading -->
-      <BaseTableLoading v-if="isRefreshing" class="mt-6 hidden md:block" />
       <BaseLoading
         v-if="isRefreshing"
         size="lg"
         orientation="vertical"
-        class="mt-6 block md:hidden"
+        class="my-6"
       />
 
       <!-- Error -->
