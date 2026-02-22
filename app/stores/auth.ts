@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { getAuthService } from '~/services/authService';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
@@ -6,7 +7,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const setUserData = (authResult: AuthResponse) => {
     const expirationDate = new Date(
-      new Date().getTime() + authResult.expirationMinutes * 1000,
+      Date.now() + authResult.expirationMinutes * 60 * 1000,
     );
 
     const token = useCookie<string>('token', {
@@ -15,7 +16,7 @@ export const useAuthStore = defineStore('auth', () => {
       sameSite: 'lax',
     });
 
-    const tokenExpiration = useCookie<Date>('tokenExpiration', {
+    const tokenExpiration = useCookie<string | null>('tokenExpiration', {
       expires: expirationDate,
       secure: true,
       sameSite: 'lax',
@@ -27,16 +28,16 @@ export const useAuthStore = defineStore('auth', () => {
     });
 
     token.value = authResult.token;
-    tokenExpiration.value = expirationDate;
+    tokenExpiration.value = expirationDate.toISOString();
     user.value = authResult.user;
     userData.value = authResult.user;
     authenticated.value = true;
   };
 
   const logout = () => {
-    const token = useCookie('token');
-    const tokenExpiration = useCookie('tokenExpiration');
-    const userData = useCookie('user');
+    const token = useCookie<string | null>('token');
+    const tokenExpiration = useCookie<string | null>('tokenExpiration');
+    const userData = useCookie<User | null>('user');
 
     token.value = null;
     tokenExpiration.value = null;
@@ -45,13 +46,42 @@ export const useAuthStore = defineStore('auth', () => {
     authenticated.value = false;
   };
 
-  const checkAuth = () => {
-    const token = useCookie<string>('token');
-    const tokenExpiration = useCookie<Date>('tokenExpiration');
-    const userData = useCookie<User>('user');
-
-    if (new Date() > tokenExpiration.value || !token) {
+  const logoutAsync = async () => {
+    try {
+      const nuxtApp = useNuxtApp();
+      const authService = getAuthService(nuxtApp.$api);
+      await authService.logout();
+    } catch {
+      // se falhar no servidor, mesmo assim limpamos localmente
+    } finally {
       logout();
+    }
+  };
+
+  const tryRefresh = async (): Promise<boolean> => {
+    try {
+      const nuxtApp = useNuxtApp();
+      const authService = getAuthService(nuxtApp.$api);
+
+      const authResult = await authService.refresh();
+      setUserData(authResult);
+      return true;
+    } catch {
+      logout();
+      return false;
+    }
+  };
+
+  const checkAuth = () => {
+    const token = useCookie<string | null>('token');
+    const tokenExpiration = useCookie<string | null>('tokenExpiration');
+    const userData = useCookie<User | null>('user');
+
+    const exp = tokenExpiration.value ? new Date(tokenExpiration.value) : null;
+
+    if (!token.value || !exp || new Date() > exp) {
+      logout();
+      return;
     }
 
     if (userData.value) {
@@ -81,6 +111,8 @@ export const useAuthStore = defineStore('auth', () => {
     authenticated,
     setUserData,
     logout,
+    logoutAsync,
+    tryRefresh,
     checkAuth,
     isAdministrator,
     isSuperAdministrator,

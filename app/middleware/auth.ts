@@ -22,6 +22,6 @@ export default defineNuxtRouteMiddleware((to) => {
   // User não autenticado a tentar aceder a qualquer rota que não "/"
   if (!token.value && to?.path !== '/') {
     abortNavigation();
-    return navigateTo('/');
+    return navigateTo('/?reason=session-expired');
   }
 });

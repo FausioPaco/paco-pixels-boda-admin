@@ -7,5 +7,8 @@
     <main class="flex-1">
       <slot></slot>
     </main>
+
+    <!-- Session Expiry Warning Modal -->
+    <SessionExpiryWarningModal />
   </div>
 </template>

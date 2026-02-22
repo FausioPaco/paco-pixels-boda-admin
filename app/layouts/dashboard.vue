@@ -12,5 +12,8 @@
         </div>
       </main>
     </div>
+
+    <!-- Session Expiry Warning Modal -->
+    <SessionExpiryWarningModal />
   </div>
 </template>
