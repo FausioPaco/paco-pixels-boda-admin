@@ -67,6 +67,7 @@ export default defineNuxtConfig({
     'nuxt-seo-utils',
     'nuxt-link-checker',
     'nuxt-qrcode',
+    'nuxt-tiptap-editor',
   ],
   components: [
     {
@@ -74,6 +75,7 @@ export default defineNuxtConfig({
       pathPrefix: false,
     },
   ],
+
   css: ['~/assets/css/app.css'],
   ...(isProd
     ? {
@@ -131,5 +133,9 @@ export default defineNuxtConfig({
 
   build: {
     transpile: ['@vuepic/vue-datepicker', 'vue-toastification'],
+  },
+
+  tiptap: {
+    prefix: 'tiptap',
   },
 });

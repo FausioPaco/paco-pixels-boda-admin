@@ -1,9 +1,9 @@
 /* eslint-env node */
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-
 import type { Config } from 'tailwindcss';
 import { generateThemeColors } from './utils/generateThemeColors';
+import Typography from '@tailwindcss/typography';
 
 const clientCode = process.env.NUXT_PUBLIC_CLIENT_CODE || 'mariee';
 const themePath = resolve(`./configs/${clientCode}/theme.json`);
@@ -76,6 +76,25 @@ export default <Partial<Config>>{
         fadeIn: 'fadeIn 0.4s ease-in',
         blink: 'blink 1.5s ease-in-out infinite',
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            'ul > li::marker': {
+              color: theme?.colors?.textEditorPrimaryColor,
+            },
+            'ol > li::marker': {
+              color: theme?.colors?.textEditorPrimaryColor,
+            },
+            blockquote: {
+              color: '#F4F9E9',
+              borderLeftColor: theme?.colors?.textEditorPrimaryColor,
+            },
+            'blockquote p::before, blockquote p::after': {
+              color: theme?.colors?.textEditorPrimaryColor,
+            },
+          },
+        },
+      },
     },
   },
 
@@ -91,4 +110,6 @@ export default <Partial<Config>>{
     'error.{js,ts,vue}',
     'content/**/*.md',
   ],
+
+  plugins: [Typography],
 };

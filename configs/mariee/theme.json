@@ -77,7 +77,8 @@
       "800": "#360083",
       "900": "#290064"
     },
-    "invitation": "#3E3022"
+    "invitation": "#3E3022",
+    "textEditorPrimaryColor": "#746621"
   },
   "fontFamily": {
     "sans": "'Plus Jakarta Sans', sans-serif",

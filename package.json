@@ -34,7 +34,11 @@
     "vue-router": "^4.6.3",
     "vue-toastification": "2.0.0-rc.5",
     "vuedraggable": "^4.1.0",
-    "yup": "^1.6.1"
+    "yup": "^1.6.1",
+    "nuxt-tiptap-editor": "^3.2.0",
+    "@tiptap/extensions": "^3.15.3",
+    "@tailwindcss/typography": "0.5.10",
+    "isomorphic-dompurify": "^2.28.0"
   },
   "devDependencies": {
     "@nuxt/fonts": "^0.12.1",
