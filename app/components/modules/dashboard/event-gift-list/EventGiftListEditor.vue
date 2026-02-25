@@ -71,10 +71,14 @@ const generatePdf = async () => {
   }
 
   try {
+    const dpr = window.devicePixelRatio || 1;
+
     const canvas = await nuxtApp.$html2canvas(pdfRef.value, {
-      scale: 2,
       backgroundColor: '#ffffff',
       useCORS: true,
+      scale: Math.min(4, Math.max(2, dpr * 2)), // tipicamente 2–4 fica top
+      windowWidth: pdfRef.value.scrollWidth,
+      windowHeight: pdfRef.value.scrollHeight,
     });
 
     const imgData = canvas.toDataURL('image/png');
@@ -165,12 +169,12 @@ watch(errorMessage, (val) => {
             v-if="giftList?.mode === 'manual'"
             btn-type="primary"
             btn-size="sm"
-            icon="checkmark"
+            icon="save"
             :icon-size="16"
             :disabled="isPersisting"
             @click="onSave"
           >
-            Guardar
+            Salvar
           </BaseButton>
         </div>
       </div>
@@ -213,6 +217,18 @@ watch(errorMessage, (val) => {
                 placeholder="Coloque a descrição aqui"
               />
             </ClientOnly>
+
+            <BaseButton
+              v-if="giftList?.mode === 'manual'"
+              btn-type="primary"
+              btn-size="sm"
+              icon="save"
+              :icon-size="16"
+              :disabled="isPersisting"
+              @click="onSave"
+            >
+              Salvar
+            </BaseButton>
           </div>
         </div>
       </div>

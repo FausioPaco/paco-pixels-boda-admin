@@ -17,6 +17,7 @@ let theme = {
     warning: {},
     purple: {},
     invitation: '',
+    textEditorPrimaryColor: '',
   },
   fontFamily: {
     sans: '',
