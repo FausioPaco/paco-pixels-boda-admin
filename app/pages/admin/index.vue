@@ -10,6 +10,6 @@ eventStore.loadFromCookies();
       :event-id="eventStore.selected.id"
     />
 
-    <LazyEventDashboardStatsCards />
+    <!-- <LazyEventDashboardStatsCards /> -->
   </div>
 </template>
