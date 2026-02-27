@@ -79,6 +79,7 @@ export default defineNuxtPlugin((nuxtApp) => {
       ctx.options.credentials = 'include';
 
       const opts = ctx.options as FetchOptions<'json'>;
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return await $fetch(ctx.request, opts as any);
     },

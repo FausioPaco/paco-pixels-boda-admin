@@ -1,7 +1,7 @@
 <script setup lang="ts">
 defineOptions({ name: 'EventDashboardStatsCards' });
 
-const { dashboardStats, isRefreshing, isError, refreshDashboardStats } =
+const { dashboardStats, isError, refreshDashboardStats } =
   await useEventDashboardStats({
     range: 'last30Days',
   });
@@ -41,19 +41,18 @@ const onNavigate = async (route: string) => {
 
     <!-- Linha 1 -->
     <div class="grid gap-6 lg:grid-cols-2">
-      <StatsCardAttention
+      <!-- <StatsCardAttention
         :stats="stats"
         :is-refreshing="isRefreshing"
         @refresh="onRefresh(true)"
         @navigate="onNavigate"
-      />
-
+      /> -->
+      <StatsCardGuests :stats="stats" />
       <StatsCardHealth :stats="stats" />
     </div>
 
     <!-- Linha 2 -->
-    <div class="grid gap-6 lg:grid-cols-3">
-      <StatsCardGuests :stats="stats" />
+    <div class="grid gap-6 lg:grid-cols-2">
       <StatsCardBudget :stats="stats" />
       <StatsCardSeating :stats="stats" @navigate="onNavigate" />
     </div>
