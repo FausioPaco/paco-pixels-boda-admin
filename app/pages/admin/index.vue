@@ -9,5 +9,7 @@ eventStore.loadFromCookies();
       v-if="eventStore.selected"
       :event-id="eventStore.selected.id"
     />
+
+    <!-- <LazyEventDashboardStatsCards /> -->
   </div>
 </template>
