@@ -61,12 +61,12 @@ export const ADMIN_EXPERIENCE_LINKS: AdminLink[] = [
     icon: 'dashboard-program',
     restricted: false,
   },
-  {
-    label: 'Lista de Presentes',
-    link: '/admin/presentes',
-    icon: 'dashboard-gifts-list',
-    restricted: false,
-  },
+  // {
+  //   label: 'Lista de Presentes',
+  //   link: '/admin/presentes',
+  //   icon: 'dashboard-gifts-list',
+  //   restricted: false,
+  // },
   {
     label: 'Menu',
     link: '/admin/menu',
