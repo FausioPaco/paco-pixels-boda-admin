@@ -58,7 +58,7 @@ const onRemoveClick = (e: MouseEvent) => {
 
 <template>
   <article
-    class="border-primary-100 bg-primary-50/70 text-grey-700 hover:border-3 hover:border-primary-700 relative flex w-full flex-col justify-between rounded-2xl border shadow-sm outline-2 transition hover:-translate-y-0.5 hover:shadow-md md:w-[300px] md:min-w-[220px] lg:min-w-[320px]"
+    class="border-primary-100 bg-primary-50/70 text-grey-700 hover:border-3 hover:border-primary-700 relative flex w-full animate-fadeIn flex-col justify-between rounded-2xl border shadow-sm outline-2 transition hover:-translate-y-0.5 hover:shadow-md md:w-[300px] md:min-w-[220px] lg:min-w-[320px]"
   >
     <!-- topo: ícone + 3 dots -->
     <div

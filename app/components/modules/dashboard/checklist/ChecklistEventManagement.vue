@@ -310,8 +310,8 @@ function onDragEnd(newOrder: ChecklistSection[]) {
                 :global-filters="taskFilters"
                 @edit-section="openEditSection"
                 @remove-section="confirmRemoveSection"
-                @task-created="refreshSections"
-                @task-updated="refreshSections"
+                @task-created="refreshSections({ force: true })"
+                @task-updated="refreshSections({ force: true })"
                 @move-up="moveSection(element.id, 'up')"
                 @move-down="moveSection(element.id, 'down')"
               />

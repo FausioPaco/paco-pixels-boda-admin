@@ -132,7 +132,7 @@ export default defineNuxtConfig({
   },
 
   build: {
-    transpile: ['@vuepic/vue-datepicker', 'vue-toastification'],
+    transpile: ['@vuepic/vue-datepicker', 'vue-toastification', 'vue-chartjs'],
   },
 
   tiptap: {

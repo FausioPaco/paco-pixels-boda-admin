@@ -22,11 +22,20 @@ export interface AttentionItem {
 }
 
 export interface GuestsStats {
+  // Convites (registos de Guest)
   total: number;
   confirmed: number;
   declined: number;
   pending: number;
   confirmationRate: number; // 0-100
+
+  // Pessoas (somatório de People_Count / People_Confirmed)
+  peopleTotal: number;
+  peopleConfirmed: number;
+  peopleDeclined: number;
+  peoplePending: number;
+  peopleConfirmationRate: number; // 0-100
+
   rsvpActivityTimeline: TimeSeriesPoint[];
 }
 
