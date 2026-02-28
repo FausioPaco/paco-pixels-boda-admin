@@ -111,11 +111,11 @@ const centerTextPlugin = computed<Plugin<'doughnut'>>(() => ({
     ctx.textBaseline = 'middle';
 
     ctx.fillStyle = palette.value.textStrong;
-    ctx.font = '800 22px inherit';
+    ctx.font = "800 22px 'Plus Jakarta Sans', sans-serif";
     ctx.fillText(String(totals.value.peopleTotal), cx, cy - 6);
 
     ctx.fillStyle = palette.value.textMuted;
-    ctx.font = '600 12px inherit';
+    ctx.font = "600 12px 'Plus Jakarta Sans', sans-serif";
     ctx.fillText('Pessoas', cx, cy + 14);
 
     ctx.restore();
@@ -154,29 +154,44 @@ const sparkLabels = computed(() => {
   });
 });
 
-const sparkData = computed<ChartData<'line'>>(() => ({
-  labels: sparkLabels.value,
-  datasets: [
-    {
-      label: 'Actividade RSVP',
-      data: totals.value.timeline.map((p) => p.value),
-      borderColor: palette.value.primary,
-      backgroundColor: 'rgba(0,0,0,0.05)',
-      fill: true,
-      tension: 0.35,
-      pointRadius: 0,
-      borderWidth: 2,
-    },
-  ],
-}));
+const sparkPoints = computed<(number | null)[]>(() => {
+  return totals.value.timeline.map((p) =>
+    typeof p.value === 'number' ? p.value : null,
+  );
+});
+
+const sparkData = computed<ChartData<'line', (number | null)[]>>(() => {
+  const pts = sparkPoints.value;
+
+  const data: (number | null)[] =
+    pts.length === 0
+      ? []
+      : pts.length === 1
+        ? [pts[0] ?? null, pts[0] ?? null]
+        : pts;
+
+  return {
+    labels: sparkLabels.value,
+    datasets: [
+      {
+        label: 'Actividade RSVP',
+        data,
+        borderColor: palette.value.primary,
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 0,
+        borderWidth: 2,
+        spanGaps: true,
+      },
+    ],
+  };
+});
 
 const sparkOptions = computed<ChartOptions<'line'>>(() => ({
   responsive: true,
   maintainAspectRatio: false,
-  scales: {
-    x: { display: false, grid: { display: false } },
-    y: { display: false, grid: { display: false }, beginAtZero: true },
-  },
+
   plugins: {
     legend: { display: false },
     datalabels: { display: false },
@@ -187,7 +202,33 @@ const sparkOptions = computed<ChartOptions<'line'>>(() => ({
           return `${v} respostas`;
         },
       },
+      bodyFont: {
+        size: 8,
+      },
+      titleFont: {
+        size: 8,
+      },
     },
+  },
+  scales: {
+    x: {
+      ticks: {
+        font: {
+          size: 9,
+        },
+      },
+    },
+    y: {
+      ticks: {
+        font: {
+          size: 9,
+        },
+      },
+    },
+  },
+
+  elements: {
+    point: { radius: 0, hitRadius: 8 },
   },
 }));
 
@@ -207,13 +248,13 @@ const isEmpty = computed(() => totals.value.peopleTotal === 0);
               class="h-2 w-2 rounded-full"
               :style="{ backgroundColor: palette.primary }"
             ></span>
-            <p class="text-grey-600 text-xs">Pessoas</p>
+            <p class="text-grey-600 text-xs font-semibold">Pessoas</p>
           </div>
           <div class="text-right">
             <p class="text-grey-900 text-sm font-semibold">
               {{ totals.peopleTotal }}
             </p>
-            <p class="text-grey-600 text-[11px]">
+            <p class="text-grey-400 text-[11px] font-medium">
               {{ totals.peopleConfirmationRate }}% confirmados
             </p>
           </div>
@@ -227,20 +268,20 @@ const isEmpty = computed(() => totals.value.peopleTotal === 0);
               class="h-2 w-2 rounded-full"
               :style="{ backgroundColor: palette.primary }"
             ></span>
-            <p class="text-grey-600 text-xs">Convites</p>
+            <p class="text-grey-600 text-xs font-semibold">Convites</p>
           </div>
           <div class="text-right">
             <p class="text-grey-900 text-sm font-semibold">
               {{ totals.invitesTotal }}
             </p>
-            <p class="text-grey-600 text-[11px]">
+            <p class="text-grey-400 text-[11px] font-medium">
               {{ totals.invitesRate }}% confirmados
             </p>
           </div>
         </div>
       </div>
 
-      <div class="grid gap-5 lg:grid-cols-[220px_1fr]">
+      <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <!-- donut -->
         <div class="relative">
           <div class="h-[200px]">
@@ -254,75 +295,102 @@ const isEmpty = computed(() => totals.value.peopleTotal === 0);
           </div>
 
           <!-- legend pills -->
-          <div class="mt-3 grid grid-cols-3 gap-2">
-            <div class="bg-grey-50 rounded-2xl px-2 py-2 text-center">
-              <div class="flex items-center justify-center gap-2">
+          <div class="mt-3 flex flex-col gap-2">
+            <!-- Confirmados -->
+            <div class="rounded-2xl bg-gray-50 px-2 py-2">
+              <div class="flex items-center gap-2">
                 <span
                   class="h-2 w-2 rounded-full"
                   :style="{ backgroundColor: palette.confirmed }"
                 ></span>
-                <p class="text-grey-600 text-[11px]">Confirmados</p>
+                <p class="text-grey-600 text-[11px] font-medium">
+                  Confirmados :
+                  <span class="text-success-800">{{
+                    totals.peopleConfirmed
+                  }}</span>
+                </p>
               </div>
-              <p class="text-grey-900 text-sm font-semibold">
-                {{ totals.peopleConfirmed }}
-              </p>
             </div>
-            <div class="bg-grey-50 rounded-2xl px-2 py-2 text-center">
-              <div class="flex items-center justify-center gap-2">
+
+            <!-- Pendentes -->
+            <div class="rounded-2xl bg-gray-50 px-2 py-2">
+              <div class="flex items-center gap-2">
                 <span
                   class="h-2 w-2 rounded-full"
                   :style="{ backgroundColor: palette.pending }"
                 ></span>
-                <p class="text-grey-600 text-[11px]">Pendentes</p>
+                <p class="text-grey-600 text-[11px] font-medium">
+                  Pendentes :
+                  <span class="text-warning-800">{{
+                    totals.peoplePending
+                  }}</span>
+                </p>
               </div>
-              <p class="text-grey-900 text-sm font-semibold">
-                {{ totals.peoplePending }}
-              </p>
             </div>
-            <div class="bg-grey-50 rounded-2xl px-2 py-2 text-center">
-              <div class="flex items-center justify-center gap-2">
+
+            <!-- Recusaram -->
+            <div class="rounded-2xl bg-gray-50 px-2 py-2">
+              <div class="flex items-center gap-2">
                 <span
                   class="h-2 w-2 rounded-full"
                   :style="{ backgroundColor: palette.declined }"
                 ></span>
-                <p class="text-grey-600 text-[11px]">Recusaram</p>
+                <p class="text-grey-600 text-[11px] font-medium">
+                  Recusaram :
+                  <span class="text-danger-800">{{
+                    totals.peopleDeclined
+                  }}</span>
+                </p>
               </div>
-              <p class="text-grey-900 text-sm font-semibold">
-                {{ totals.peopleDeclined }}
-              </p>
             </div>
           </div>
         </div>
 
         <!-- sparkline / empty state -->
-        <div class="flex flex-col justify-between">
-          <div class="flex items-center justify-between">
+        <div class="flex flex-col flex-wrap justify-start">
+          <div class="flex w-full flex-wrap items-center justify-between gap-2">
             <p class="text-grey-900 text-xs font-semibold">Actividade RSVP</p>
-            <p class="text-grey-600 text-[11px]">últimos dias</p>
+            <p class="text-grey-400 text-sm font-medium">últimos dias</p>
           </div>
 
-          <div class="mt-2 h-[150px]">
+          <div class="mt-8 h-[200px]">
             <div
               v-if="isEmpty || totals.timeline.length === 0"
-              class="border-grey-200 bg-grey-50 flex h-full items-center justify-center rounded-2xl border border-dashed"
+              class="border-grey-100 bg-grey-50 flex h-full animate-fadeIn flex-col items-center justify-center gap-4 rounded-2xl border border-dashed text-center"
             >
-              <p class="text-grey-600 text-xs">
+              <IconLineChart
+                :font-controlled="false"
+                class="text-grey-300 size-[40px]"
+              />
+
+              <p class="text-grey-400 text-xs font-medium">
                 Sem actividade ainda — quando houver respostas, vais ver a
                 tendência aqui.
               </p>
             </div>
 
-            <ClientOnly v-else>
-              <Line :data="sparkData" :options="sparkOptions" />
-            </ClientOnly>
+            <div v-else class="h-[180px]">
+              <div class="h-full w-full">
+                <ClientOnly>
+                  <Line
+                    :data="sparkData"
+                    :options="sparkOptions"
+                    class="h-full w-full"
+                  />
+                </ClientOnly>
+              </div>
+            </div>
           </div>
 
           <div
-            class="bg-grey-50 mt-3 flex items-center justify-between rounded-2xl px-3 py-2"
+            class="bg-grey-50 mt-auto flex w-full flex-wrap items-center justify-between rounded-2xl px-3 py-2"
           >
-            <p class="text-grey-600 text-[11px]">Sugestão</p>
-            <p class="text-grey-900 text-[11px] font-semibold">
-              Partilha o link RSVP com os convidados.
+            <div class="text-grey-400 flex flex-wrap items-end gap-1 font-bold">
+              <IconLightbulb :font-controlled="false" class="size-4" />
+              <p class="text-[11px] leading-none">Sugestão</p>
+            </div>
+            <p class="text-grey-900 mt-1 text-[11px] font-semibold">
+              Efectuar a confirmação dos convidados
             </p>
           </div>
         </div>

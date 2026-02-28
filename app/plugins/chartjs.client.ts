@@ -1,37 +1,12 @@
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Filler,
-} from 'chart.js';
+import { Chart as ChartJS, registerables } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 export default defineNuxtPlugin(() => {
-  // Registo global (só no cliente, pois este ficheiro é *.client.ts)
-  ChartJS.register(
-    ArcElement,
-    Tooltip,
-    Legend,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    PointElement,
-    LineElement,
-    Filler,
-    ChartDataLabels,
-  );
+  ChartJS.register(...registerables, ChartDataLabels);
 
-  // Defaults coerentes com Tailwind
-  ChartJS.defaults.font.family = 'inherit';
+  ChartJS.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
   ChartJS.defaults.plugins.legend.display = false;
-  // ChartJS.defaults.animation.duration = 300;
 
-  // Datalabels: default OFF (activamos por chart quando fizer sentido)
-  // ChartJS.defaults.plugins.datalabels.display = false;
+  // ✅ datalabels TS-safe
+  ChartJS.defaults.set('plugins.datalabels', { display: false });
 });

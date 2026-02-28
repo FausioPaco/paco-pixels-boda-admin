@@ -16,10 +16,14 @@ const onNavigate = async (route: string) => {
   if (!route) return;
   await navigateTo(route);
 };
+
+onMounted(() => {
+  onRefresh(true);
+});
 </script>
 
 <template>
-  <div class="mt-6 space-y-6">
+  <div class="mt-4 space-y-6">
     <!-- erro geral -->
     <div v-if="isError" class="rounded-2xl border border-red-200 bg-red-50 p-4">
       <div class="flex items-center justify-between gap-3">
@@ -40,15 +44,15 @@ const onNavigate = async (route: string) => {
     </div>
 
     <!-- Linha 1 -->
-    <div class="grid gap-6 lg:grid-cols-2">
+    <div class="grid gap-4 lg:grid-cols-2">
+      <StatsCardGuests :stats="stats" />
+      <StatsCardHealth :stats="stats" />
       <!-- <StatsCardAttention
         :stats="stats"
         :is-refreshing="isRefreshing"
         @refresh="onRefresh(true)"
         @navigate="onNavigate"
       /> -->
-      <StatsCardGuests :stats="stats" />
-      <StatsCardHealth :stats="stats" />
     </div>
 
     <!-- Linha 2 -->
