@@ -12,7 +12,10 @@ const overdue = computed(() => props.stats?.checklist?.overdue ?? 0);
 const dueSoon = computed(() => props.stats?.checklist?.dueSoon ?? 0);
 
 const completion = computed(() =>
-  Math.max(0, Math.min(100, Math.round(props.stats?.checklist?.completionRate ?? 0))),
+  Math.max(
+    0,
+    Math.min(100, Math.round(props.stats?.checklist?.completionRate ?? 0)),
+  ),
 );
 
 /** Tailwind colors */
@@ -37,6 +40,7 @@ const readTailwindColor = (
 
 const palette = ref({
   primary: '#857526',
+  primaryLight: '#DAD3AB',
   track: 'rgba(0,0,0,0.08)',
   textStrong: 'rgba(0,0,0,0.85)',
   textMuted: 'rgba(0,0,0,0.65)',
@@ -45,8 +49,11 @@ const palette = ref({
 onMounted(() => {
   palette.value = {
     primary: readTailwindColor('text-primary-500') ?? palette.value.primary,
+    primaryLight:
+      readTailwindColor('text-primary-200') ?? palette.value.primaryLight,
     track:
-      readTailwindColor('bg-grey-100', 'backgroundColor') ?? palette.value.track,
+      readTailwindColor('bg-grey-100', 'backgroundColor') ??
+      palette.value.track,
     textStrong: readTailwindColor('text-grey-900') ?? palette.value.textStrong,
     textMuted: readTailwindColor('text-grey-600') ?? palette.value.textMuted,
   };
@@ -57,7 +64,7 @@ const gaugeData = computed<ChartData<'doughnut'>>(() => ({
   datasets: [
     {
       data: [completion.value, Math.max(0, 100 - completion.value)],
-      backgroundColor: [palette.value.primary, palette.value.track],
+      backgroundColor: [palette.value.primary, palette.value.primaryLight],
       borderWidth: 0,
       hoverOffset: 0,
     },
@@ -77,7 +84,7 @@ const centerTextPlugin = computed<Plugin<'doughnut'>>(() => ({
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = palette.value.textStrong;
-    ctx.font = '900 18px inherit';
+    ctx.font = '900 18px "Plus Jakarta Sans", sans-serif';
     ctx.fillText(`${completion.value}%`, cx, cy);
     ctx.restore();
   },
@@ -98,13 +105,13 @@ const hasData = computed(() => total.value > 0);
 </script>
 
 <template>
-  <BaseCard title="Checklist">
+  <BaseCard title="Cronograma">
     <div class="space-y-4">
       <div class="grid gap-5 md:grid-cols-[180px_1fr] md:items-center">
-        <div class="rounded-2xl bg-grey-50 p-3">
+        <div class="bg-primary-50/50 rounded-2xl p-3">
           <div class="flex items-center justify-between">
-            <p class="text-xs font-semibold text-grey-900">Progresso</p>
-            <p class="text-[11px] text-grey-600">tarefas</p>
+            <p class="text-grey-900 text-xs font-semibold">Progresso</p>
+            <p class="text-grey-600 text-[11px]">tarefas</p>
           </div>
 
           <div class="mt-2 h-[140px]">
@@ -119,34 +126,35 @@ const hasData = computed(() => total.value > 0);
         </div>
 
         <div class="grid grid-cols-2 gap-3">
-          <div class="rounded-2xl border border-grey-100 bg-white px-3 py-2">
-            <p class="text-[11px] text-grey-600">Total</p>
-            <p class="text-sm font-semibold text-grey-900">{{ total }}</p>
+          <div class="border-grey-100/55 rounded-2xl border bg-white px-3 py-2">
+            <p class="text-grey-400 text-[11px]">Total</p>
+            <p class="text-grey-900 text-sm font-semibold">{{ total }}</p>
           </div>
 
-          <div class="rounded-2xl border border-grey-100 bg-white px-3 py-2">
-            <p class="text-[11px] text-grey-600">Concluídas</p>
-            <p class="text-sm font-semibold text-grey-900">{{ done }}</p>
+          <div class="border-grey-100/55 rounded-2xl border bg-white px-3 py-2">
+            <p class="text-grey-400 text-[11px]">Concluídas</p>
+            <p class="text-grey-900 text-sm font-semibold">{{ done }}</p>
           </div>
 
-          <div class="rounded-2xl border border-grey-100 bg-white px-3 py-2">
-            <p class="text-[11px] text-grey-600">Em atraso</p>
-            <p class="text-sm font-semibold text-grey-900">{{ overdue }}</p>
+          <div class="border-grey-100/55 rounded-2xl border bg-white px-3 py-2">
+            <p class="text-grey-400 text-[11px]">Em atraso</p>
+            <p class="text-grey-900 text-sm font-semibold">{{ overdue }}</p>
           </div>
 
-          <div class="rounded-2xl border border-grey-100 bg-white px-3 py-2">
-            <p class="text-[11px] text-grey-600">A vencer</p>
-            <p class="text-sm font-semibold text-grey-900">{{ dueSoon }}</p>
+          <div class="border-grey-100/55 rounded-2xl border bg-white px-3 py-2">
+            <p class="text-grey-400 text-[11px]">A vencer</p>
+            <p class="text-grey-900 text-sm font-semibold">{{ dueSoon }}</p>
           </div>
         </div>
       </div>
 
       <div
         v-if="!hasData"
-        class="rounded-2xl border border-dashed border-grey-200 bg-grey-50 px-3 py-3"
+        class="border-grey-200 bg-grey-50 rounded-2xl border border-dashed px-3 py-3"
       >
-        <p class="text-xs text-grey-600">
-          Ainda não tens tarefas na checklist. Quando criares, vais ver o progresso aqui.
+        <p class="text-grey-400 text-xs">
+          Ainda não tens tarefas na checklist. Quando criares, vais ver o
+          progresso aqui.
         </p>
       </div>
     </div>

@@ -35,6 +35,7 @@ const readTailwindColor = (
 
 const palette = ref({
   primary: '#857526',
+  primaryLight: 'rgba(133, 117, 38, 0.15)',
   textMuted: 'rgba(0,0,0,0.65)',
   grid: 'rgba(0,0,0,0.06)',
 });
@@ -42,8 +43,13 @@ const palette = ref({
 onMounted(() => {
   palette.value = {
     primary: readTailwindColor('text-primary-500') ?? palette.value.primary,
+    primaryLight:
+      readTailwindColor('bg-primary-500/15', 'backgroundColor') ??
+      palette.value.primaryLight,
     textMuted: readTailwindColor('text-grey-600') ?? palette.value.textMuted,
-    grid: palette.value.grid,
+    grid:
+      readTailwindColor('bg-grey-100/50', 'backgroundColor') ??
+      palette.value.grid,
   };
 });
 
@@ -127,9 +133,13 @@ const barOptions = computed<ChartOptions<'bar'>>(() => ({
       <div class="h-[210px]">
         <div
           v-if="!hasData"
-          class="border-grey-200 bg-grey-50 flex h-full items-center justify-center rounded-2xl border border-dashed"
+          class="border-grey-100 bg-grey-50 flex h-full animate-fadeIn flex-col items-center justify-center gap-4 rounded-2xl border border-dashed text-center"
         >
-          <p class="text-grey-600 text-xs">
+          <IconLineChart
+            :font-controlled="false"
+            class="text-grey-300 size-[40px]"
+          />
+          <p class="text-grey-400 text-xs font-medium">
             Ainda não adicionaste fornecedores. Quando adicionares, vais ver o
             estado aqui.
           </p>
