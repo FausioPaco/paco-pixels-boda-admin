@@ -1,6 +1,12 @@
 <script setup lang="ts">
 const eventStore = useEventStore();
 eventStore.loadFromCookies();
+
+onMounted(() => {
+  requestAnimationFrame(() => {
+    window.scrollTo(0, 0);
+  });
+});
 </script>
 
 <template>
