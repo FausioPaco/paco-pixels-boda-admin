@@ -8,14 +8,21 @@ const props = defineProps<{ stats: EventDashboardStats | null }>();
 
 const currency = computed(() => props.stats?.budget?.currency ?? 'MZN');
 
+const planned = computed(() => props.stats?.budget?.totalPlannedBudget ?? 0);
+const actual = computed(() => props.stats?.budget?.totalActual ?? 0);
+const paid = computed(() => props.stats?.budget?.totalPaid ?? 0);
+const unpaid = computed(() => props.stats?.budget?.totalUnpaid ?? 0);
+
 const consumptionPct = computed(() => {
-  const b = props.stats?.budget;
-  if (!b || !b.totalPlannedBudget) return 0;
-  const pct = (b.totalActual / b.totalPlannedBudget) * 100;
+  if (!planned.value) return 0;
+  const pct = (actual.value / planned.value) * 100;
   if (Number.isNaN(pct)) return 0;
   return Math.max(0, Math.min(100, Math.round(pct)));
 });
 
+const money = (v: number) => formatMoney(v ?? 0, currency.value);
+
+/** Tailwind colors */
 const readTailwindColor = (
   className: string,
   cssProp: 'color' | 'backgroundColor' = 'color',
@@ -38,8 +45,9 @@ const readTailwindColor = (
 const palette = ref({
   primary: '#857526',
   track: 'rgba(0,0,0,0.08)',
-  strong: 'rgba(0,0,0,0.85)',
-  label: 'rgba(0,0,0,0.65)',
+  textStrong: 'rgba(0,0,0,0.85)',
+  textMuted: 'rgba(0,0,0,0.65)',
+  grid: 'rgba(0,0,0,0.06)',
 });
 
 onMounted(() => {
@@ -48,11 +56,13 @@ onMounted(() => {
     track:
       readTailwindColor('bg-grey-100', 'backgroundColor') ??
       palette.value.track,
-    strong: readTailwindColor('text-grey-900') ?? palette.value.strong,
-    label: readTailwindColor('text-grey-600') ?? palette.value.label,
+    textStrong: readTailwindColor('text-grey-900') ?? palette.value.textStrong,
+    textMuted: readTailwindColor('text-grey-bold') ?? palette.value.textMuted,
+    grid: palette.value.grid,
   };
 });
 
+/** Doughnut gauge */
 const gaugeData = computed<ChartData<'doughnut'>>(() => ({
   labels: ['Consumido', 'Disponível'],
   datasets: [
@@ -77,11 +87,9 @@ const centerTextPlugin = computed<Plugin<'doughnut'>>(() => ({
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-
-    ctx.fillStyle = palette.value.strong;
-    ctx.font = '800 18px inherit';
+    ctx.fillStyle = palette.value.textStrong;
+    ctx.font = '900 18px inherit';
     ctx.fillText(`${consumptionPct.value}%`, cx, cy);
-
     ctx.restore();
   },
 }));
@@ -89,14 +97,19 @@ const centerTextPlugin = computed<Plugin<'doughnut'>>(() => ({
 const gaugeOptions = computed<ChartOptions<'doughnut'>>(() => ({
   responsive: true,
   maintainAspectRatio: false,
-  cutout: '70%',
+  cutout: '72%',
   plugins: {
+    legend: { display: false },
     tooltip: { enabled: false },
     datalabels: { display: false },
   },
 }));
 
+/** Bar */
 const topCategories = computed(() => props.stats?.budget?.topCategories ?? []);
+const hasBars = computed(() =>
+  topCategories.value.some((c) => (c.actual ?? 0) > 0),
+);
 
 const barData = computed<ChartData<'bar'>>(() => ({
   labels: topCategories.value.map((c) => c.title),
@@ -105,8 +118,10 @@ const barData = computed<ChartData<'bar'>>(() => ({
       label: 'Custo real',
       data: topCategories.value.map((c) => Math.round(c.actual ?? 0)),
       backgroundColor: palette.value.primary,
-      borderRadius: 10,
+      borderRadius: 12,
       borderSkipped: false,
+      barThickness: 18,
+      maxBarThickness: 22,
     },
   ],
 }));
@@ -117,15 +132,29 @@ const barOptions = computed<ChartOptions<'bar'>>(() => ({
   scales: {
     x: {
       grid: { display: false },
-      ticks: { color: palette.value.label },
+      ticks: {
+        color: palette.value.textMuted,
+        maxRotation: 0,
+        autoSkip: true,
+        font: { size: 11, weight: 'bold' },
+      },
     },
     y: {
-      grid: { color: 'rgba(0,0,0,0.08)' },
-      ticks: { color: palette.value.label },
       beginAtZero: true,
+      grid: { color: palette.value.grid },
+      ticks: {
+        color: palette.value.textMuted,
+        font: { size: 11, weight: 'bold' },
+        callback(value) {
+          const v = Number(value ?? 0);
+          if (!v) return '0';
+          return v >= 1000 ? `${Math.round(v / 1000)}k` : String(v);
+        },
+      },
     },
   },
   plugins: {
+    legend: { display: false },
     tooltip: {
       callbacks: {
         label(item) {
@@ -137,63 +166,101 @@ const barOptions = computed<ChartOptions<'bar'>>(() => ({
       display: (ctx) => Number(ctx.dataset.data[ctx.dataIndex] ?? 0) > 0,
       anchor: 'end',
       align: 'end',
-      color: palette.value.label,
+      color: palette.value.textMuted,
       font: { weight: 'bold', size: 10 },
-      formatter: (v: unknown) => money(Number(v ?? 0)),
+      formatter: (v: unknown) => {
+        const n = Number(v ?? 0);
+        if (!n) return '';
+        return money(n);
+      },
       clamp: true,
     },
   },
 }));
-
-const money = (v: number) => formatMoney(v ?? 0, currency.value);
 </script>
 
 <template>
   <BaseCard title="Orçamento">
     <div class="space-y-4">
-      <div class="grid items-center gap-4 sm:grid-cols-[150px_1fr]">
-        <div class="h-[150px]">
-          <ClientOnly>
-            <Doughnut
-              :data="gaugeData"
-              :options="gaugeOptions"
-              :plugins="[centerTextPlugin]"
-            />
-          </ClientOnly>
+      <div class="grid gap-5 md:grid-cols-[180px_1fr] md:items-center">
+        <!-- gauge -->
+        <div class="bg-grey-50 rounded-2xl p-3">
+          <div class="flex items-center justify-between">
+            <p class="text-grey-900 text-xs font-semibold">Consumo</p>
+            <p class="text-grey-bold text-[11px]">real vs planeado</p>
+          </div>
+
+          <div class="mt-2 h-[140px]">
+            <ClientOnly>
+              <Doughnut
+                :data="gaugeData"
+                :options="gaugeOptions"
+                :plugins="[centerTextPlugin]"
+              />
+            </ClientOnly>
+          </div>
         </div>
 
+        <!-- numbers -->
         <div class="space-y-2">
-          <div class="flex justify-between text-xs">
-            <span class="text-grey-600">Planeado</span>
-            <span class="text-grey-900 font-semibold">
-              {{ money(props.stats?.budget?.totalPlannedBudget ?? 0) }}
-            </span>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="border-grey-100 rounded-2xl border bg-white px-3 py-2">
+              <p class="text-grey-bold text-[11px]">Planeado</p>
+              <p class="text-grey-900 text-sm font-semibold">
+                {{ money(planned) }}
+              </p>
+            </div>
+
+            <div class="border-grey-100 rounded-2xl border bg-white px-3 py-2">
+              <p class="text-grey-bold text-[11px]">Real</p>
+              <p class="text-grey-900 text-sm font-semibold">
+                {{ money(actual) }}
+              </p>
+            </div>
+
+            <div class="border-grey-100 rounded-2xl border bg-white px-3 py-2">
+              <p class="text-grey-bold text-[11px]">Pago</p>
+              <p class="text-grey-900 text-sm font-semibold">
+                {{ money(paid) }}
+              </p>
+            </div>
+
+            <div class="border-grey-100 rounded-2xl border bg-white px-3 py-2">
+              <p class="text-grey-bold text-[11px]">Por pagar</p>
+              <p class="text-grey-900 text-sm font-semibold">
+                {{ money(unpaid) }}
+              </p>
+            </div>
           </div>
-          <div class="flex justify-between text-xs">
-            <span class="text-grey-600">Real</span>
-            <span class="text-grey-900 font-semibold">
-              {{ money(props.stats?.budget?.totalActual ?? 0) }}
-            </span>
-          </div>
-          <div class="flex justify-between text-xs">
-            <span class="text-grey-600">Pago</span>
-            <span class="text-grey-900 font-semibold">
-              {{ money(props.stats?.budget?.totalPaid ?? 0) }}
-            </span>
-          </div>
-          <div class="flex justify-between text-xs">
-            <span class="text-grey-600">Por pagar</span>
-            <span class="text-grey-900 font-semibold">
-              {{ money(props.stats?.budget?.totalUnpaid ?? 0) }}
-            </span>
+
+          <div class="bg-grey-50 rounded-2xl px-3 py-2">
+            <p class="text-grey-bold text-[11px]">Nota</p>
+            <p class="text-grey-900 text-[11px] font-semibold">
+              Mantém o real abaixo do planeado para evitar surpresas.
+            </p>
           </div>
         </div>
       </div>
 
+      <!-- bar -->
       <div>
-        <p class="text-grey-600 mb-2 text-xs">Top categorias (custo real)</p>
-        <div class="h-[190px]">
-          <ClientOnly>
+        <div class="flex items-center justify-between">
+          <p class="text-grey-900 text-xs font-semibold">Top categorias</p>
+          <p class="text-grey-bold text-[11px]">custo real</p>
+        </div>
+
+        <div class="mt-2 h-[210px]">
+          <div
+            v-if="!hasBars"
+            class="border-grey-200 bg-grey-50 flex h-full items-center justify-center rounded-2xl border border-dashed"
+          >
+            <p class="text-grey-bold text-xs">
+              Sem despesas registadas ainda — quando houver custos reais, vais
+              ver as categorias aqui.
+            </p>
+          </div>
+
+          <ClientOnly v-else>
             <Bar :data="barData" :options="barOptions" />
           </ClientOnly>
         </div>

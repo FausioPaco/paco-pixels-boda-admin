@@ -7,21 +7,38 @@ defineOptions({ name: 'StatsCardHealth' });
 const props = defineProps<{ stats: EventDashboardStats | null }>();
 
 const score = computed(() =>
-  Math.round(props.stats?.overview?.healthScore ?? 0),
+  Math.max(
+    0,
+    Math.min(100, Math.round(props.stats?.overview?.healthScore ?? 0)),
+  ),
 );
 
 const operationalStatus = computed(
   () => props.stats?.overview?.operationalStatus ?? '—',
 );
 
+const rsvp = computed(() =>
+  Math.round(props.stats?.guests?.confirmationRate ?? 0),
+);
+const seating = computed(() =>
+  Math.round(props.stats?.seating?.occupancyRate ?? 0),
+);
+const checklist = computed(() =>
+  Math.round(props.stats?.checklist?.completionRate ?? 0),
+);
+
 const budgetConsumption = computed(() => {
   const b = props.stats?.budget;
-  if (!b || !b.totalPlannedBudget) return 0;
-  const pct = (b.totalActual / b.totalPlannedBudget) * 100;
+  const planned = b?.totalPlannedBudget ?? 0;
+  const actual = b?.totalActual ?? 0;
+
+  if (!planned) return 0;
+  const pct = (actual / planned) * 100;
   if (Number.isNaN(pct)) return 0;
   return Math.max(0, Math.min(100, Math.round(pct)));
 });
 
+/** Tailwind colors */
 const readTailwindColor = (
   className: string,
   cssProp: 'color' | 'backgroundColor' = 'color',
@@ -44,7 +61,8 @@ const readTailwindColor = (
 const palette = ref({
   primary: '#857526',
   track: 'rgba(0,0,0,0.08)',
-  strong: 'rgba(0,0,0,0.85)',
+  textStrong: 'rgba(0,0,0,0.85)',
+  textMuted: 'rgba(0,0,0,0.65)',
 });
 
 onMounted(() => {
@@ -53,7 +71,8 @@ onMounted(() => {
     track:
       readTailwindColor('bg-grey-100', 'backgroundColor') ??
       palette.value.track,
-    strong: readTailwindColor('text-grey-900') ?? palette.value.strong,
+    textStrong: readTailwindColor('text-grey-900') ?? palette.value.textStrong,
+    textMuted: readTailwindColor('text-grey-600') ?? palette.value.textMuted,
   };
 });
 
@@ -81,9 +100,15 @@ const centerTextPlugin = computed<Plugin<'doughnut'>>(() => ({
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = palette.value.strong;
-    ctx.font = '800 20px inherit';
-    ctx.fillText(`${score.value}%`, cx, cy);
+
+    ctx.fillStyle = palette.value.textStrong;
+    ctx.font = '900 18px inherit';
+    ctx.fillText(`${score.value}%`, cx, cy - 2);
+
+    ctx.fillStyle = palette.value.textMuted;
+    ctx.font = '600 11px inherit';
+    ctx.fillText('Score', cx, cy + 16);
+
     ctx.restore();
   },
 }));
@@ -91,64 +116,101 @@ const centerTextPlugin = computed<Plugin<'doughnut'>>(() => ({
 const gaugeOptions = computed<ChartOptions<'doughnut'>>(() => ({
   responsive: true,
   maintainAspectRatio: false,
-  cutout: '70%',
+  cutout: '72%',
   plugins: {
+    legend: { display: false },
     tooltip: { enabled: false },
     datalabels: { display: false },
   },
 }));
 
-const formatPct = (v: number) => `${Math.round(v)}%`;
+const rows = computed(() => [
+  { label: 'RSVP', value: rsvp.value },
+  { label: 'Mesas', value: seating.value },
+  { label: 'Checklist', value: checklist.value },
+  { label: 'Orçamento', value: budgetConsumption.value },
+]);
+
+const badge = computed(() => {
+  const v = score.value;
+  if (v >= 85)
+    return {
+      text: 'Excelente',
+      cls: 'bg-success-50 text-success-700 border-success-200',
+    };
+  if (v >= 70)
+    return {
+      text: 'Bom',
+      cls: 'bg-primary-50 text-primary-700 border-primary-200',
+    };
+  if (v >= 50)
+    return {
+      text: 'Atenção',
+      cls: 'bg-warning-50 text-warning-700 border-warning-200',
+    };
+  return {
+    text: 'Crítico',
+    cls: 'bg-danger-50 text-danger-700 border-danger-200',
+  };
+});
 </script>
 
 <template>
   <BaseCard title="Saúde do evento">
-    <div class="grid items-center gap-6 sm:grid-cols-[180px_1fr]">
-      <div class="h-[180px]">
-        <ClientOnly>
-          <Doughnut
-            :data="gaugeData"
-            :options="gaugeOptions"
-            :plugins="[centerTextPlugin]"
-          />
-        </ClientOnly>
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span
+            class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold"
+            :class="badge.cls"
+          >
+            {{ badge.text }}
+          </span>
+          <span class="text-grey-600 text-[11px]">{{ operationalStatus }}</span>
+        </div>
+        <p class="text-grey-600 text-[11px]">visão geral</p>
       </div>
 
-      <div class="space-y-3">
-        <div class="flex items-center justify-between">
-          <p class="text-grey-900 text-sm font-semibold">Score</p>
-          <span class="text-grey-600 text-xs">{{ operationalStatus }}</span>
-        </div>
-
-        <div class="space-y-2">
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-grey-600">RSVP</span>
-            <span class="text-grey-900 font-semibold">
-              {{ props.stats?.guests?.confirmationRate ?? 0 }}%
-            </span>
-          </div>
-
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-grey-600">Mesas</span>
-            <span class="text-grey-900 font-semibold">
-              {{ formatPct(props.stats?.seating?.occupancyRate ?? 0) }}
-            </span>
-          </div>
-
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-grey-600">Checklist</span>
-            <span class="text-grey-900 font-semibold">
-              {{ formatPct(props.stats?.checklist?.completionRate ?? 0) }}
-            </span>
-          </div>
-
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-grey-600">Orçamento</span>
-            <span class="text-grey-900 font-semibold">
-              {{ formatPct(budgetConsumption) }}
-            </span>
+      <div class="grid gap-5 md:grid-cols-[180px_1fr] md:items-center">
+        <div class="bg-grey-50 rounded-2xl p-3">
+          <div class="h-[140px]">
+            <ClientOnly>
+              <Doughnut
+                :data="gaugeData"
+                :options="gaugeOptions"
+                :plugins="[centerTextPlugin]"
+              />
+            </ClientOnly>
           </div>
         </div>
+
+        <div class="border-grey-100 rounded-2xl border bg-white p-3">
+          <div class="grid gap-2">
+            <div
+              v-for="r in rows"
+              :key="r.label"
+              class="flex items-center justify-between"
+            >
+              <div class="flex items-center gap-2">
+                <span
+                  class="h-1.5 w-1.5 rounded-full"
+                  :style="{ backgroundColor: palette.primary }"
+                ></span>
+                <p class="text-grey-600 text-xs">{{ r.label }}</p>
+              </div>
+
+              <p class="text-grey-900 text-xs font-semibold">{{ r.value }}%</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-grey-50 rounded-2xl px-3 py-2">
+        <p class="text-grey-600 text-[11px]">Dica</p>
+        <p class="text-grey-900 text-[11px] font-semibold">
+          Acompanha RSVP e orçamento semanalmente para manter o evento
+          “saudável”.
+        </p>
       </div>
     </div>
   </BaseCard>

@@ -6,7 +6,13 @@ defineOptions({ name: 'StatsCardSuppliers' });
 
 const props = defineProps<{ stats: EventDashboardStats | null }>();
 
-const categories = ['Confirmados', 'Pendentes', 'Ausentes'];
+const confirmed = computed(() => props.stats?.suppliers?.confirmed ?? 0);
+const pending = computed(() => props.stats?.suppliers?.pending ?? 0);
+const absent = computed(() => props.stats?.suppliers?.absent ?? 0);
+const total = computed(() => props.stats?.suppliers?.total ?? 0);
+const confirmedNotArrived = computed(
+  () => props.stats?.suppliers?.confirmedNotArrived ?? 0,
+);
 
 const readTailwindColor = (
   className: string,
@@ -29,34 +35,34 @@ const readTailwindColor = (
 
 const palette = ref({
   primary: '#857526',
-  label: 'rgba(0,0,0,0.65)',
+  textMuted: 'rgba(0,0,0,0.65)',
+  grid: 'rgba(0,0,0,0.06)',
 });
 
 onMounted(() => {
   palette.value = {
     primary: readTailwindColor('text-primary-500') ?? palette.value.primary,
-    label: readTailwindColor('text-grey-600') ?? palette.value.label,
+    textMuted: readTailwindColor('text-grey-600') ?? palette.value.textMuted,
+    grid: palette.value.grid,
   };
 });
 
-const barData = computed<ChartData<'bar'>>(() => {
-  const s = props.stats?.suppliers;
-  const values = [s?.confirmed ?? 0, s?.pending ?? 0, s?.absent ?? 0];
+const hasData = computed(() => total.value > 0);
 
-  return {
-    labels: categories,
-    datasets: [
-      {
-        label: 'Fornecedores',
-        data: values,
-        backgroundColor: palette.value.primary,
-        borderRadius: 10,
-        borderSkipped: false,
-        barThickness: 16,
-      },
-    ],
-  };
-});
+const barData = computed<ChartData<'bar'>>(() => ({
+  labels: ['Confirmados', 'Pendentes', 'Ausentes'],
+  datasets: [
+    {
+      label: 'Fornecedores',
+      data: [confirmed.value, pending.value, absent.value],
+      backgroundColor: palette.value.primary,
+      borderRadius: 12,
+      borderSkipped: false,
+      barThickness: 18,
+      maxBarThickness: 22,
+    },
+  ],
+}));
 
 const barOptions = computed<ChartOptions<'bar'>>(() => ({
   responsive: true,
@@ -65,15 +71,22 @@ const barOptions = computed<ChartOptions<'bar'>>(() => ({
   scales: {
     x: {
       beginAtZero: true,
-      grid: { color: 'rgba(0,0,0,0.08)' },
-      ticks: { color: palette.value.label },
+      grid: { color: palette.value.grid },
+      ticks: {
+        color: palette.value.textMuted,
+        font: { size: 11, weight: 'bold' },
+      },
     },
     y: {
       grid: { display: false },
-      ticks: { color: palette.value.label },
+      ticks: {
+        color: palette.value.textMuted,
+        font: { size: 11, weight: 'bold' },
+      },
     },
   },
   plugins: {
+    legend: { display: false },
     tooltip: {
       callbacks: {
         label(item) {
@@ -85,7 +98,7 @@ const barOptions = computed<ChartOptions<'bar'>>(() => ({
       display: (ctx) => Number(ctx.dataset.data[ctx.dataIndex] ?? 0) > 0,
       anchor: 'end',
       align: 'end',
-      color: palette.value.label,
+      color: palette.value.textMuted,
       font: { weight: 'bold', size: 10 },
       formatter: (v: unknown) => String(v ?? ''),
       clamp: true,
@@ -97,18 +110,32 @@ const barOptions = computed<ChartOptions<'bar'>>(() => ({
 <template>
   <BaseCard title="Fornecedores">
     <div class="space-y-4">
-      <div class="flex items-baseline justify-between">
-        <p class="text-grey-900 text-sm font-semibold">
-          {{ props.stats?.suppliers?.total ?? 0 }} total
-        </p>
-        <p class="text-grey-600 text-xs">
-          Confirmados sem chegada:
-          {{ props.stats?.suppliers?.confirmedNotArrived ?? 0 }}
-        </p>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div class="bg-grey-50 rounded-2xl px-3 py-2">
+          <p class="text-grey-600 text-[11px]">Total</p>
+          <p class="text-grey-900 text-sm font-semibold">{{ total }}</p>
+        </div>
+
+        <div class="bg-grey-50 rounded-2xl px-3 py-2">
+          <p class="text-grey-600 text-[11px]">Confirmados sem chegada</p>
+          <p class="text-grey-900 text-sm font-semibold">
+            {{ confirmedNotArrived }}
+          </p>
+        </div>
       </div>
 
-      <div class="h-[220px]">
-        <ClientOnly>
+      <div class="h-[210px]">
+        <div
+          v-if="!hasData"
+          class="border-grey-200 bg-grey-50 flex h-full items-center justify-center rounded-2xl border border-dashed"
+        >
+          <p class="text-grey-600 text-xs">
+            Ainda não adicionaste fornecedores. Quando adicionares, vais ver o
+            estado aqui.
+          </p>
+        </div>
+
+        <ClientOnly v-else>
           <Bar :data="barData" :options="barOptions" />
         </ClientOnly>
       </div>
