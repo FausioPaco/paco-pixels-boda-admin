@@ -128,7 +128,6 @@ const palette = ref({
 onMounted(() => {
   palette.value = {
     primary: readTailwindColor('text-primary-500') ?? palette.value.primary,
-    // ✅ fallback correcto
     primaryLight:
       readTailwindColor('text-primary-200') ?? palette.value.primaryLight,
     track:

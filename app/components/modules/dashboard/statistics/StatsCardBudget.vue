@@ -44,6 +44,7 @@ const readTailwindColor = (
 
 const palette = ref({
   primary: '#857526',
+  primaryLight: '#DAD3AB',
   track: 'rgba(0,0,0,0.08)',
   textStrong: 'rgba(0,0,0,0.85)',
   textMuted: 'rgba(0,0,0,0.65)',
@@ -53,11 +54,13 @@ const palette = ref({
 onMounted(() => {
   palette.value = {
     primary: readTailwindColor('text-primary-500') ?? palette.value.primary,
+    primaryLight:
+      readTailwindColor('text-primary-200') ?? palette.value.primaryLight,
     track:
       readTailwindColor('bg-grey-100', 'backgroundColor') ??
       palette.value.track,
     textStrong: readTailwindColor('text-grey-900') ?? palette.value.textStrong,
-    textMuted: readTailwindColor('text-grey-bold') ?? palette.value.textMuted,
+    textMuted: readTailwindColor('text-grey-600') ?? palette.value.textMuted,
     grid: palette.value.grid,
   };
 });
@@ -68,7 +71,7 @@ const gaugeData = computed<ChartData<'doughnut'>>(() => ({
   datasets: [
     {
       data: [consumptionPct.value, Math.max(0, 100 - consumptionPct.value)],
-      backgroundColor: [palette.value.primary, palette.value.track],
+      backgroundColor: [palette.value.primary, palette.value.primaryLight],
       borderWidth: 0,
       hoverOffset: 0,
     },
@@ -88,7 +91,7 @@ const centerTextPlugin = computed<Plugin<'doughnut'>>(() => ({
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = palette.value.textStrong;
-    ctx.font = '900 18px inherit';
+    ctx.font = "900 18px 'Plus Jakarta Sans', sans-serif";
     ctx.fillText(`${consumptionPct.value}%`, cx, cy);
     ctx.restore();
   },
@@ -184,10 +187,10 @@ const barOptions = computed<ChartOptions<'bar'>>(() => ({
     <div class="space-y-4">
       <div class="grid gap-5 md:grid-cols-[180px_1fr] md:items-center">
         <!-- gauge -->
-        <div class="bg-grey-50 rounded-2xl p-3">
+        <div class="bg-primary-50/50 rounded-2xl p-3">
           <div class="flex items-center justify-between">
             <p class="text-grey-900 text-xs font-semibold">Consumo</p>
-            <p class="text-grey-bold text-[11px]">real vs planeado</p>
+            <p class="text-grey-400 text-[11px]">(real vs planeado)</p>
           </div>
 
           <div class="mt-2 h-[140px]">
@@ -204,38 +207,51 @@ const barOptions = computed<ChartOptions<'bar'>>(() => ({
         <!-- numbers -->
         <div class="space-y-2">
           <div class="grid grid-cols-2 gap-3">
-            <div class="border-grey-100 rounded-2xl border bg-white px-3 py-2">
-              <p class="text-grey-bold text-[11px]">Planeado</p>
+            <div
+              class="border-grey-100/55 rounded-2xl border bg-white px-3 py-2"
+            >
+              <p class="text-grey-400 text-[11px]">Planeado</p>
               <p class="text-grey-900 text-sm font-semibold">
                 {{ money(planned) }}
               </p>
             </div>
 
-            <div class="border-grey-100 rounded-2xl border bg-white px-3 py-2">
-              <p class="text-grey-bold text-[11px]">Real</p>
+            <div
+              class="border-grey-100/55 rounded-2xl border bg-white px-3 py-2"
+            >
+              <p class="text-grey-400 text-[11px]">Real</p>
               <p class="text-grey-900 text-sm font-semibold">
                 {{ money(actual) }}
               </p>
             </div>
 
-            <div class="border-grey-100 rounded-2xl border bg-white px-3 py-2">
-              <p class="text-grey-bold text-[11px]">Pago</p>
+            <div
+              class="border-grey-100/55 rounded-2xl border bg-white px-3 py-2"
+            >
+              <p class="text-grey-400 text-[11px]">Pago</p>
               <p class="text-grey-900 text-sm font-semibold">
                 {{ money(paid) }}
               </p>
             </div>
 
-            <div class="border-grey-100 rounded-2xl border bg-white px-3 py-2">
-              <p class="text-grey-bold text-[11px]">Por pagar</p>
+            <div
+              class="border-grey-100/55 rounded-2xl border bg-white px-3 py-2"
+            >
+              <p class="text-grey-400 text-[11px]">Por pagar</p>
               <p class="text-grey-900 text-sm font-semibold">
                 {{ money(unpaid) }}
               </p>
             </div>
           </div>
 
-          <div class="bg-grey-50 rounded-2xl px-3 py-2">
-            <p class="text-grey-bold text-[11px]">Nota</p>
-            <p class="text-grey-900 text-[11px] font-semibold">
+          <div
+            class="bg-grey-50 mt-auto flex w-full flex-col flex-wrap rounded-2xl px-3 py-2"
+          >
+            <div class="text-grey-400 flex flex-wrap items-end gap-1 font-bold">
+              <IconLightbulb :font-controlled="false" class="size-4" />
+              <p class="text-[11px] leading-none">Nota</p>
+            </div>
+            <p class="text-grey-900 mt-1 text-[11px] font-semibold">
               Mantém o real abaixo do planeado para evitar surpresas.
             </p>
           </div>
@@ -246,15 +262,20 @@ const barOptions = computed<ChartOptions<'bar'>>(() => ({
       <div>
         <div class="flex items-center justify-between">
           <p class="text-grey-900 text-xs font-semibold">Top categorias</p>
-          <p class="text-grey-bold text-[11px]">custo real</p>
+          <p class="text-grey-400 text-[11px]">custo real</p>
         </div>
 
         <div class="mt-2 h-[210px]">
           <div
             v-if="!hasBars"
-            class="border-grey-200 bg-grey-50 flex h-full items-center justify-center rounded-2xl border border-dashed"
+            class="border-grey-100 bg-grey-50 flex h-full animate-fadeIn flex-col items-center justify-center gap-4 rounded-2xl border border-dashed text-center"
           >
-            <p class="text-grey-bold text-xs">
+            <IconLineChart
+              :font-controlled="false"
+              class="text-grey-300 size-[40px]"
+            />
+
+            <p class="text-grey-400 text-xs font-medium">
               Sem despesas registadas ainda — quando houver custos reais, vais
               ver as categorias aqui.
             </p>

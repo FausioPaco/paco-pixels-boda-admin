@@ -284,7 +284,7 @@ const isEmpty = computed(() => totals.value.peopleTotal === 0);
       <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <!-- donut -->
         <div class="relative">
-          <div class="h-[200px]">
+          <div class="h-[220px]">
             <ClientOnly>
               <Doughnut
                 :data="donutData"
@@ -353,7 +353,7 @@ const isEmpty = computed(() => totals.value.peopleTotal === 0);
             <p class="text-grey-400 text-sm font-medium">últimos dias</p>
           </div>
 
-          <div class="mt-8 h-[200px]">
+          <div class="mt-8 h-[220px]">
             <div
               v-if="isEmpty || totals.timeline.length === 0"
               class="border-grey-100 bg-grey-50 flex h-full animate-fadeIn flex-col items-center justify-center gap-4 rounded-2xl border border-dashed text-center"
