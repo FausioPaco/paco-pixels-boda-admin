@@ -46,7 +46,7 @@ export const useGuestsList = async (
     ].join('|'),
   );
 
-  const { data, refresh, status } = await useAsyncData(
+  const { data, refresh, status } = await useLazyAsyncData(
     key,
     () => getGuestService(nuxtApp.$api).getAllGuests(toRaw(queryParameters)),
     {

@@ -7,7 +7,7 @@ export const useDeskOptions = async () => {
   const eventId = eventStore.ensureSelected();
   const key = 'get-desk-options';
 
-  const { data, refresh, status } = await useAsyncData(
+  const { data, refresh, status } = await useLazyAsyncData(
     key,
     () => getDeskService(nuxtApp.$api).getDeskOptions(eventId),
     {

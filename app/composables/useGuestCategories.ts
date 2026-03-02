@@ -11,7 +11,7 @@ export const useGuestCategories = async () => {
   const eventStore = useEventStore();
   const eventTypeSlug = eventStore.eventTypeSlug;
 
-  const { data, refresh, status } = await useAsyncData(
+  const { data, refresh, status } = await useLazyAsyncData(
     key,
     () => getGuestService(nuxtApp.$api).getGuestCategories(eventTypeSlug),
     {
@@ -25,6 +25,7 @@ export const useGuestCategories = async () => {
         const cached = nuxtApp.payload.data[key] || nuxtApp.static.data[key];
         if (!cached) return;
         if (!cached.fetchedAt || cacheExpired(cached.fetchedAt, 30)) return;
+
         return cached;
       },
     },
