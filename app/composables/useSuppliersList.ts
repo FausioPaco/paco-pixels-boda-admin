@@ -39,7 +39,7 @@ export const useSuppliersList = async (
     ].join('|'),
   );
 
-  const { data, refresh, status } = await useAsyncData(
+  const { data, refresh, status } = await useLazyAsyncData(
     key,
     () =>
       getSupplierService(nuxtApp.$api).getAllSuppliers(toRaw(queryParameters)),

@@ -24,10 +24,77 @@ const periodOptions = [
   { id: 'custom', name: 'Customizado' },
 ];
 
+function getInitialRange(p: DatePeriodOption) {
+  const now = new Date();
+
+  const startOfDay = (d: Date) => {
+    const x = new Date(d);
+    x.setHours(0, 0, 0, 0);
+    return x;
+  };
+
+  const endOfDay = (d: Date) => {
+    const x = new Date(d);
+    x.setHours(23, 59, 59, 999);
+    return x;
+  };
+
+  switch (p) {
+    case 'all':
+      return { startDate: '', endDate: '' };
+
+    case 'thisYear': {
+      const y = now.getFullYear();
+      return {
+        startDate: formatDDMMYYYY(startOfDay(new Date(y, 0, 1))),
+        endDate: formatDDMMYYYY(endOfDay(new Date(y, 11, 31))),
+      };
+    }
+
+    case 'last6Months': {
+      const start = new Date(
+        now.getFullYear(),
+        now.getMonth() - 6,
+        now.getDate(),
+      );
+      return {
+        startDate: formatDDMMYYYY(startOfDay(start)),
+        endDate: formatDDMMYYYY(endOfDay(now)),
+      };
+    }
+
+    case 'last3Months': {
+      const start = new Date(
+        now.getFullYear(),
+        now.getMonth() - 3,
+        now.getDate(),
+      );
+      return {
+        startDate: formatDDMMYYYY(startOfDay(start)),
+        endDate: formatDDMMYYYY(endOfDay(now)),
+      };
+    }
+
+    case 'lastYear': {
+      const y = now.getFullYear() - 1;
+      return {
+        startDate: formatDDMMYYYY(startOfDay(new Date(y, 0, 1))),
+        endDate: formatDDMMYYYY(endOfDay(new Date(y, 11, 31))),
+      };
+    }
+
+    // no arranque deixa vazio; a tua watch(period/customRange) trata depois
+    case 'custom':
+      return { startDate: '', endDate: '' };
+  }
+}
+
+const initial = getInitialRange(period.value);
+
 const queryParameters = reactive<EventParameters>({
   searchQuery: '',
-  startDate: '',
-  endDate: '',
+  startDate: initial.startDate,
+  endDate: initial.endDate,
   pageNumber: 1,
   pageSize: 40,
 });
@@ -38,7 +105,7 @@ const { events, pagination, isRefreshing, isError, refreshEvents } =
 watch(
   queryParameters,
   () => {
-    refreshEvents();
+    refreshEvents({ force: true });
   },
   { deep: true },
 );
@@ -266,8 +333,6 @@ watch(
 );
 
 onMounted(() => {
-  applyPeriodFilter();
-  refreshEvents({ force: true });
   eventStore.clearSelectedEvent();
 });
 </script>

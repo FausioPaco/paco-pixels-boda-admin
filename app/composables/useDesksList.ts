@@ -42,7 +42,7 @@ export const useDesksList = async (overrides?: DeskParameters | undefined) => {
     ].join('|'),
   );
 
-  const { data, refresh, status } = await useAsyncData(
+  const { data, refresh, status } = await useLazyAsyncData(
     key,
     () => getDeskService(nuxtApp.$api).getAllDesks(toRaw(queryParameters)),
     {

@@ -21,7 +21,7 @@ export const useEventBeverageEstimatesList = async (
     () => null,
   );
 
-  const { data, pending, error, refresh } = await useAsyncData(
+  const { data, pending, error, refresh } = await useLazyAsyncData(
     cacheKey,
     async () => service.getEventBeverageEstimates(parameters),
     {
