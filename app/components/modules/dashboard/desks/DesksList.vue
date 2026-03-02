@@ -83,10 +83,6 @@ const exportDesks = async () => {
     isExporting.value = false;
   }
 };
-
-onMounted(() => {
-  refreshDesks({ force: true });
-});
 </script>
 <template>
   <section

@@ -38,7 +38,7 @@ export const useChecklistSectionsList = async (
     ].join('|'),
   );
 
-  const { data, refresh, status } = await useAsyncData(
+  const { data, refresh, status } = await useLazyAsyncData(
     key,
     () => getChecklistService(nuxtApp.$api).getAllSections(queryParameters),
     {

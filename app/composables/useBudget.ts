@@ -9,7 +9,7 @@ export const useBudget = async (eventId: number) => {
   const nuxtApp = useNuxtApp();
   const key = `get-budget-by-event-${eventId}`;
 
-  const { data, refresh, status } = await useAsyncData(
+  const { data, refresh, status } = await useLazyAsyncData(
     key,
     () => getBudgetService(nuxtApp.$api).getByEvent(eventId),
     {

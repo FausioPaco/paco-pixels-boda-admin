@@ -29,14 +29,10 @@ const queryParameters = reactive<EventBeverageEstimatesParameters>({
 const { estimates, pagination, isRefreshing, isError, refreshEstimates } =
   await useEventBeverageEstimatesList(queryParameters);
 
-const { categories, refreshCategories } = await useBeverageCategoriesList({
-  parameters: { pageNumber: 1, pageSize: 200, searchQuery: '' },
-});
-
-onMounted(async () => {
-  await refreshCategories?.({ force: true });
-  await refreshEstimates({ force: true });
-});
+const { categories, isLoading: isRefreshingCategories } =
+  await useBeverageCategoriesList({
+    parameters: { pageNumber: 1, pageSize: 200, searchQuery: '' },
+  });
 
 watch(queryParameters, () => {
   refreshEstimates({ force: true });
@@ -323,6 +319,7 @@ watch(isBlocked, (newVal) => {
           />
 
           <BaseSelect
+            v-if="!isRefreshingCategories"
             id="estimateCategory"
             label="Categoria:"
             :options="categoryOptions"

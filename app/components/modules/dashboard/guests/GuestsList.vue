@@ -20,7 +20,8 @@ const { guests, pagination, isRefreshing, isError, refreshGuests } =
   await useGuestsList(queryParameters);
 
 const { refreshDesks } = await useDeskOptions();
-const { categories } = await useGuestCategories();
+const { categories, isRefreshing: isRefreshingCategories } =
+  await useGuestCategories();
 
 const nuxtApp = useNuxtApp();
 const guestService = getGuestService(nuxtApp.$api);
@@ -198,7 +199,7 @@ const absenceRowClass = (g: Guest) => {
           />
 
           <BaseSelect
-            v-if="categories"
+            v-if="!isRefreshingCategories && categories"
             id="category"
             v-model="queryParameters.categoryId"
             label="Tipo de Convidado: "
