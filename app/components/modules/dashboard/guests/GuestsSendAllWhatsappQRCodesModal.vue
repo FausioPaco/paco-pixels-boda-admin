@@ -1,0 +1,118 @@
+<script setup lang="ts">
+import type { ExportTextColor } from '~~/shared/types/guest';
+
+interface Props {
+  show?: boolean;
+}
+
+withDefaults(defineProps<Props>(), { show: false });
+
+const emit = defineEmits<{
+  (e: 'closeModal'): void;
+  (
+    e: 'send',
+    payload: { color: ExportTextColor; force: boolean; reason?: string },
+  ): void;
+}>();
+
+const colorInput = ref<ExportTextColor>('black');
+const forceInput = ref(false);
+const reasonInput = ref('');
+
+const isSubmitting = ref(false);
+
+const textColorList = ref<SelectOption[]>([
+  { id: 'black', name: 'Preto' },
+  { id: 'white', name: 'Branco' },
+]);
+
+const onSubmit = () => {
+  isSubmitting.value = true;
+
+  emit('send', {
+    color: colorInput.value,
+    force: forceInput.value,
+    reason: forceInput.value ? reasonInput.value : undefined,
+  });
+
+  setTimeout(() => {
+    isSubmitting.value = false;
+  }, 200);
+};
+</script>
+
+<template>
+  <BaseModal
+    title="Enviar QR Codes via WhatsApp"
+    :show="show"
+    @close-modal="$emit('closeModal')"
+  >
+    <div class="my-2 animate-fadeIn">
+      <form class="space-y-3" @submit.prevent="onSubmit">
+        <p class="text-grey-400 text-left text-base md:text-lg">
+          Esta acção vai enviar 1 imagem (QR Code) por convidado elegível.
+        </p>
+
+        <BaseSelect
+          id="whatsAppQrTextColor"
+          v-model="colorInput"
+          label="Cor do texto: "
+          :options="textColorList"
+          disable-empty
+        />
+
+        <div class="bg-grey-50 rounded-lg p-3">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-grey-800 text-sm font-semibold">Reenvio forçado</p>
+              <p class="text-grey-500 text-xs">
+                Use apenas em casos raros. Pode reenviar mesmo que já esteja
+                marcado como enviado.
+              </p>
+            </div>
+
+            <!-- se tiveres um BaseToggle, usa-o. Se não, mantém checkbox -->
+            <BaseToggle
+              id="forceInput"
+              :model-value="forceInput"
+              size="md"
+              reverse
+            />
+          </div>
+
+          <div v-if="forceInput" class="mt-3">
+            <BaseInput
+              id="reasonInput"
+              v-model="reasonInput"
+              label="Motivo do reenvio (obrigatório):"
+              placeholder="Ex: o convidado apagou a mensagem / pediu reenvio"
+            />
+          </div>
+        </div>
+
+        <div class="my-4 flex items-center justify-center space-x-3">
+          <BaseButton
+            type="submit"
+            btn-type="primary"
+            class="my-1"
+            size="md"
+            :loading="isSubmitting"
+            :disabled="isSubmitting || (forceInput && !reasonInput)"
+          >
+            Enviar agora
+          </BaseButton>
+
+          <BaseButton
+            type="button"
+            btn-type="outline-primary"
+            class="my-1"
+            size="md"
+            @click="$emit('closeModal')"
+          >
+            Cancelar
+          </BaseButton>
+        </div>
+      </form>
+    </div>
+  </BaseModal>
+</template>

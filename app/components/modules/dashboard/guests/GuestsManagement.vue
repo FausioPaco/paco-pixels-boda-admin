@@ -23,11 +23,14 @@ const invitationService = getInvitationService(nuxtApp.$api);
 const { clientCode, apiImageUrl } = useRuntimeConfig().public;
 
 const textColorExport = ref<ExportTextColor>('black');
-
 const showExportFormatModal = ref<boolean>(false);
-
 const toast = useToast();
 const { canExport } = await useInvitationSettings();
+
+const showWhatsAppSendModal = ref(false);
+const whatsAppTextColor = ref<ExportTextColor>('black');
+const whatsAppForce = ref(false);
+const whatsAppReason = ref<string | undefined>(undefined);
 
 const startExport = (exportOptions: ExportQROptions) => {
   textColorExport.value = exportOptions.color;
@@ -82,16 +85,64 @@ const exportQRCodes = async () => {
   await qrExport.start();
 };
 
+const waSummary = ref<WhatsAppQrLogsSummary | null>(null);
+
+const waExport = useExportJob({
+  toast,
+  toastId: `send-whatsapp-qrcodes-${eventStore.eventSlug}`,
+  toastTitle: 'Envio de QR Codes via WhatsApp',
+  start: async () => {
+    const res = await eventService.startSendQrCardsWhatsapp(
+      eventStore.eventId!,
+      whatsAppTextColor.value,
+      clientCode,
+      whatsAppForce.value,
+      whatsAppReason.value,
+    );
+    return { jobId: res.jobId, total: res.total };
+  },
+  getStatus: (jobId) => eventService.getExportStatus(jobId),
+  onCompleted: async () => {
+    waSummary.value = await eventService.getSendQrCardsWhatsappSummary(
+      eventStore.eventId!,
+    );
+  },
+  onFailed: async () => {
+    waSummary.value = await eventService.getSendQrCardsWhatsappSummary(
+      eventStore.eventId!,
+    );
+  },
+});
+
+const startBulkWhatsAppSend = async (payload: {
+  color: ExportTextColor;
+  force: boolean;
+  reason?: string;
+}) => {
+  whatsAppTextColor.value = payload.color;
+  whatsAppForce.value = payload.force;
+  whatsAppReason.value = payload.reason;
+
+  showWhatsAppSendModal.value = false;
+  waSummary.value = null;
+  await waExport.start();
+};
+
 const activeExport = computed(() => {
   if (qrExport.isRunning.value || qrExport.showProgressModal.value)
     return qrExport;
   if (invExport.isRunning.value || invExport.showProgressModal.value)
     return invExport;
+  if (waExport.isRunning.value || waExport.showProgressModal.value)
+    return waExport;
   return null;
 });
 
 const anyExportRunning = computed(
-  () => qrExport.isRunning.value || invExport.isRunning.value,
+  () =>
+    qrExport.isRunning.value ||
+    invExport.isRunning.value ||
+    waExport.isRunning.value,
 );
 </script>
 <template>
@@ -140,6 +191,22 @@ const anyExportRunning = computed(
             invExport.isRunning.value
               ? `A exportar... ${invExport.percent.value}%`
               : 'Exportar convites'
+          }}
+        </BaseButton>
+
+        <BaseButton
+          v-if="eventStore.eventQRCodeUrl && !eventStore.eventModeView"
+          btn-type="outline-primary"
+          btn-size="sm"
+          icon="whatsapp"
+          :disabled="anyExportRunning"
+          class="animate-fadeIn"
+          @click="showWhatsAppSendModal = true"
+        >
+          {{
+            waExport.isRunning.value
+              ? `A enviar... ${waExport.percent.value}%`
+              : 'Enviar QRs via WhatsApp'
           }}
         </BaseButton>
       </div>
@@ -212,6 +279,21 @@ const anyExportRunning = computed(
           if (activeExport) activeExport.showProgressModal.value = false;
         }
       "
+    />
+
+    <LazyGuestsSendAllWhatsappQRCodesModal
+      :show="showWhatsAppSendModal"
+      @close-modal="showWhatsAppSendModal = false"
+      @send="startBulkWhatsAppSend"
+    />
+
+    <LazyGuestsWhatsAppSendStatusModal
+      :show="waExport.showProgressModal.value"
+      :export-total="waExport.total.value"
+      :export-processed="waExport.processed.value"
+      :export-percent="waExport.percent.value"
+      :summary="waSummary"
+      @close-modal="waExport.showProgressModal.value = false"
     />
   </BaseCard>
 </template>

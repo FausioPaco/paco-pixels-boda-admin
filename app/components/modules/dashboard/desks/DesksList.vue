@@ -113,6 +113,7 @@ const exportDesks = async () => {
             label="Lugares: "
             :options="avaliabiltyList"
             :disabled="isRefreshing"
+            disable-empty
           />
 
           <!-- Counter & Limit -->

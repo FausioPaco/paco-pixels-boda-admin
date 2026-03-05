@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useToast } from 'vue-toastification';
 import { getDeskService } from '~/services/deskService';
+import { getEventService } from '~/services/eventService';
 import { getInvitationService } from '~/services/invitationService';
 import { generateSlug } from '~/utils/stringUtils';
 
@@ -17,6 +18,7 @@ const toast = useToast();
 const showFormModal = ref<boolean>(false);
 const showRemoveModal = ref<boolean>(false);
 const showExportFormatModal = ref<boolean>(false);
+
 const eventStore = useEventStore();
 
 const { refreshGuest } = await useGuest(props.guest.id);
@@ -32,6 +34,10 @@ const nuxtApp = useNuxtApp();
 const deskService = getDeskService(nuxtApp.$api);
 const invitationService = getInvitationService(nuxtApp.$api);
 const { apiImageUrl } = useRuntimeConfig().public;
+
+const eventService = getEventService(nuxtApp.$api);
+const { clientCode } = useRuntimeConfig().public;
+const isSendingWhatsApp = ref(false);
 
 async function fetchDeskById(id: number) {
   if (!id) return;
@@ -213,6 +219,42 @@ const generateInvitationPng = async () => {
   }
 };
 
+const sendQrWhatsapp = async (force = false) => {
+  try {
+    isSendingWhatsApp.value = true;
+
+    const eventId = eventStore.ensureSelected();
+
+    const res: SendQrToGuestResponse =
+      await eventService.sendQrCardWhatsappToGuest(
+        eventId,
+        props.guest.id,
+        textColorExport.value,
+        clientCode,
+        force,
+        force ? 'Reenvio manual via GuestView' : undefined,
+      );
+
+    // tratamento UX:
+    if (res.status?.toLowerCase().includes('skipped')) {
+      toast.info(res.reason || 'O envio foi ignorado.');
+      return;
+    }
+
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+
+    toast.success('QR enviado via WhatsApp com sucesso.');
+  } catch (err) {
+    console.error(err);
+    toast.error('Erro ao enviar o QR via WhatsApp.');
+  } finally {
+    isSendingWhatsApp.value = false;
+  }
+};
+
 onMounted(() => {
   const componentName = siteConfig.qrCodeComponent;
 
@@ -234,6 +276,20 @@ onMounted(() => {
     description="Verifique todos os detalhes deste convidado aqui"
     back-link="/admin/convidados"
   >
+    <template #right-content>
+      <BaseButton
+        v-if="eventStore.eventQRCodeUrl"
+        btn-type="outline-primary"
+        btn-size="sm"
+        icon="whatsapp"
+        :disabled="isSendingWhatsApp"
+        class="animate-fadeIn"
+        @click="sendQrWhatsapp(false)"
+      >
+        {{ isSendingWhatsApp ? 'A enviar...' : 'Enviar QR Code' }}
+      </BaseButton>
+    </template>
+
     <div
       class="flex w-full animate-fadeIn flex-col px-3 md:flex-row md:justify-between"
     >
