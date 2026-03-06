@@ -328,7 +328,7 @@ const absenceRowClass = (g: Guest) => {
             <td>{{ `${eventInitials}-${guest.localId}` }}</td>
             <td class="flex gap-2">
               <GuestsStatusIcon :guest="guest" />
-              <span>{{ guest.name }}</span>
+              <span class="truncate">{{ guest.name }}</span>
             </td>
             <td>{{ guest.people_Count }}</td>
             <td>

@@ -1,3 +1,11 @@
+export type GuestWhatsAppQrStatus =
+  | 'not_sent'
+  | 'pending'
+  | 'sent'
+  | 'invalid_phone'
+  | 'failed_temporary'
+  | 'failed';
+
 export interface Guest {
   id: number;
   localId: number;
@@ -19,6 +27,16 @@ export interface Guest {
   absence_Declared?: boolean;
   absence_Declared_At?: string | Date | null;
   created_At: Date;
+
+  hasWhatsAppQrSent?: boolean;
+  whatsAppQrStatus?: GuestWhatsAppQrStatus;
+  whatsAppQrStatusLabel?: string;
+  whatsAppQrSentAt?: string | Date | null;
+  whatsAppQrLastAttemptAt?: string | Date | null;
+  whatsAppQrErrorMessage?: string | null;
+  whatsAppQrSkipReason?: string | null;
+  whatsAppQrCanRetry?: boolean;
+  whatsAppQrWasForced?: boolean;
 }
 
 export interface GuestParameters {

@@ -11,11 +11,18 @@ const showPresence = computed(
 );
 
 const showArrival = computed(() => !showAbsent.value && !!props.guest.arrived);
+
+const showWhatsapp = computed(
+  () =>
+    !!props.guest.whatsAppQrStatus &&
+    props.guest.whatsAppQrStatus !== 'not_sent',
+);
 </script>
 
 <template>
   <div class="flex items-center gap-2">
-    <!-- Ausente -->
+    <GuestsWhatsAppStatusChip v-if="showWhatsapp" :guest="guest" compact />
+
     <BaseTooltip v-if="showAbsent" text="Ausente" placement="top">
       <template #trigger>
         <IconCloseSimple
@@ -25,7 +32,6 @@ const showArrival = computed(() => !showAbsent.value && !!props.guest.arrived);
       </template>
     </BaseTooltip>
 
-    <!-- Presença confirmada -->
     <BaseTooltip v-if="showPresence" text="Presença confirmada" placement="top">
       <template #trigger>
         <span
@@ -39,7 +45,6 @@ const showArrival = computed(() => !showAbsent.value && !!props.guest.arrived);
       </template>
     </BaseTooltip>
 
-    <!-- Chegada confirmada -->
     <BaseTooltip v-if="showArrival" text="Chegada confirmada" placement="top">
       <template #trigger>
         <span

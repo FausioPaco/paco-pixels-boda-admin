@@ -21,7 +21,9 @@ const showExportFormatModal = ref<boolean>(false);
 
 const eventStore = useEventStore();
 
-const { refreshGuest } = await useGuest(props.guest.id);
+const { guest: guestState, refreshGuest } = await useGuest(props.guest.id);
+const guestDetails = computed<Guest>(() => guestState.value ?? props.guest);
+
 const desk = ref<Desk | null | undefined>(undefined);
 const isLoadingDesk = ref(false);
 const showForExport = ref(false);
@@ -141,7 +143,7 @@ const exportInvitationAsPdf = async () => {
 
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
-    const fileName = `${eventStore.eventInitials}-${props.guest.localId}-${generateSlug(props.guest.name)}.png`; // slug do guest.name aqui
+    const fileName = `${eventStore.eventInitials}-${guestDetails.value.localId}-${generateSlug(guestDetails.value.name)}.png`; // slug do guest.name aqui
     pdf.save(fileName);
   } catch (err) {
     console.error(err);
@@ -151,18 +153,6 @@ const exportInvitationAsPdf = async () => {
     showForExport.value = false;
   }
 };
-
-// const copyInvitationLink = async () => {
-//   try {
-//     const link = `${siteConfig.link}?QRCode=${props.guest.localId}`;
-
-//     await navigator.clipboard.writeText(link);
-//     toast.success('Link do QRCode copiado com sucesso!');
-//   } catch (error) {
-//     console.error(error);
-//     toast.error('Erro ao copiar o link do QRCode.');
-//   }
-// };
 
 const startExport = (exportOptions: ExportQROptions) => {
   textColorExport.value = exportOptions.color;
@@ -204,7 +194,7 @@ const generateInvitationPng = async () => {
 
     const link = document.createElement('a');
     link.href = blobUrl;
-    link.download = `${eventStore.eventInitials}-${props.guest.localId}-convite.png`;
+    link.download = `${eventStore.eventInitials}-${guestDetails.value.localId}-convite.png`;
 
     document.body.appendChild(link);
     link.click();
@@ -228,14 +218,15 @@ const sendQrWhatsapp = async (force = false) => {
     const res: SendQrToGuestResponse =
       await eventService.sendQrCardWhatsappToGuest(
         eventId,
-        props.guest.id,
+        guestDetails.value.id,
         textColorExport.value,
         clientCode,
         force,
         force ? 'Reenvio manual via GuestView' : undefined,
       );
 
-    // tratamento UX:
+    await refreshGuest({ force: true });
+
     if (res.status?.toLowerCase().includes('skipped')) {
       toast.info(res.reason || 'O envio foi ignorado.');
       return;
@@ -246,7 +237,11 @@ const sendQrWhatsapp = async (force = false) => {
       return;
     }
 
-    toast.success('QR enviado via WhatsApp com sucesso.');
+    toast.success(
+      force
+        ? 'QR reenviado via WhatsApp com sucesso.'
+        : 'QR enviado via WhatsApp com sucesso.',
+    );
   } catch (err) {
     console.error(err);
     toast.error('Erro ao enviar o QR via WhatsApp.');
@@ -272,7 +267,7 @@ onMounted(() => {
 </script>
 <template>
   <BaseCard
-    :title="guest.name"
+    :title="guestDetails.name"
     description="Verifique todos os detalhes deste convidado aqui"
     back-link="/admin/convidados"
   >
@@ -373,7 +368,41 @@ onMounted(() => {
             title="Comentários adicionais"
             :description="guest.additional_Comments"
           />
+
+          <BaseDescriptionListItem
+            title="WhatsApp"
+            :description="guestDetails.whatsAppQrStatusLabel || 'Por enviar'"
+          />
+
+          <BaseDescriptionListItem
+            v-if="guestDetails.whatsAppQrErrorMessage"
+            title="Detalhe do envio"
+            :description="guestDetails.whatsAppQrErrorMessage"
+          />
+
+          <BaseDescriptionListItem
+            v-else-if="guestDetails.whatsAppQrSkipReason"
+            title="Detalhe do envio"
+            :description="guestDetails.whatsAppQrSkipReason"
+          />
         </BaseDescriptionList>
+
+        <div class="mb-4 flex flex-wrap items-center gap-2">
+          <GuestsWhatsAppStatusChip :guest="guestDetails" />
+
+          <span
+            v-if="
+              guestDetails.whatsAppQrSentAt &&
+              guestDetails.whatsAppQrStatus === 'sent'
+            "
+            class="text-grey-500 text-xs"
+          >
+            QR Code enviado em
+            {{
+              useDateFormat(guestDetails.whatsAppQrSentAt, 'DD/MM/YYYY HH:mm')
+            }}
+          </span>
+        </div>
 
         <!-- Main Actions -->
         <div class="my-4 flex flex-wrap items-center space-x-2">
