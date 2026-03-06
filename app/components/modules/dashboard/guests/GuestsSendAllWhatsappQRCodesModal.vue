@@ -26,7 +26,14 @@ const textColorList = ref<SelectOption[]>([
   { id: 'white', name: 'Branco' },
 ]);
 
+const canSubmit = computed(() => {
+  if (!forceInput.value) return true;
+  return !!reasonInput.value?.trim();
+});
+
 const onSubmit = () => {
+  if (!canSubmit.value) return;
+
   isSubmitting.value = true;
 
   emit('send', {
@@ -37,7 +44,19 @@ const onSubmit = () => {
 
   setTimeout(() => {
     isSubmitting.value = false;
+    resetForm();
   }, 200);
+};
+
+const resetForm = () => {
+  colorInput.value = 'black';
+  forceInput.value = false;
+  reasonInput.value = '';
+};
+
+const closeModal = () => {
+  resetForm();
+  emit('closeModal');
 };
 </script>
 
@@ -45,7 +64,7 @@ const onSubmit = () => {
   <BaseModal
     title="Enviar QR Codes via WhatsApp"
     :show="show"
-    @close-modal="$emit('closeModal')"
+    @close-modal="closeModal"
   >
     <div class="my-2 animate-fadeIn">
       <form class="space-y-3" @submit.prevent="onSubmit">
@@ -74,7 +93,7 @@ const onSubmit = () => {
             <!-- se tiveres um BaseToggle, usa-o. Se não, mantém checkbox -->
             <BaseToggle
               id="forceInput"
-              :model-value="forceInput"
+              v-model="forceInput"
               size="md"
               reverse
             />
@@ -82,6 +101,7 @@ const onSubmit = () => {
 
           <div v-if="forceInput" class="mt-3">
             <BaseInput
+              v-if="forceInput"
               id="reasonInput"
               v-model="reasonInput"
               label="Motivo do reenvio (obrigatório):"
@@ -97,7 +117,7 @@ const onSubmit = () => {
             class="my-1"
             size="md"
             :loading="isSubmitting"
-            :disabled="isSubmitting || (forceInput && !reasonInput)"
+            :disabled="isSubmitting || !canSubmit"
           >
             Enviar agora
           </BaseButton>

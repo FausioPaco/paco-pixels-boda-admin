@@ -28,7 +28,7 @@ const emit = defineEmits(['closeModal']);
   >
     <div class="space-y-3">
       <p class="text-grey-700 text-sm">
-        A processar
+        Processados
         <b class="text-success-500">{{ exportProcessed }}</b> de
         {{ exportTotal }}
         <span class="text-grey-400 font-semibold">({{ exportPercent }}%)</span>
@@ -45,6 +45,11 @@ const emit = defineEmits(['closeModal']);
         <p class="text-grey-700 mb-2 text-xs font-semibold">Resumo</p>
 
         <div class="grid grid-cols-2 gap-2 text-xs">
+          <p class="text-grey-700">Pendentes</p>
+          <p class="text-grey-900 text-right font-semibold">
+            {{ summary.pending }}
+          </p>
+
           <p class="text-grey-700">Enviados</p>
           <p class="text-grey-900 text-right font-semibold">
             {{ summary.sent }}
@@ -77,7 +82,8 @@ const emit = defineEmits(['closeModal']);
       </div>
 
       <p class="text-grey-500 text-xs">
-        Pode demorar alguns minutos em eventos com muitos convidados.
+        Pode demorar alguns minutos em eventos com muitos convidados. Os
+        processados incluem envios com sucesso e convidados ignorados.
       </p>
 
       <div class="flex justify-end">

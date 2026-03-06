@@ -133,8 +133,6 @@ const activeExport = computed(() => {
     return qrExport;
   if (invExport.isRunning.value || invExport.showProgressModal.value)
     return invExport;
-  if (waExport.isRunning.value || waExport.showProgressModal.value)
-    return waExport;
   return null;
 });
 
@@ -270,13 +268,14 @@ const anyExportRunning = computed(
     />
 
     <LazyGuestsExportStatusModal
+      v-if="activeExport"
       :show="activeExport?.showProgressModal.value"
       :export-total="activeExport?.total.value"
       :export-processed="activeExport?.processed.value"
       :export-percent="activeExport?.percent.value"
       @close-modal="
         () => {
-          if (activeExport) activeExport.showProgressModal.value = false;
+          activeExport!.showProgressModal.value = false;
         }
       "
     />
