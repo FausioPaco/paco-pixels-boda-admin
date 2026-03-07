@@ -2,10 +2,12 @@
 type Props = {
   guest: Guest;
   compact?: boolean;
+  label?: string;
 };
 
 const props = withDefaults(defineProps<Props>(), {
   compact: false,
+  label: undefined,
 });
 
 const status = computed(() => props.guest.whatsAppQrStatus ?? 'not_sent');
@@ -52,7 +54,7 @@ const chipClasses = computed(() => {
     case 'failed_temporary':
       return 'bg-orange-50 text-orange-700 ring-1 ring-orange-200';
     case 'failed':
-      return 'bg-rose-50 text-rose-700 ring-1 ring-rose-200';
+      return 'bg-danger-50 text-danger-700 ring-1 ring-danger-200';
     default:
       return 'bg-grey-100 text-grey-500 ring-1 ring-grey-200';
   }
@@ -69,7 +71,7 @@ const dotClasses = computed(() => {
     case 'failed_temporary':
       return 'bg-orange-500';
     case 'failed':
-      return 'bg-rose-500';
+      return 'bg-danger-500';
     default:
       return 'bg-grey-400';
   }
@@ -97,9 +99,21 @@ const dotClasses = computed(() => {
               'text-amber-500': status === 'pending',
               'text-slate-400': status === 'invalid_phone',
               'text-orange-500': status === 'failed_temporary',
-              'text-rose-500': status === 'failed',
+              'text-danger-500': status === 'failed',
             }"
         /></span>
+        <span
+          v-if="label"
+          :class="{
+            'text-emerald-500': status === 'sent',
+            'text-amber-500': status === 'pending',
+            'text-slate-400': status === 'invalid_phone',
+            'text-orange-500': status === 'failed_temporary',
+            'text-danger-500': status === 'failed',
+          }"
+        >
+          {{ label }}
+        </span>
       </span>
     </template>
   </BaseTooltip>

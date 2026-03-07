@@ -163,6 +163,10 @@ const absenceRowClass = (g: Guest) => {
   }
   return '';
 };
+
+onMounted(() => {
+  refreshDesks({ force: true });
+});
 </script>
 <template>
   <section

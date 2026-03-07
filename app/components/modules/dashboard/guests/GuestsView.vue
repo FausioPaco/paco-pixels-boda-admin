@@ -271,20 +271,6 @@ onMounted(() => {
     description="Verifique todos os detalhes deste convidado aqui"
     back-link="/admin/convidados"
   >
-    <template #right-content>
-      <BaseButton
-        v-if="eventStore.eventQRCodeUrl"
-        btn-type="outline-primary"
-        btn-size="sm"
-        icon="whatsapp"
-        :disabled="isSendingWhatsApp"
-        class="animate-fadeIn"
-        @click="sendQrWhatsapp(false)"
-      >
-        {{ isSendingWhatsApp ? 'A enviar...' : 'Enviar QR Code' }}
-      </BaseButton>
-    </template>
-
     <div
       class="flex w-full animate-fadeIn flex-col px-3 md:flex-row md:justify-between"
     >
@@ -326,6 +312,18 @@ onMounted(() => {
               {{
                 isGeneratingInvitation ? 'A gerar convite...' : 'Gerar Convite'
               }}
+            </BaseButton>
+
+            <BaseButton
+              v-if="eventStore.eventQRCodeUrl"
+              btn-type="outline-primary"
+              btn-size="sm"
+              icon="whatsapp"
+              :disabled="isSendingWhatsApp"
+              class="animate-fadeIn"
+              @click="sendQrWhatsapp(false)"
+            >
+              {{ isSendingWhatsApp ? 'A enviar...' : 'Enviar QR Code' }}
             </BaseButton>
           </div>
         </div>
@@ -369,40 +367,37 @@ onMounted(() => {
             :description="guest.additional_Comments"
           />
 
+          <BaseDescriptionListItem title="WhatsApp">
+            <div class="flex gap-2">
+              <GuestsWhatsAppStatusChip
+                :guest="guestDetails"
+                :label="guestDetails.whatsAppQrStatusLabel || 'Por enviar'"
+              /></div
+          ></BaseDescriptionListItem>
           <BaseDescriptionListItem
-            title="WhatsApp"
-            :description="guestDetails.whatsAppQrStatusLabel || 'Por enviar'"
+            v-if="
+              guestDetails.whatsAppQrSentAt &&
+              guestDetails.whatsAppQrStatus === 'sent'
+            "
+            title=" QR Code enviado em"
+            :description="
+              useDateFormat(guestDetails.whatsAppQrSentAt, 'DD/MM/YYYY HH:mm')
+                .value
+            "
           />
 
           <BaseDescriptionListItem
             v-if="guestDetails.whatsAppQrErrorMessage"
-            title="Detalhe do envio"
+            title="Detalhe do envio (WhatsApp)"
             :description="guestDetails.whatsAppQrErrorMessage"
           />
 
           <BaseDescriptionListItem
             v-else-if="guestDetails.whatsAppQrSkipReason"
-            title="Detalhe do envio"
+            title="Detalhe do envio (WhatsApp)"
             :description="guestDetails.whatsAppQrSkipReason"
           />
         </BaseDescriptionList>
-
-        <div class="mb-4 flex flex-wrap items-center gap-2">
-          <GuestsWhatsAppStatusChip :guest="guestDetails" />
-
-          <span
-            v-if="
-              guestDetails.whatsAppQrSentAt &&
-              guestDetails.whatsAppQrStatus === 'sent'
-            "
-            class="text-grey-500 text-xs"
-          >
-            QR Code enviado em
-            {{
-              useDateFormat(guestDetails.whatsAppQrSentAt, 'DD/MM/YYYY HH:mm')
-            }}
-          </span>
-        </div>
 
         <!-- Main Actions -->
         <div class="my-4 flex flex-wrap items-center space-x-2">

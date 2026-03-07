@@ -13,7 +13,9 @@ withDefaults(defineProps<DescriptionItemProps>(), {
 <template>
   <div class="mb-2 flex w-full items-center justify-between py-2">
     <p class="text-grey-600 text-sm font-light">{{ title }}</p>
-    <p v-if="!hideDescription" class="text-sm font-bold">{{ description }}</p>
+    <p v-if="!hideDescription" class="text-right text-sm font-bold">
+      {{ description }}
+    </p>
     <slot></slot>
   </div>
 </template>
