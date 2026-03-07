@@ -261,8 +261,9 @@ const anyExportRunning = computed(
       />
     </transition>
 
-    <LazyGuestsExportAllQRCodesModal
+    <LazyGuestsAllQRCodesColorModal
       :show="showExportFormatModal"
+      mode="export"
       @close-modal="showExportFormatModal = false"
       @export="startExport"
     />

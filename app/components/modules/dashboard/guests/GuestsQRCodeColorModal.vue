@@ -3,10 +3,12 @@ import type { ExportTextColor } from '~~/shared/types/guest';
 
 interface IGuestExportQRCodeModalProps {
   show?: boolean;
+  mode?: 'export' | 'whatsapp';
 }
 
 withDefaults(defineProps<IGuestExportQRCodeModalProps>(), {
   show: false,
+  mode: 'export',
 });
 
 const emit = defineEmits<{
@@ -42,14 +44,20 @@ const onSubmit = () => {
 </script>
 <template>
   <BaseModal
-    title="Exportar QRCode"
+    :title="
+      mode === 'export' ? 'Exportar QRCode' : 'Enviar QRCode via WhatsApp'
+    "
     :show="show"
     @close-modal="$emit('closeModal')"
   >
     <div class="my-2 animate-fadeIn">
       <form @submit.prevent="onSubmit">
         <p class="text-grey-400 text-left text-base md:text-lg">
-          Selecione o formato que pretende baixar o QRCode
+          {{
+            mode === 'export'
+              ? 'Selecione o formato que pretende baixar o QRCode'
+              : 'Selecione o formato que pretende enviar o QRCode via WhatsApp'
+          }}
         </p>
 
         <BaseSelect
@@ -78,7 +86,9 @@ const onSubmit = () => {
             size="md"
             :loading="isSubmiting"
             :disabled="isSubmiting"
-            >Baixar agora</BaseButton
+            >{{
+              mode === 'export' ? 'Baixar agora' : 'Enviar agora'
+            }}</BaseButton
           >
 
           <BaseButton

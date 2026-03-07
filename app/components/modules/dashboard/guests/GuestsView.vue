@@ -18,6 +18,7 @@ const toast = useToast();
 const showFormModal = ref<boolean>(false);
 const showRemoveModal = ref<boolean>(false);
 const showExportFormatModal = ref<boolean>(false);
+const showWhatsAppColorModal = ref(false);
 
 const eventStore = useEventStore();
 
@@ -164,6 +165,12 @@ const startExport = (exportOptions: ExportQROptions) => {
   }
 
   showExportFormatModal.value = false;
+};
+
+const onConfirmWhatsAppColor = async (options: ExportQROptions) => {
+  textColorExport.value = options.color;
+  showWhatsAppColorModal.value = false;
+  sendQrWhatsapp();
 };
 
 const { canExport: canExportInvitation } = await useInvitationSettings();
@@ -321,7 +328,7 @@ onMounted(() => {
               icon="whatsapp"
               :disabled="isSendingWhatsApp"
               class="animate-fadeIn"
-              @click="sendQrWhatsapp(false)"
+              @click="showWhatsAppColorModal = true"
             >
               {{ isSendingWhatsApp ? 'A enviar...' : 'Enviar QR Code' }}
             </BaseButton>
@@ -380,6 +387,7 @@ onMounted(() => {
               guestDetails.whatsAppQrStatus === 'sent'
             "
             title=" QR Code enviado em"
+            :description="formatDateWithTime(guestDetails.whatsAppQrSentAt)"
           />
 
           <BaseDescriptionListItem
@@ -459,10 +467,18 @@ onMounted(() => {
       @success="$router.push('/admin/convidados')"
     />
 
-    <LazyGuestsExportQRCodeModal
+    <LazyGuestsQRCodeColorModal
       :show="showExportFormatModal"
+      mode="export"
       @close-modal="showExportFormatModal = false"
       @export="startExport"
+    />
+
+    <LazyGuestsQRCodeColorModal
+      :show="showWhatsAppColorModal"
+      mode="whatsapp"
+      @close-modal="showWhatsAppColorModal = false"
+      @export="onConfirmWhatsAppColor"
     />
   </BaseCard>
 </template>
