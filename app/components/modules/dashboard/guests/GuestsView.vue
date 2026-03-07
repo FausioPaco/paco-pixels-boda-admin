@@ -371,7 +371,7 @@ onMounted(() => {
             <div class="flex gap-2">
               <GuestsWhatsAppStatusChip
                 :guest="guestDetails"
-                :label="guestDetails.whatsAppQrStatusLabel || 'Por enviar'"
+                show-description
               /></div
           ></BaseDescriptionListItem>
           <BaseDescriptionListItem
@@ -380,10 +380,6 @@ onMounted(() => {
               guestDetails.whatsAppQrStatus === 'sent'
             "
             title=" QR Code enviado em"
-            :description="
-              useDateFormat(guestDetails.whatsAppQrSentAt, 'DD/MM/YYYY HH:mm')
-                .value
-            "
           />
 
           <BaseDescriptionListItem

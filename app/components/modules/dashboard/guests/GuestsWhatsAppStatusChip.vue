@@ -2,12 +2,12 @@
 type Props = {
   guest: Guest;
   compact?: boolean;
-  label?: string;
+  showDescription?: boolean;
 };
 
 const props = withDefaults(defineProps<Props>(), {
   compact: false,
-  label: undefined,
+  showDescription: false,
 });
 
 const status = computed(() => props.guest.whatsAppQrStatus ?? 'not_sent');
@@ -79,7 +79,11 @@ const dotClasses = computed(() => {
 </script>
 
 <template>
-  <BaseTooltip :text="tooltipText" placement="top">
+  <BaseTooltip
+    :text="tooltipText"
+    placement="top"
+    max-width-class="max-w-[480px]"
+  >
     <template #trigger>
       <span
         class="inline-flex items-center gap-1 rounded-full font-semibold transition"
@@ -103,7 +107,7 @@ const dotClasses = computed(() => {
             }"
         /></span>
         <span
-          v-if="label"
+          v-if="showDescription"
           :class="{
             'text-emerald-500': status === 'sent',
             'text-amber-500': status === 'pending',
@@ -112,7 +116,7 @@ const dotClasses = computed(() => {
             'text-danger-500': status === 'failed',
           }"
         >
-          {{ label }}
+          {{ guest.whatsAppQrStatusLabel || 'Por enviar' }}
         </span>
       </span>
     </template>
