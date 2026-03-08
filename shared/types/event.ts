@@ -18,6 +18,24 @@ export interface BodaEvent {
   event_Date?: Date | undefined;
   has_QRCode_Image?: boolean;
   qrCodeImage_Url?: string;
+
+  location?: string | undefined;
+  godparentsCount?: number | undefined;
+  decorationType?: string | undefined;
+  dietaryRestrictions?: string | undefined;
+  guestProfile?: string | undefined;
+  colorPalette?: string | undefined;
+  event_End_Time?: string | undefined;
+
+  brideNationality?: string | undefined;
+  groomNationality?: string | undefined;
+  brideBirthDate?: Date | undefined;
+  groomBirthDate?: Date | undefined;
+  brideProfession?: string | undefined;
+  groomProfession?: string | undefined;
+  brideDocument?: string | undefined;
+  groomDocument?: string | undefined;
+
   created_At: Date;
 }
 
@@ -51,4 +69,23 @@ export interface EventInput {
 export interface QRCodeFileUploadResult {
   url: string;
   message: string;
+}
+
+export interface EventDetailsInput {
+  location?: string | null | undefined;
+  godparentsCount?: number | null | undefined;
+  decorationType?: string | null | undefined;
+  dietaryRestrictions?: string | null | undefined;
+  guestProfile?: string | null | undefined;
+  colorPalette?: string | null | undefined;
+  event_End_Time?: string | null | undefined;
+
+  brideNationality?: string | null | undefined;
+  groomNationality?: string | null | undefined;
+  brideBirthDate?: Date | null | undefined;
+  groomBirthDate?: Date | null | undefined;
+  brideProfession?: string | null | undefined;
+  groomProfession?: string | null | undefined;
+  brideDocument?: string | null | undefined;
+  groomDocument?: string | null | undefined;
 }

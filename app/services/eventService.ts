@@ -33,6 +33,16 @@ export const getEventService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
     });
   },
 
+  async updateEventDetails(
+    eventId: number,
+    updatedDetails: EventDetailsInput,
+  ): Promise<unknown> {
+    return $fetch<unknown>(`${RESOURCE}/UpdateDetails/${eventId}`, {
+      method: 'put',
+      body: updatedDetails,
+    });
+  },
+
   async removeEvent(eventId: number): Promise<unknown> {
     return $fetch<unknown>(`${RESOURCE}/Remove/${eventId}`, {
       method: 'delete',
