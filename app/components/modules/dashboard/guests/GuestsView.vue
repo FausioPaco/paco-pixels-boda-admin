@@ -19,6 +19,7 @@ const showFormModal = ref<boolean>(false);
 const showRemoveModal = ref<boolean>(false);
 const showExportFormatModal = ref<boolean>(false);
 const showWhatsAppColorModal = ref(false);
+const showWhatsAppResendModal = ref(false);
 
 const eventStore = useEventStore();
 
@@ -41,6 +42,13 @@ const { apiImageUrl } = useRuntimeConfig().public;
 const eventService = getEventService(nuxtApp.$api);
 const { clientCode } = useRuntimeConfig().public;
 const isSendingWhatsApp = ref(false);
+
+const hasPreviousWhatsAppSend = computed(() => {
+  return Boolean(
+    guestDetails.value?.whatsAppQrSentAt ||
+      guestDetails.value?.whatsAppQrStatus?.toLowerCase() === 'sent',
+  );
+});
 
 async function fetchDeskById(id: number) {
   if (!id) return;
@@ -94,10 +102,9 @@ const exportInvitationAsImage = async () => {
 
     const image = canvas.toDataURL('image/png');
 
-    // Criar download direto da imagem
     const link = document.createElement('a');
     link.href = image;
-    link.download = `${eventStore.eventInitials}-${props.guest.localId}-${generateSlug(props.guest.name)}.png`; // slug  do guest.name aqui
+    link.download = `${eventStore.eventInitials}-${props.guest.localId}-${generateSlug(props.guest.name)}.png`;
     link.click();
   } catch (err) {
     console.error(err);
@@ -130,12 +137,10 @@ const exportInvitationAsPdf = async () => {
 
     const imgProps = await new $jsPDF().getImageProperties(imgData);
 
-    // Conversão de px → mm (96 dpi)
     const pxToMm = (px: number) => (px * 25.4) / 96;
     const pdfWidth = pxToMm(imgProps.width);
     const pdfHeight = pxToMm(imgProps.height);
 
-    // Criar o PDF com o tamanho exato do QRCode
     const pdf = new $jsPDF({
       orientation: pdfHeight > pdfWidth ? 'portrait' : 'landscape',
       unit: 'mm',
@@ -144,7 +149,7 @@ const exportInvitationAsPdf = async () => {
 
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
-    const fileName = `${eventStore.eventInitials}-${guestDetails.value.localId}-${generateSlug(guestDetails.value.name)}.png`; // slug do guest.name aqui
+    const fileName = `${eventStore.eventInitials}-${guestDetails.value.localId}-${generateSlug(guestDetails.value.name)}.png`;
     pdf.save(fileName);
   } catch (err) {
     console.error(err);
@@ -170,10 +175,22 @@ const startExport = (exportOptions: ExportQROptions) => {
 const onConfirmWhatsAppColor = async (options: ExportQROptions) => {
   textColorExport.value = options.color;
   showWhatsAppColorModal.value = false;
-  sendQrWhatsapp();
+
+  if (hasPreviousWhatsAppSend.value) {
+    showWhatsAppResendModal.value = true;
+    return;
+  }
+
+  await sendQrWhatsapp();
+};
+
+const confirmWhatsAppResend = async () => {
+  showWhatsAppResendModal.value = false;
+  await sendQrWhatsapp(true);
 };
 
 const { canExport: canExportInvitation } = await useInvitationSettings();
+
 const generateInvitationPng = async () => {
   try {
     isGeneratingInvitation.value = true;
@@ -191,10 +208,11 @@ const generateInvitationPng = async () => {
       method: 'GET',
     });
 
-    if (!response.ok)
+    if (!response.ok) {
       throw new Error(
         `Falha ao descarregar imagem. Status: ${response.status}`,
       );
+    }
 
     const blob = await response.blob();
     const blobUrl = window.URL.createObjectURL(blob);
@@ -272,6 +290,7 @@ onMounted(() => {
   }
 });
 </script>
+
 <template>
   <BaseCard
     :title="guestDetails.name"
@@ -281,22 +300,11 @@ onMounted(() => {
     <div
       class="flex w-full animate-fadeIn flex-col px-3 md:flex-row md:justify-between"
     >
-      <!-- Guest Info -->
       <div class="md:w-1/2">
         <div
           class="mb-3 flex flex-col justify-between md:items-center lg:flex-row"
         >
-          <!-- Main Links: Generate Invitation & Generate Confirmation Link -->
           <div class="my-3 flex gap-2">
-            <!-- <BaseButton
-              btn-type="outline-primary"
-              btn-size="sm"
-              icon="copy"
-              @click="copyInvitationLink"
-            >
-              Copiar Link
-            </BaseButton> -->
-
             <BaseButton
               v-if="eventStore.eventQRCodeUrl"
               btn-type="outline-primary"
@@ -308,6 +316,7 @@ onMounted(() => {
             >
               {{ isExporting ? 'A gerar QR Code...' : 'Gerar QR Code' }}
             </BaseButton>
+
             <BaseButton
               v-if="canExportInvitation"
               btn-type="outline-primary"
@@ -335,9 +344,9 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Descriptions -->
         <BaseDescriptionList>
           <BaseDescriptionListItem title="Nome" :description="guest.name" />
+
           <BaseDescriptionListItem
             title="Número de Pessoas"
             :description="
@@ -346,14 +355,17 @@ onMounted(() => {
                 : `${guest.people_Count} Pessoas`
             "
           />
+
           <BaseDescriptionListItem
             title="Telefone"
             :description="guest.phone"
           />
+
           <BaseDescriptionListItem
             title="Tipo de Convidado"
             :description="guest.categoryName"
           />
+
           <BaseDescriptionListItem title="Presença Confirmada" hide-descriptipn>
             <p
               class="text-sm font-bold"
@@ -368,6 +380,7 @@ onMounted(() => {
             title="Pessoas Confirmadas"
             :description="`${guest.people_Confirmed} ${guest.people_Confirmed === 1 ? 'Pessoa' : 'Pessoas'}`"
           />
+
           <BaseDescriptionListItem
             v-if="guest.additional_Comments"
             title="Comentários adicionais"
@@ -379,8 +392,10 @@ onMounted(() => {
               <GuestsWhatsAppStatusChip
                 :guest="guestDetails"
                 show-description
-              /></div
-          ></BaseDescriptionListItem>
+              />
+            </div>
+          </BaseDescriptionListItem>
+
           <BaseDescriptionListItem
             v-if="
               guestDetails.whatsAppQrSentAt &&
@@ -403,7 +418,6 @@ onMounted(() => {
           />
         </BaseDescriptionList>
 
-        <!-- Main Actions -->
         <div class="my-4 flex flex-wrap items-center space-x-2">
           <BaseButton
             type="button"
@@ -428,7 +442,6 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Desk Guests -->
       <LazyDesksTableView
         v-if="desk"
         :desk-name="desk.name"
@@ -437,7 +450,6 @@ onMounted(() => {
       />
     </div>
 
-    <!-- Invitation File -->
     <div
       class="pointer-events-none fixed left-[-9999px] top-[-9999px] opacity-0"
     >
@@ -449,10 +461,6 @@ onMounted(() => {
       />
     </div>
 
-    <!-- Example Invitation -->
-    <!-- <component :is="InvitationComponent" ref="qrCodeRef" :guest="guest" /> -->
-
-    <!-- Modals -->
     <LazyGuestsFormModal
       :show="showFormModal"
       :guest="guest"
@@ -479,6 +487,13 @@ onMounted(() => {
       mode="whatsapp"
       @close-modal="showWhatsAppColorModal = false"
       @export="onConfirmWhatsAppColor"
+    />
+
+    <LazyGuestsWhatsAppResendModal
+      :show="showWhatsAppResendModal"
+      :loading="isSendingWhatsApp"
+      @close-modal="showWhatsAppResendModal = false"
+      @confirm="confirmWhatsAppResend"
     />
   </BaseCard>
 </template>
