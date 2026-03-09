@@ -34,9 +34,10 @@ const serverErrors = ref<ServerError>({
 });
 
 const maxBirthDate = new Date();
+
 const normalizeTimeString = (value?: string | null) => {
   if (!value) return null;
-  return String(value).slice(0, 5);
+  return `${value}:00`;
 };
 
 const { errors, handleSubmit, defineField, resetForm } =
@@ -84,12 +85,9 @@ const { errors, handleSubmit, defineField, resetForm } =
           .optional(),
 
         event_End_Time: string()
+          .trim()
+          .matches(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Hora inválida')
           .nullable()
-          .test('valid-time', 'Selecione um horário válido', (value) => {
-            if (!value) return true;
-
-            return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
-          })
           .optional(),
         brideNationality: string()
           .trim()
@@ -220,7 +218,7 @@ watch(
         dietaryRestrictions: current?.dietaryRestrictions ?? '',
         guestProfile: current?.guestProfile ?? '',
         colorPalette: current?.colorPalette ?? '',
-        event_End_Time: normalizeTimeString(current?.event_End_Time),
+        event_End_Time: current?.event_End_Time?.slice(0, 5) ?? null,
         brideNationality: current?.brideNationality ?? '',
         groomNationality: current?.groomNationality ?? '',
         brideBirthDate: current?.brideBirthDate
@@ -243,7 +241,12 @@ watch(
 </script>
 
 <template>
-  <BaseModal title="Detalhes do evento" :show="show" @close-modal="closeModal">
+  <BaseModal
+    size="large"
+    title="Detalhes do evento"
+    :show="show"
+    @close-modal="closeModal"
+  >
     <form
       class="mb-5 w-full animate-fadeIn text-left"
       @submit.prevent="onSubmit"
@@ -314,7 +317,7 @@ watch(
             time-picker
             model-type="HH:mm"
             :is-24="true"
-            :minutes-increment="5"
+            :minutes-increment="1"
             :teleport="true"
             :disabled="isSubmiting"
             :clearable="true"
@@ -367,10 +370,16 @@ watch(
         rows="4"
       />
 
-      <div class="my-6 border-t border-gray-100 pt-6">
-        <h3 class="text-grey-900 mb-4 text-sm font-semibold">Noiva</h3>
+      <div class="mb-5 mt-4 border-t border-gray-100 pt-6">
+        <div class="mb-6 flex items-center gap-1">
+          <IconBudgetOutfit
+            class="text-grey-500 size-[16px]"
+            :font-controlled="false"
+          />
+          <h3 class="text-grey-500 text-sm font-semibold">Noiva</h3>
+        </div>
 
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="mb-4 grid gap-x-4 gap-y-6 md:grid-cols-2">
           <BaseInput
             id="brideNationality"
             v-model="brideNationality"
@@ -381,6 +390,7 @@ watch(
             name="brideNationality"
             type="text"
             placeholder="Ex.: Moçambicana"
+            disable-margins
           />
 
           <BaseInput
@@ -393,6 +403,7 @@ watch(
             name="brideProfession"
             type="text"
             placeholder="Ex.: Médica"
+            disable-margins
           />
 
           <div>
@@ -432,14 +443,21 @@ watch(
             name="brideDocument"
             type="text"
             placeholder="Ex.: BI / Passaporte"
+            disable-margins
           />
         </div>
       </div>
 
-      <div class="my-6 border-t border-gray-100 pt-6">
-        <h3 class="text-grey-900 mb-4 text-sm font-semibold">Noivo</h3>
+      <div class="mb-4 mt-4 border-t border-gray-100 pt-6">
+        <div class="mb-6 flex items-center gap-1">
+          <IconSuit
+            class="text-grey-500 size-[16px]"
+            :font-controlled="false"
+          />
+          <h3 class="text-grey-500 text-sm font-semibold">Noivo</h3>
+        </div>
 
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="mb-4 grid gap-x-4 gap-y-6 md:grid-cols-2">
           <BaseInput
             id="groomNationality"
             v-model="groomNationality"
@@ -450,6 +468,7 @@ watch(
             name="groomNationality"
             type="text"
             placeholder="Ex.: Moçambicano"
+            disable-margins
           />
 
           <BaseInput
@@ -462,6 +481,7 @@ watch(
             name="groomProfession"
             type="text"
             placeholder="Ex.: Engenheiro"
+            disable-margins
           />
 
           <div>
@@ -501,6 +521,7 @@ watch(
             name="groomDocument"
             type="text"
             placeholder="Ex.: BI / Passaporte"
+            disable-margins
           />
         </div>
       </div>

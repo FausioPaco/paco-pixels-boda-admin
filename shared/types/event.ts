@@ -104,7 +104,6 @@ export interface EventDetailsFormValues {
   guestProfile?: string | null | undefined;
   colorPalette?: string | null | undefined;
   event_End_Time?: string | null | undefined;
-
   brideNationality?: string | null | undefined;
   groomNationality?: string | null | undefined;
   brideBirthDate?: Date | null | undefined;
