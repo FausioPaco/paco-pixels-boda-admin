@@ -212,21 +212,9 @@ onMounted(() => {
         <button
           type="button"
           class="text-primary-700 flex items-center gap-1 text-xs font-medium hover:underline"
-          @click.prevent="showDetailsFormModal = true"
-        >
-          <span>Detalhes</span>
-          <IconPencil
-            :font-controlled="false"
-            class="text-primary-700 h-3.5 w-3.5"
-          />
-        </button>
-
-        <button
-          type="button"
-          class="text-primary-700 flex items-center gap-1 text-xs font-medium hover:underline"
           @click.prevent="showFormModal = true"
         >
-          <span>Editar base</span>
+          <span>Editar informação básica</span>
           <IconPencil
             :font-controlled="false"
             class="text-primary-700 h-3.5 w-3.5"
@@ -329,35 +317,60 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="border-grey-100 mt-6 border-t pt-6">
+    <div class="border-grey-100/30 mt-6 border-t pt-6">
       <div
         class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
       >
-        <div>
-          <p class="text-grey-900 text-sm font-semibold">
-            Ficha complementar do evento
-          </p>
-          <p class="text-grey-300 mt-1 text-xs">
-            Informação organizada para consulta rápida pela equipa e parceiros.
-          </p>
+        <div class="flex flex-wrap items-center gap-2">
+          <IconDocument
+            :font-controlled="false"
+            class="text-primary-700 size-[32px]"
+          />
+
+          <div>
+            <p class="text-grey-900 text-sm font-semibold">
+              Ficha complementar do evento
+            </p>
+            <p class="text-grey-300 mt-1 text-xs">
+              Informação organizada para consulta rápida pela equipa e
+              parceiros.
+            </p>
+          </div>
         </div>
 
-        <div
-          v-if="!hasAdministrativeDetails"
-          class="bg-primary-50 text-primary-700 inline-flex rounded-full px-3 py-1 text-xs font-medium"
-        >
-          Ainda sem detalhes adicionais preenchidos
+        <div class="flex flex-col items-start gap-1 md:items-end">
+          <div
+            v-if="!hasAdministrativeDetails"
+            class="bg-primary-50/50 text-primary-800/50 inline-flex rounded-full px-3 py-1 text-xs font-medium"
+          >
+            Ainda sem detalhes adicionais preenchidos
+          </div>
+          <button
+            type="button"
+            class="text-primary-700 flex items-center gap-1 text-xs font-medium hover:underline"
+            @click.prevent="showDetailsFormModal = true"
+          >
+            <span>Editar Detalhes</span>
+            <IconPencil
+              :font-controlled="false"
+              class="text-primary-700 h-3.5 w-3.5"
+            />
+          </button>
         </div>
       </div>
 
-      <div class="grid gap-4 xl:grid-cols-3">
+      <div class="grid gap-4 xl:grid-cols-2">
+        <!-- Sobre o evento -->
         <section
-          class="border-primary-100 bg-primary-50/50 rounded-2xl border p-4"
+          class="border-primary-100 bg-primary-50/30 rounded-2xl border p-4"
         >
           <div class="mb-4 flex items-center gap-2">
-            <span class="bg-primary-700 h-2.5 w-2.5 rounded-full"></span>
-            <h3 class="text-grey-900 text-sm font-semibold">
-              Contexto do evento
+            <IconInformation
+              :font-controlled="false"
+              class="text-primary-800/80 size-[16px]"
+            />
+            <h3 class="text-primary-800/80 text-sm font-semibold">
+              Sobre evento
             </h3>
           </div>
 
@@ -365,7 +378,7 @@ onMounted(() => {
             <div
               v-for="item in eventContextItems"
               :key="item.label"
-              class="border-grey-100 rounded-xl border bg-white px-3 py-2.5"
+              class="border-primary-700/20 rounded-xl border bg-transparent px-3 py-2.5"
             >
               <dt
                 class="text-grey-300 mb-1 text-[11px] font-medium uppercase tracking-wide"
@@ -379,12 +392,16 @@ onMounted(() => {
           </dl>
         </section>
 
+        <!-- Preferências -->
         <section
-          class="border-primary-100 bg-primary-50/50 rounded-2xl border p-4"
+          class="border-primary-100 bg-primary-50/30 rounded-2xl border p-4"
         >
           <div class="mb-4 flex items-center gap-2">
-            <span class="bg-primary-700 h-2.5 w-2.5 rounded-full"></span>
-            <h3 class="text-grey-900 text-sm font-semibold">
+            <IconLike
+              :font-controlled="false"
+              class="text-primary-800/80 size-[16px]"
+            />
+            <h3 class="text-primary-800/80 text-sm font-semibold">
               Preferências e perfil
             </h3>
           </div>
@@ -393,7 +410,7 @@ onMounted(() => {
             <div
               v-for="item in preferencesItems"
               :key="item.label"
-              class="border-grey-100 rounded-xl border bg-white px-3 py-2.5"
+              class="border-primary-700/20 rounded-xl border bg-transparent px-3 py-2.5"
             >
               <dt
                 class="text-grey-300 mb-1 text-[11px] font-medium uppercase tracking-wide"
@@ -407,51 +424,68 @@ onMounted(() => {
           </dl>
         </section>
 
+        <!-- Noiva -->
         <section
-          class="border-primary-100 bg-primary-50/50 rounded-2xl border p-4"
+          class="border-primary-100 bg-primary-50/30 rounded-2xl border p-4"
         >
           <div class="mb-4 flex items-center gap-2">
-            <span class="bg-primary-700 h-2.5 w-2.5 rounded-full"></span>
-            <h3 class="text-grey-900 text-sm font-semibold">Dados do casal</h3>
+            <IconBudgetOutfit
+              :font-controlled="false"
+              class="text-primary-800/80 size-[16px]"
+            />
+            <h3 class="text-primary-800/80 text-sm font-semibold">
+              Sobre a Noiva
+            </h3>
           </div>
 
-          <div class="space-y-4">
-            <div class="rounded-xl border border-gray-100 bg-white p-3">
-              <p class="text-grey-900 mb-3 text-sm font-semibold">Noiva</p>
-              <dl class="space-y-2">
-                <div
-                  v-for="item in brideItems"
-                  :key="`bride-${item.label}`"
-                  class="rounded-lg bg-gray-50 px-3 py-2"
-                >
-                  <dt class="text-grey-300 text-[11px] font-medium uppercase">
-                    {{ item.label }}
-                  </dt>
-                  <dd class="text-grey-900 mt-1 text-sm font-medium">
-                    {{ item.value }}
-                  </dd>
-                </div>
-              </dl>
+          <dl class="space-y-3">
+            <div
+              v-for="item in brideItems"
+              :key="`bride-${item.label}`"
+              class="border-primary-700/20 rounded-xl border bg-transparent px-3 py-2.5"
+            >
+              <dt
+                class="text-grey-300 mb-1 text-[11px] font-medium uppercase tracking-wide"
+              >
+                {{ item.label }}
+              </dt>
+              <dd class="text-grey-900 text-sm font-medium leading-relaxed">
+                {{ item.value }}
+              </dd>
             </div>
+          </dl>
+        </section>
 
-            <div class="rounded-xl border border-gray-100 bg-white p-3">
-              <p class="text-grey-900 mb-3 text-sm font-semibold">Noivo</p>
-              <dl class="space-y-2">
-                <div
-                  v-for="item in groomItems"
-                  :key="`groom-${item.label}`"
-                  class="rounded-lg bg-gray-50 px-3 py-2"
-                >
-                  <dt class="text-grey-300 text-[11px] font-medium uppercase">
-                    {{ item.label }}
-                  </dt>
-                  <dd class="text-grey-900 mt-1 text-sm font-medium">
-                    {{ item.value }}
-                  </dd>
-                </div>
-              </dl>
-            </div>
+        <!-- Noivo -->
+        <section
+          class="border-primary-100 bg-primary-50/30 rounded-2xl border p-4"
+        >
+          <div class="mb-4 flex items-center gap-2">
+            <IconSuit
+              :font-controlled="false"
+              class="text-primary-800/80 size-[16px]"
+            />
+            <h3 class="text-primary-800/80 text-sm font-semibold">
+              Sobre o Noivo
+            </h3>
           </div>
+
+          <dl class="space-y-3">
+            <div
+              v-for="item in groomItems"
+              :key="`groom-${item.label}`"
+              class="border-primary-700/20 rounded-xl border bg-transparent px-3 py-2.5"
+            >
+              <dt
+                class="text-grey-300 mb-1 text-[11px] font-medium uppercase tracking-wide"
+              >
+                {{ item.label }}
+              </dt>
+              <dd class="text-grey-900 text-sm font-medium leading-relaxed">
+                {{ item.value }}
+              </dd>
+            </div>
+          </dl>
         </section>
       </div>
     </div>

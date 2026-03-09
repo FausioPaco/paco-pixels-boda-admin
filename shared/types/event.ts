@@ -89,3 +89,28 @@ export interface EventDetailsInput {
   brideDocument?: string | null | undefined;
   groomDocument?: string | null | undefined;
 }
+
+export interface TimePickerValue {
+  hours?: number;
+  minutes?: number;
+  seconds?: number;
+}
+
+export interface EventDetailsFormValues {
+  location?: string | null | undefined;
+  godparentsCount?: number | null | undefined;
+  decorationType?: string | null | undefined;
+  dietaryRestrictions?: string | null | undefined;
+  guestProfile?: string | null | undefined;
+  colorPalette?: string | null | undefined;
+  event_End_Time?: string | null | undefined;
+
+  brideNationality?: string | null | undefined;
+  groomNationality?: string | null | undefined;
+  brideBirthDate?: Date | null | undefined;
+  groomBirthDate?: Date | null | undefined;
+  brideProfession?: string | null | undefined;
+  groomProfession?: string | null | undefined;
+  brideDocument?: string | null | undefined;
+  groomDocument?: string | null | undefined;
+}

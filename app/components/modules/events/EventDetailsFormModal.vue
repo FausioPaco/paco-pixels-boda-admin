@@ -34,14 +34,13 @@ const serverErrors = ref<ServerError>({
 });
 
 const maxBirthDate = new Date();
-
-const normalizeTimeForInput = (value?: string | null) => {
-  if (!value) return '';
+const normalizeTimeString = (value?: string | null) => {
+  if (!value) return null;
   return String(value).slice(0, 5);
 };
 
 const { errors, handleSubmit, defineField, resetForm } =
-  useForm<EventDetailsInput>({
+  useForm<EventDetailsFormValues>({
     validationSchema: toTypedSchema(
       object({
         location: string()
@@ -84,8 +83,14 @@ const { errors, handleSubmit, defineField, resetForm } =
           .nullable()
           .optional(),
 
-        event_End_Time: string().trim().nullable().optional(),
+        event_End_Time: string()
+          .nullable()
+          .test('valid-time', 'Selecione um horário válido', (value) => {
+            if (!value) return true;
 
+            return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
+          })
+          .optional(),
         brideNationality: string()
           .trim()
           .max(120, 'A nacionalidade da noiva é demasiado longa')
@@ -177,8 +182,7 @@ const onSubmit = handleSubmit((values) => {
     dietaryRestrictions: values.dietaryRestrictions?.trim() || null,
     guestProfile: values.guestProfile?.trim() || null,
     colorPalette: values.colorPalette?.trim() || null,
-    event_End_Time: values.event_End_Time?.trim() || null,
-
+    event_End_Time: normalizeTimeString(values.event_End_Time),
     brideNationality: values.brideNationality?.trim() || null,
     groomNationality: values.groomNationality?.trim() || null,
     brideBirthDate: values.brideBirthDate ?? null,
@@ -216,8 +220,7 @@ watch(
         dietaryRestrictions: current?.dietaryRestrictions ?? '',
         guestProfile: current?.guestProfile ?? '',
         colorPalette: current?.colorPalette ?? '',
-        event_End_Time: normalizeTimeForInput(current?.event_End_Time),
-
+        event_End_Time: normalizeTimeString(current?.event_End_Time),
         brideNationality: current?.brideNationality ?? '',
         groomNationality: current?.groomNationality ?? '',
         brideBirthDate: current?.brideBirthDate
@@ -240,34 +243,36 @@ watch(
 </script>
 
 <template>
-  <BaseModal
-    title="Detalhes do evento"
-    :show="show"
-    icon="Calendar"
-    @close-modal="closeModal"
-  >
+  <BaseModal title="Detalhes do evento" :show="show" @close-modal="closeModal">
     <form
-      class="mb-5 w-full animate-fadeIn px-4 text-left"
+      class="mb-5 w-full animate-fadeIn text-left"
       @submit.prevent="onSubmit"
     >
       <div class="mb-5">
-        <h3 class="text-grey-900 text-sm font-semibold">Contexto do evento</h3>
+        <div class="flex items-center gap-1">
+          <IconInformation
+            class="text-grey-500 size-[16px]"
+            :font-controlled="false"
+          />
+          <h3 class="text-grey-500 text-sm font-semibold">Sobre o evento</h3>
+        </div>
         <p class="text-grey-300 mt-1 text-xs">
           Informação útil para alinhamento interno, fornecedores e produção.
         </p>
       </div>
 
-      <div class="grid gap-4 md:grid-cols-2">
+      <div class="grid gap-x-4 gap-y-6 md:grid-cols-2">
         <BaseInput
           id="eventLocation"
           v-model="location"
           v-bind="locationAttrs"
           :error-message="errors.location"
           :readonly="isSubmiting"
-          label="Local"
+          label="Local:"
           name="location"
           type="text"
           placeholder="Ex.: Polana Serena Hotel"
+          disable-margins
         />
 
         <BaseInput
@@ -281,6 +286,7 @@ watch(
           type="number"
           min="0"
           placeholder="Ex.: 8"
+          disable-margins
         />
 
         <BaseInput
@@ -289,22 +295,41 @@ watch(
           v-bind="decorationTypeAttrs"
           :error-message="errors.decorationType"
           :readonly="isSubmiting"
-          label="Tipo de decoração"
+          label="Tipo de decoração:"
           name="decorationType"
           type="text"
           placeholder="Ex.: Clássica / Minimalista / Rústica"
+          disable-margins
         />
 
-        <BaseInput
-          id="eventEndTime"
-          v-model="event_End_Time"
-          v-bind="eventEndTimeAttrs"
-          :error-message="errors.event_End_Time"
-          :readonly="isSubmiting"
-          label="Horário de término"
-          name="event_End_Time"
-          type="time"
-        />
+        <div>
+          <label class="mb-1 block text-sm font-medium"
+            >Horário de término</label
+          >
+
+          <DatePicker
+            v-model="event_End_Time"
+            v-bind="eventEndTimeAttrs"
+            locale="pt-PT"
+            time-picker
+            model-type="HH:mm"
+            :is-24="true"
+            :minutes-increment="5"
+            :teleport="true"
+            :disabled="isSubmiting"
+            :clearable="true"
+            placeholder="Selecione o horário"
+            select-text="Selecionar"
+            cancel-text="Cancelar"
+          />
+
+          <p
+            v-if="errors.event_End_Time"
+            class="text-danger-800 mt-1 animate-fadeIn text-sm"
+          >
+            {{ errors.event_End_Time }}
+          </p>
+        </div>
       </div>
 
       <BaseTextArea
@@ -314,36 +339,33 @@ watch(
         :error-message="errors.dietaryRestrictions"
         :readonly="isSubmiting"
         name="dietaryRestrictions"
-        label="Restrições dietéticas"
+        label="Restrições dietéticas:"
         placeholder="Ex.: menu vegetariano, alergia a marisco, sem glúten"
         rows="3"
       />
+      <BaseTextArea
+        id="guestProfile"
+        v-model="guestProfile"
+        v-bind="guestProfileAttrs"
+        :error-message="errors.guestProfile"
+        :readonly="isSubmiting"
+        name="guestProfile"
+        label="Perfil dos convidados:"
+        placeholder="Ex.: maioritariamente família, colegas, público jovem"
+        rows="4"
+      />
 
-      <div class="grid gap-4 md:grid-cols-2">
-        <BaseTextArea
-          id="guestProfile"
-          v-model="guestProfile"
-          v-bind="guestProfileAttrs"
-          :error-message="errors.guestProfile"
-          :readonly="isSubmiting"
-          name="guestProfile"
-          label="Perfil dos convidados"
-          placeholder="Ex.: maioritariamente família, colegas, público jovem"
-          rows="3"
-        />
-
-        <BaseTextArea
-          id="colorPalette"
-          v-model="colorPalette"
-          v-bind="colorPaletteAttrs"
-          :error-message="errors.colorPalette"
-          :readonly="isSubmiting"
-          name="colorPalette"
-          label="Paleta de cores"
-          placeholder="Ex.: bege, dourado e verde oliva"
-          rows="3"
-        />
-      </div>
+      <BaseTextArea
+        id="colorPalette"
+        v-model="colorPalette"
+        v-bind="colorPaletteAttrs"
+        :error-message="errors.colorPalette"
+        :readonly="isSubmiting"
+        name="colorPalette"
+        label="Paleta de cores:"
+        placeholder="Ex.: bege, dourado e verde oliva"
+        rows="4"
+      />
 
       <div class="my-6 border-t border-gray-100 pt-6">
         <h3 class="text-grey-900 mb-4 text-sm font-semibold">Noiva</h3>
@@ -355,7 +377,7 @@ watch(
             v-bind="brideNationalityAttrs"
             :error-message="errors.brideNationality"
             :readonly="isSubmiting"
-            label="Nacionalidade"
+            label="Nacionalidade:"
             name="brideNationality"
             type="text"
             placeholder="Ex.: Moçambicana"
@@ -367,7 +389,7 @@ watch(
             v-bind="brideProfessionAttrs"
             :error-message="errors.brideProfession"
             :readonly="isSubmiting"
-            label="Profissão"
+            label="Profissão:"
             name="brideProfession"
             type="text"
             placeholder="Ex.: Médica"
@@ -388,7 +410,7 @@ watch(
               :format="'dd/MM/yyyy'"
               :auto-apply="true"
               :disabled="isSubmiting"
-              placeholder="Selecione a data"
+              placeholder="Selecione a data:"
               select-text="Selecionar"
               cancel-text="Cancelar"
             />
