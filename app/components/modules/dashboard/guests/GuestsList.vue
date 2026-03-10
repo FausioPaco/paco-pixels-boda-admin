@@ -148,20 +148,28 @@ const openConfirmModal = (g: Guest) => {
   showManageModal.value = true;
 };
 
-const openArrivedModal = (g: Guest) => {
-  guestSelected.value = g;
-  showArrivedModal.value = true;
-};
-
 const onGuestUpdated = () => {
   refreshGuests({ force: true });
   refreshDesks({ force: true });
 };
+
 const absenceRowClass = (g: Guest) => {
   if (g.absence_Declared) {
-    return 'opacity-60 grayscale';
+    return 'opacity-60';
   }
+
   return '';
+};
+
+const openArrivalAction = (g: Guest) => {
+  guestSelected.value = g;
+
+  if (g.arrived) {
+    showCancelArrivedModal.value = true;
+    return;
+  }
+
+  showArrivedModal.value = true;
 };
 
 onMounted(() => {
@@ -347,13 +355,16 @@ onMounted(() => {
                 :title="
                   guest.absence_Declared
                     ? 'Convidado marcado como ausente'
-                    : 'Confirmar chegada'
+                    : guest.arrived
+                      ? 'Cancelar chegada'
+                      : 'Confirmar chegada'
                 "
-                @click.prevent="openArrivedModal(guest)"
+                @click.prevent="openArrivalAction(guest)"
               >
                 {{ guest.arrived ? 'Não chegou' : 'Chegou' }}
               </BaseButton>
 
+              <!-- Ver detalhes -->
               <BaseButton
                 btn-size="sm"
                 btn-type="outline-primary"

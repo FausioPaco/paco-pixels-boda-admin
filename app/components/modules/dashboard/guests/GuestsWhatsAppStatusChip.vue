@@ -1,124 +1,95 @@
 <script setup lang="ts">
-type Props = {
-  guest: Guest;
-  compact?: boolean;
-  showDescription?: boolean;
-};
+import type { GuestWhatsAppQrStatus } from '~~/shared/types/guest';
 
-const props = withDefaults(defineProps<Props>(), {
-  compact: false,
-  showDescription: false,
+defineOptions({
+  name: 'GuestsWhatsAppStatusChip',
 });
 
-const status = computed(() => props.guest.whatsAppQrStatus ?? 'not_sent');
-const label = computed(
-  () =>
-    props.guest.whatsAppQrStatusLabel ??
-    (status.value === 'sent' ? 'Enviado por WhatsApp' : 'Por enviar'),
-);
+interface Props {
+  status?: GuestWhatsAppQrStatus | null;
+  label?: string | null;
+  compact?: boolean;
+}
 
-const tooltipText = computed(() => {
-  const parts: string[] = [label.value];
+const props = withDefaults(defineProps<Props>(), {
+  status: 'not_sent',
+  label: null,
+  compact: false,
+});
 
-  if (props.guest.whatsAppQrSentAt && status.value === 'sent') {
-    parts.push(
-      `Enviado em ${useDateFormat(props.guest.whatsAppQrSentAt, 'DD/MM/YYYY HH:mm').value}`,
-    );
-  }
+const fallbackLabelMap: Record<GuestWhatsAppQrStatus, string> = {
+  not_sent: 'Por enviar',
+  pending: 'Em processamento',
+  accepted: 'Aceite pela plataforma',
+  delivered: 'Entregue',
+  seen: 'Visualizado',
+  invalid_phone: 'Número inválido',
+  failed_temporary: 'Falha temporária',
+  failed: 'Falha no envio',
+  delivery_unknown: 'Entrega por confirmar',
+  needs_review: 'Precisa de verificação',
+};
 
-  if (props.guest.whatsAppQrLastAttemptAt && status.value !== 'sent') {
-    parts.push(
-      `Última tentativa: ${useDateFormat(props.guest.whatsAppQrLastAttemptAt, 'DD/MM/YYYY HH:mm').value}`,
-    );
-  }
+const normalizedStatus = computed<GuestWhatsAppQrStatus>(() => {
+  return props.status ?? 'not_sent';
+});
 
-  if (props.guest.whatsAppQrSkipReason) {
-    parts.push(props.guest.whatsAppQrSkipReason);
-  }
-
-  if (props.guest.whatsAppQrErrorMessage) {
-    parts.push(props.guest.whatsAppQrErrorMessage);
-  }
-
-  return parts.join(' • ');
+const chipLabel = computed(() => {
+  return props.label?.trim() || fallbackLabelMap[normalizedStatus.value];
 });
 
 const chipClasses = computed(() => {
-  switch (status.value) {
-    case 'sent':
-      return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200';
-    case 'pending':
-      return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200';
-    case 'invalid_phone':
-      return 'bg-slate-100 text-slate-600 ring-1 ring-slate-200';
-    case 'failed_temporary':
-      return 'bg-orange-50 text-orange-700 ring-1 ring-orange-200';
-    case 'failed':
-      return 'bg-danger-50 text-danger-700 ring-1 ring-danger-200';
-    default:
-      return 'bg-grey-100 text-grey-500 ring-1 ring-grey-200';
-  }
+  const base =
+    'inline-flex items-center rounded-full border font-medium whitespace-nowrap';
+
+  const size = props.compact
+    ? 'px-2 py-0.5 text-[11px] gap-1'
+    : 'px-2.5 py-1 text-xs gap-1.5';
+
+  const paletteMap: Record<GuestWhatsAppQrStatus, string> = {
+    not_sent: 'border-grey-200 bg-grey-50 text-grey-700',
+    pending: 'border-warning-200 bg-warning-50 text-warning-700',
+    accepted: 'border-primary-200 bg-primary-50 text-primary-700',
+    delivered: 'border-info-200 bg-info-50 text-info-700',
+    seen: 'border-success-200 bg-success-50 text-success-700',
+    invalid_phone: 'border-grey-300 bg-grey-100 text-grey-700',
+    failed_temporary: 'border-warning-200 bg-warning-50 text-warning-800',
+    failed: 'border-danger-200 bg-danger-50 text-danger-700',
+    delivery_unknown: 'border-secondary-200 bg-secondary-50 text-secondary-700',
+    needs_review: 'border-danger-200 bg-danger-50 text-danger-800',
+  };
+
+  return [base, size, paletteMap[normalizedStatus.value]].join(' ');
 });
 
 const dotClasses = computed(() => {
-  switch (status.value) {
-    case 'sent':
-      return 'bg-emerald-500';
-    case 'pending':
-      return 'bg-amber-500';
-    case 'invalid_phone':
-      return 'bg-slate-400';
-    case 'failed_temporary':
-      return 'bg-orange-500';
-    case 'failed':
-      return 'bg-danger-500';
-    default:
-      return 'bg-grey-400';
-  }
+  const base = 'inline-block rounded-full shrink-0';
+  const size = props.compact ? 'h-1.5 w-1.5' : 'h-2 w-2';
+
+  const colorMap: Record<GuestWhatsAppQrStatus, string> = {
+    not_sent: 'bg-grey-400',
+    pending: 'bg-warning-500',
+    accepted: 'bg-primary-500',
+    delivered: 'bg-info-500',
+    seen: 'bg-success-500',
+    invalid_phone: 'bg-grey-500',
+    failed_temporary: 'bg-warning-600',
+    failed: 'bg-danger-500',
+    delivery_unknown: 'bg-warning-500',
+    needs_review: 'bg-danger-600',
+  };
+
+  return [base, size, colorMap[normalizedStatus.value]].join(' ');
+});
+
+const titleText = computed(() => {
+  return chipLabel.value;
 });
 </script>
 
 <template>
-  <BaseTooltip
-    :text="tooltipText"
-    placement="top"
-    max-width-class="max-w-[480px]"
-  >
-    <template #trigger>
-      <span
-        class="inline-flex items-center gap-1 rounded-full font-semibold transition"
-        :class="
-          compact
-            ? ['px-1.5 py-1 text-[10px]', chipClasses]
-            : ['px-2.5 py-1.5 text-xs', chipClasses]
-        "
-      >
-        <span class="size-1.5 rounded-full" :class="dotClasses"></span>
-        <span>
-          <IconWhatsapp
-            :font-controlled="false"
-            class="size-[14px]"
-            :class="{
-              'text-emerald-500': status === 'sent',
-              'text-amber-500': status === 'pending',
-              'text-slate-400': status === 'invalid_phone',
-              'text-orange-500': status === 'failed_temporary',
-              'text-danger-500': status === 'failed',
-            }"
-        /></span>
-        <span
-          v-if="showDescription"
-          :class="{
-            'text-emerald-500': status === 'sent',
-            'text-amber-500': status === 'pending',
-            'text-slate-400': status === 'invalid_phone',
-            'text-orange-500': status === 'failed_temporary',
-            'text-danger-500': status === 'failed',
-          }"
-        >
-          {{ guest.whatsAppQrStatusLabel || 'Por enviar' }}
-        </span>
-      </span>
-    </template>
-  </BaseTooltip>
+  <span :class="chipClasses" :title="titleText" :aria-label="titleText">
+    <span :class="dotClasses"></span>
+    <span>{{ chipLabel }}</span>
+  </span>
 </template>

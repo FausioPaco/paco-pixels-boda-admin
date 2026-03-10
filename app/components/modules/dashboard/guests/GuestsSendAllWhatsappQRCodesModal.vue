@@ -39,7 +39,7 @@ const onSubmit = () => {
   emit('send', {
     color: colorInput.value,
     force: forceInput.value,
-    reason: forceInput.value ? reasonInput.value : undefined,
+    reason: forceInput.value ? reasonInput.value.trim() : undefined,
   });
 
   setTimeout(() => {
@@ -75,7 +75,7 @@ const closeModal = () => {
         <BaseSelect
           id="whatsAppQrTextColor"
           v-model="colorInput"
-          label="Cor do texto: "
+          label="Cor do texto:"
           :options="textColorList"
           disable-empty
         />
@@ -85,12 +85,11 @@ const closeModal = () => {
             <div>
               <p class="text-grey-800 text-sm font-semibold">Reenvio forçado</p>
               <p class="text-grey-500 text-xs">
-                Use apenas em casos raros. Pode reenviar mesmo que já esteja
-                marcado como enviado.
+                Use apenas em casos raros. Permite voltar a enviar mesmo quando
+                já existe entrega confirmada ou histórico anterior relevante.
               </p>
             </div>
 
-            <!-- se tiveres um BaseToggle, usa-o. Se não, mantém checkbox -->
             <BaseToggle
               id="forceInput"
               v-model="forceInput"
@@ -101,14 +100,19 @@ const closeModal = () => {
 
           <div v-if="forceInput" class="mt-3">
             <BaseInput
-              v-if="forceInput"
               id="reasonInput"
               v-model="reasonInput"
               label="Motivo do reenvio (obrigatório):"
-              placeholder="Ex: o convidado apagou a mensagem / pediu reenvio"
+              placeholder="Ex: o convidado pediu novo envio / houve erro anterior"
             />
           </div>
         </div>
+
+        <p class="text-grey-500 text-xs">
+          O envio inicial indica apenas que a plataforma aceitou a mensagem. A
+          confirmação de entrega e visualização acontece depois, através dos
+          reports do provider.
+        </p>
 
         <div class="my-4 flex items-center justify-center space-x-3">
           <BaseButton
@@ -127,7 +131,7 @@ const closeModal = () => {
             btn-type="outline-primary"
             class="my-1"
             size="md"
-            @click="$emit('closeModal')"
+            @click="closeModal"
           >
             Cancelar
           </BaseButton>

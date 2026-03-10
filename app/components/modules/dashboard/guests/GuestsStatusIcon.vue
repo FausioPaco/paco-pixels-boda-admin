@@ -6,6 +6,7 @@ type Props = {
 const props = defineProps<Props>();
 
 const showAbsent = computed(() => !!props.guest.absence_Declared);
+
 const showPresence = computed(
   () => !showAbsent.value && !!props.guest.presence_Confirmed,
 );
@@ -21,7 +22,12 @@ const showWhatsapp = computed(
 
 <template>
   <div class="flex items-center gap-2">
-    <GuestsWhatsAppStatusChip v-if="showWhatsapp" :guest="guest" compact />
+    <GuestsWhatsAppStatusChip
+      v-if="showWhatsapp"
+      :status="guest.whatsAppQrStatus"
+      :label="guest.whatsAppQrStatusLabel"
+      compact
+    />
 
     <BaseTooltip v-if="showAbsent" text="Ausente" placement="top">
       <template #trigger>

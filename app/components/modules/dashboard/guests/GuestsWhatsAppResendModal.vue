@@ -2,11 +2,13 @@
 interface Props {
   show?: boolean;
   loading?: boolean;
+  statusLabel?: string | null;
 }
 
 withDefaults(defineProps<Props>(), {
   show: false,
   loading: false,
+  statusLabel: null,
 });
 
 const emit = defineEmits<{
@@ -22,13 +24,20 @@ const emit = defineEmits<{
   >
     <div class="my-2 animate-fadeIn space-y-4">
       <p class="text-grey-700 text-left text-base md:text-lg">
-        Este convite já foi enviado anteriormente para este convidado.
+        Este convidado já possui histórico de envio por WhatsApp.
+      </p>
+
+      <p
+        v-if="statusLabel"
+        class="text-grey-500 text-left text-sm md:text-base"
+      >
+        Estado actual: <b>{{ statusLabel }}</b>
       </p>
 
       <p class="text-grey-500 text-left text-sm md:text-base">
-        Os reenvios são permitidos, mas envios repetidos podem gerar custos
-        adicionais com o serviço de WhatsApp. Reenvie apenas se for realmente
-        necessário.
+        Reenvios podem gerar custos adicionais com o serviço de WhatsApp.
+        Reenvie apenas quando houver um motivo claro, como pedido do convidado
+        ou falha anterior confirmada.
       </p>
 
       <div class="my-4 flex animate-fadeIn items-center justify-center gap-3">

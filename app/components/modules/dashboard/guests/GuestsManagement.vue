@@ -133,6 +133,8 @@ const activeExport = computed(() => {
     return qrExport;
   if (invExport.isRunning.value || invExport.showProgressModal.value)
     return invExport;
+  if (waExport.isRunning.value || waExport.showProgressModal.value)
+    return waExport;
   return null;
 });
 

@@ -44,9 +44,23 @@ const { clientCode } = useRuntimeConfig().public;
 const isSendingWhatsApp = ref(false);
 
 const hasPreviousWhatsAppSend = computed(() => {
+  const status = guestDetails.value?.whatsAppQrStatus?.toLowerCase();
+
   return Boolean(
-    guestDetails.value?.whatsAppQrSentAt ||
-      guestDetails.value?.whatsAppQrStatus?.toLowerCase() === 'sent',
+    guestDetails.value?.whatsAppQrAcceptedAt ||
+      guestDetails.value?.whatsAppQrDeliveredAt ||
+      guestDetails.value?.whatsAppQrSeenAt ||
+      guestDetails.value?.whatsAppQrSentAt ||
+      (status &&
+        [
+          'accepted',
+          'delivered',
+          'seen',
+          'delivery_unknown',
+          'failed_temporary',
+          'failed',
+          'needs_review',
+        ].includes(status)),
   );
 });
 
@@ -262,10 +276,16 @@ const sendQrWhatsapp = async (force = false) => {
       return;
     }
 
+    if (res.status === 'accepted') {
+      toast.success(
+        `${force ? 'QR reenviado' : 'QR enviado'} via WhatsApp com sucesso. A mensagem foi aceite pela plataforma e aguarda confirmação final.`,
+      );
+
+      return;
+    }
+
     toast.success(
-      force
-        ? 'QR reenviado via WhatsApp com sucesso.'
-        : 'QR enviado via WhatsApp com sucesso.',
+      `${force ? 'Reenvio' : 'Envio'} do QR Code via WhatsApp iniciado com sucesso. Acompanhe o status do envio para mais detalhes.`,
     );
   } catch (err) {
     console.error(err);
@@ -388,21 +408,42 @@ onMounted(() => {
           />
 
           <BaseDescriptionListItem title="WhatsApp">
-            <div class="flex gap-2">
-              <GuestsWhatsAppStatusChip
-                :guest="guestDetails"
-                show-description
-              />
-            </div>
+            <GuestsWhatsAppStatusChip
+              :status="guestDetails.whatsAppQrStatus"
+              :label="guestDetails.whatsAppQrStatusLabel"
+            />
           </BaseDescriptionListItem>
 
           <BaseDescriptionListItem
-            v-if="
-              guestDetails.whatsAppQrSentAt &&
-              guestDetails.whatsAppQrStatus === 'sent'
+            v-if="guestDetails.whatsAppQrAcceptedAt"
+            title="Aceite pela plataforma em"
+            :description="formatDateWithTime(guestDetails.whatsAppQrAcceptedAt)"
+          />
+
+          <BaseDescriptionListItem
+            v-if="guestDetails.whatsAppQrDeliveredAt"
+            title="Entregue em"
+            :description="
+              formatDateWithTime(guestDetails.whatsAppQrDeliveredAt)
             "
-            title=" QR Code enviado em"
-            :description="formatDateWithTime(guestDetails.whatsAppQrSentAt)"
+          />
+
+          <BaseDescriptionListItem
+            v-if="guestDetails.whatsAppQrSeenAt"
+            title="Visualizado em"
+            :description="formatDateWithTime(guestDetails.whatsAppQrSeenAt)"
+          />
+
+          <BaseDescriptionListItem
+            v-if="guestDetails.whatsAppQrProviderStatusName"
+            title="Estado do provider"
+            :description="guestDetails.whatsAppQrProviderStatusName"
+          />
+
+          <BaseDescriptionListItem
+            v-if="guestDetails.whatsAppQrProviderStatusDescription"
+            title="Detalhe do provider"
+            :description="guestDetails.whatsAppQrProviderStatusDescription"
           />
 
           <BaseDescriptionListItem
@@ -492,6 +533,7 @@ onMounted(() => {
     <LazyGuestsWhatsAppResendModal
       :show="showWhatsAppResendModal"
       :loading="isSendingWhatsApp"
+      :status-label="guestDetails?.whatsAppQrStatusLabel"
       @close-modal="showWhatsAppResendModal = false"
       @confirm="confirmWhatsAppResend"
     />

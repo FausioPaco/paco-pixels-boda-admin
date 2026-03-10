@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { WhatsAppQrLogsSummary } from '~~/shared/types/whatsappQr';
-
 interface Props {
   show?: boolean;
   exportTotal?: number;
@@ -50,9 +48,19 @@ const emit = defineEmits(['closeModal']);
             {{ summary.pending }}
           </p>
 
-          <p class="text-grey-700">Enviados</p>
+          <p class="text-grey-700">Aceites pela plataforma</p>
           <p class="text-grey-900 text-right font-semibold">
-            {{ summary.sent }}
+            {{ summary.accepted }}
+          </p>
+
+          <p class="text-grey-700">Entregues</p>
+          <p class="text-grey-900 text-right font-semibold">
+            {{ summary.delivered }}
+          </p>
+
+          <p class="text-grey-700">Visualizados</p>
+          <p class="text-grey-900 text-right font-semibold">
+            {{ summary.seen }}
           </p>
 
           <p class="text-grey-700">Ignorados (telefone inválido)</p>
@@ -60,19 +68,29 @@ const emit = defineEmits(['closeModal']);
             {{ summary.skippedInvalidPhone }}
           </p>
 
-          <p class="text-grey-700">Ignorados (já enviado)</p>
+          <p class="text-grey-700">Ignorados (já entregue)</p>
           <p class="text-grey-900 text-right font-semibold">
-            {{ summary.skippedAlreadySent }}
+            {{ summary.skippedAlreadyDelivered }}
           </p>
 
-          <p class="text-grey-700">Falhas (temporárias)</p>
+          <p class="text-grey-700">Falhas temporárias</p>
           <p class="text-grey-900 text-right font-semibold">
             {{ summary.failedTemporary }}
           </p>
 
-          <p class="text-grey-700">Falhas (permanentes)</p>
+          <p class="text-grey-700">Falhas permanentes</p>
           <p class="text-grey-900 text-right font-semibold">
             {{ summary.failedPermanent }}
+          </p>
+
+          <p class="text-grey-700">Entrega por confirmar</p>
+          <p class="text-grey-900 text-right font-semibold">
+            {{ summary.deliveryUnknown }}
+          </p>
+
+          <p class="text-grey-700">Precisa de verificação</p>
+          <p class="text-grey-900 text-right font-semibold">
+            {{ summary.needsReview }}
           </p>
         </div>
 
@@ -82,8 +100,9 @@ const emit = defineEmits(['closeModal']);
       </div>
 
       <p class="text-grey-500 text-xs">
-        Pode demorar alguns minutos em eventos com muitos convidados. Os
-        processados incluem envios com sucesso e convidados ignorados.
+        Os processados incluem mensagens aceites pela plataforma, falhas e
+        convidados ignorados. A entrega final é confirmada posteriormente pelo
+        provider.
       </p>
 
       <div class="flex justify-end">

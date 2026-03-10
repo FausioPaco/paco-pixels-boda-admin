@@ -1,10 +1,14 @@
 export type GuestWhatsAppQrStatus =
   | 'not_sent'
   | 'pending'
-  | 'sent'
+  | 'accepted'
+  | 'delivered'
+  | 'seen'
   | 'invalid_phone'
   | 'failed_temporary'
-  | 'failed';
+  | 'failed'
+  | 'delivery_unknown'
+  | 'needs_review';
 
 export interface Guest {
   id: number;
@@ -27,16 +31,28 @@ export interface Guest {
   absence_Declared?: boolean;
   absence_Declared_At?: string | Date | null;
   created_At: Date;
-
   hasWhatsAppQrSent?: boolean;
+  hasWhatsAppQrDelivered?: boolean;
+  hasWhatsAppQrSeen?: boolean;
   whatsAppQrStatus?: GuestWhatsAppQrStatus;
   whatsAppQrStatusLabel?: string;
+
   whatsAppQrSentAt?: string | Date | null;
+
+  whatsAppQrAcceptedAt?: string | Date | null;
+  whatsAppQrDeliveredAt?: string | Date | null;
+  whatsAppQrSeenAt?: string | Date | null;
+
   whatsAppQrLastAttemptAt?: string | Date | null;
   whatsAppQrErrorMessage?: string | null;
   whatsAppQrSkipReason?: string | null;
+
+  whatsAppQrProviderStatusName?: string | null;
+  whatsAppQrProviderStatusDescription?: string | null;
+
   whatsAppQrCanRetry?: boolean;
   whatsAppQrWasForced?: boolean;
+  whatsAppQrNeedsReview?: boolean;
 }
 
 export interface GuestParameters {
