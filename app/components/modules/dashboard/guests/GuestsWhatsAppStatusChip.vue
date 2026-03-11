@@ -40,11 +40,9 @@ const chipLabel = computed(() => {
 
 const chipClasses = computed(() => {
   const base =
-    'inline-flex items-center rounded-full border font-medium whitespace-nowrap';
+    'inline-flex items-center rounded-md border font-medium whitespace-nowrap';
 
-  const size = props.compact
-    ? 'px-2 py-0.5 text-[11px] gap-1'
-    : 'px-2.5 py-1 text-xs gap-1.5';
+  const size = 'text-xs px-1.5 py-0.5';
 
   const paletteMap: Record<GuestWhatsAppQrStatus, string> = {
     not_sent: 'border-grey-200 bg-grey-50 text-grey-700',
@@ -62,34 +60,35 @@ const chipClasses = computed(() => {
   return [base, size, paletteMap[normalizedStatus.value]].join(' ');
 });
 
-const dotClasses = computed(() => {
-  const base = 'inline-block rounded-full shrink-0';
-  const size = props.compact ? 'h-1.5 w-1.5' : 'h-2 w-2';
-
+const iconClasses = computed(() => {
   const colorMap: Record<GuestWhatsAppQrStatus, string> = {
-    not_sent: 'bg-grey-400',
-    pending: 'bg-warning-500',
-    accepted: 'bg-primary-500',
-    delivered: 'bg-info-500',
-    seen: 'bg-success-500',
-    invalid_phone: 'bg-grey-500',
-    failed_temporary: 'bg-warning-600',
-    failed: 'bg-danger-500',
-    delivery_unknown: 'bg-warning-500',
-    needs_review: 'bg-danger-600',
+    not_sent: 'text-grey-400',
+    pending: 'text-warning-500',
+    accepted: 'text-primary-500',
+    delivered: 'text-info-500',
+    seen: 'text-success-500',
+    invalid_phone: 'text-grey-500',
+    failed_temporary: 'text-warning-600',
+    failed: 'text-danger-500',
+    delivery_unknown: 'text-warning-500',
+    needs_review: 'text-danger-600',
   };
 
-  return [base, size, colorMap[normalizedStatus.value]].join(' ');
-});
-
-const titleText = computed(() => {
-  return chipLabel.value;
+  return [colorMap[normalizedStatus.value]].join(' ');
 });
 </script>
 
 <template>
-  <span :class="chipClasses" :title="titleText" :aria-label="titleText">
-    <span :class="dotClasses"></span>
-    <span>{{ chipLabel }}</span>
-  </span>
+  <BaseTooltip :text="chipLabel" placement="top">
+    <template #trigger>
+      <div :class="chipClasses">
+        <IconWhatsapp
+          :font-controlled="false"
+          class="size-[16px]"
+          :class="iconClasses"
+        />
+        <span v-if="label" class="ml-1">{{ label }}</span>
+      </div>
+    </template>
+  </BaseTooltip>
 </template>

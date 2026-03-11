@@ -25,7 +25,6 @@ const showWhatsapp = computed(
     <GuestsWhatsAppStatusChip
       v-if="showWhatsapp"
       :status="guest.whatsAppQrStatus"
-      :label="guest.whatsAppQrStatusLabel"
       compact
     />
 
