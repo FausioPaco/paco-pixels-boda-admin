@@ -435,18 +435,6 @@ onMounted(() => {
           />
 
           <BaseDescriptionListItem
-            v-if="guestDetails.whatsAppQrProviderStatusName"
-            title="Estado do provider"
-            :description="guestDetails.whatsAppQrProviderStatusName"
-          />
-
-          <BaseDescriptionListItem
-            v-if="guestDetails.whatsAppQrProviderStatusDescription"
-            title="Detalhe do provider"
-            :description="guestDetails.whatsAppQrProviderStatusDescription"
-          />
-
-          <BaseDescriptionListItem
             v-if="guestDetails.whatsAppQrErrorMessage"
             title="Detalhe do envio (WhatsApp)"
             :description="guestDetails.whatsAppQrErrorMessage"

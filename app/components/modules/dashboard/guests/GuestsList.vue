@@ -8,6 +8,7 @@ const queryParameters = reactive<GuestParameters>({
   guestLocalId: undefined,
   categoryId: undefined,
   availability_Type: '',
+  whatsAppQrStatus: '',
   searchQuery: '',
   startDate: '',
   endDate: '',
@@ -52,6 +53,27 @@ const availabilityOptions: SelectOption[] = [
 const giftOptions: SelectOption[] = [
   { id: 'true', value: true, name: 'Levou presente' },
   { id: 'false', value: false, name: 'Não levou presente' },
+];
+
+const whatsAppStatusOptions: SelectOption[] = [
+  { id: 'not_sent', value: 'not_sent', name: 'Por enviar' },
+  { id: 'pending', value: 'pending', name: 'Em processamento' },
+  { id: 'accepted', value: 'accepted', name: 'Aceite pela plataforma' },
+  { id: 'delivered', value: 'delivered', name: 'Entregue' },
+  { id: 'seen', value: 'seen', name: 'Vista' },
+  { id: 'invalid_phone', value: 'invalid_phone', name: 'Número inválido' },
+  {
+    id: 'failed_temporary',
+    value: 'failed_temporary',
+    name: 'Falha temporária',
+  },
+  { id: 'failed', value: 'failed', name: 'Falha no envio' },
+  {
+    id: 'delivery_unknown',
+    value: 'delivery_unknown',
+    name: 'Entrega por confirmar',
+  },
+  { id: 'needs_review', value: 'needs_review', name: 'Precisa de verificação' },
 ];
 
 const debouncedSearch = useDebounceFn(() => {
@@ -240,6 +262,14 @@ onMounted(() => {
             label="Presentes: "
             :options="giftOptions"
             empty-message="Todos"
+          />
+
+          <BaseSelect
+            id="whatsAppStatus"
+            v-model="queryParameters.whatsAppQrStatus"
+            label="Envios por WhatsApp: "
+            :options="whatsAppStatusOptions"
+            empty-message="Todos estados"
           />
         </div>
       </div>
