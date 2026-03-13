@@ -267,7 +267,7 @@ onMounted(() => {
           <BaseSelect
             id="whatsAppStatus"
             v-model="queryParameters.whatsAppQrStatus"
-            label="Envios por WhatsApp: "
+            label="Envios por WhatsApp (QR Codes): "
             :options="whatsAppStatusOptions"
             empty-message="Todos estados"
           />
