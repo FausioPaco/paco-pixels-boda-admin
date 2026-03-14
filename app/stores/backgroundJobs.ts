@@ -50,6 +50,22 @@ type StartTrackedJobPayload = {
 
 const STORAGE_KEY = 'boda-background-jobs';
 
+export const backgroundJobStatusLabels: Record<BackgroundJobStatus, string> = {
+  Pending: 'Pendente',
+  Running: 'Em processamento',
+  Completed: 'Concluída',
+  Failed: 'Falhada',
+  Cancelled: 'Cancelada',
+};
+
+export const getBackgroundJobStatusLabel = (
+  status: BackgroundJobStatus | string | null | undefined,
+) => {
+  if (!status) return 'Desconhecido';
+
+  return backgroundJobStatusLabels[status as BackgroundJobStatus] ?? status;
+};
+
 export const useBackgroundJobsStore = defineStore('background-jobs', () => {
   const jobs = ref<BackgroundJobItem[]>([]);
   const activeJobKey = ref<string | null>(null);
@@ -363,6 +379,7 @@ export const useBackgroundJobsStore = defineStore('background-jobs', () => {
     completedJobs,
     activeCount,
     activeJobKey,
+    backgroundJobStatusLabels,
     hydrateAndResume,
     getJobByKey,
     openJob,
@@ -370,5 +387,6 @@ export const useBackgroundJobsStore = defineStore('background-jobs', () => {
     startTrackedJob,
     removeJob,
     dismissCompleted,
+    getBackgroundJobStatusLabel,
   };
 });

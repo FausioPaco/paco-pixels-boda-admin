@@ -7,12 +7,13 @@ const activeLabel = computed(() => {
   if (jobsStore.activeCount === 1) return '1 tarefa';
   return `${jobsStore.activeCount} tarefas`;
 });
+const { apiImageUrl } = useRuntimeConfig().public;
 </script>
 
 <template>
   <div class="relative z-40">
     <button
-      class="border-primary-100 text-grey-700 hover:border-primary-300 hover:text-primary-700 flex items-center gap-2 rounded-full border bg-white px-3 py-2 shadow-sm transition-colors"
+      class="border-primary-100 text-grey-700 hover:border-primary-300 hover:text-primary-700 flex items-center gap-2 rounded-full border px-3 py-2 shadow-sm transition-colors"
       @click="showDropdown = !showDropdown"
     >
       <div class="relative">
@@ -27,16 +28,16 @@ const activeLabel = computed(() => {
 
       <div class="hidden text-left lg:block">
         <p class="text-xs font-semibold">Processamentos</p>
-        <p class="text-grey-400 text-[11px]">
+        <small class="text-grey-400 text-[10]">
           {{ activeLabel }}
-        </p>
+        </small>
       </div>
     </button>
 
     <transition name="fade">
       <div
         v-if="showDropdown"
-        class="absolute right-0 top-[calc(100%+10px)] w-[360px] max-w-[90vw] rounded-2xl border bg-white p-3 shadow-xl"
+        class="absolute right-0 top-[calc(100%+10px)] w-[360px] max-w-[90vw] rounded-2xl border bg-white px-4 py-3 shadow-xl"
       >
         <div class="mb-3 flex items-center justify-between">
           <div>
@@ -45,15 +46,22 @@ const activeLabel = computed(() => {
           </div>
 
           <button
-            class="text-grey-400 hover:text-grey-700 text-sm"
+            class="rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50"
             @click="showDropdown = false"
           >
             Fechar
           </button>
         </div>
 
-        <div v-if="jobsStore.sortedJobs.length === 0" class="py-6 text-center">
-          <p class="text-grey-500 text-sm">
+        <div
+          v-if="jobsStore.sortedJobs.length === 0"
+          class="flex flex-col items-center gap-2 py-6 text-center"
+        >
+          <icon-download
+            :font-controlled="false"
+            class="text-grey-400 size-[20px]"
+          />
+          <p class="text-grey-400 text-sm">
             Ainda não existem tarefas em processamento.
           </p>
         </div>
@@ -86,7 +94,7 @@ const activeLabel = computed(() => {
                         : 'bg-primary-50 text-primary-700'
                 "
               >
-                {{ job.status }}
+                {{ jobsStore.getBackgroundJobStatusLabel(job.status) }}
               </span>
             </div>
 
@@ -119,7 +127,7 @@ const activeLabel = computed(() => {
             <div class="flex flex-wrap gap-2">
               <a
                 v-if="job.status === 'Completed' && job.zipUrl"
-                :href="job.zipUrl"
+                :href="`${apiImageUrl}${job.zipUrl}`"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="bg-primary-500 hover:bg-primary-600 rounded-lg px-3 py-2 text-xs font-semibold text-white transition-colors"

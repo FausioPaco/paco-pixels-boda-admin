@@ -59,7 +59,7 @@ const waJob = computed(
 
 const normalizeZipUrl = (zipUrl?: string | null) => {
   if (!zipUrl) return null;
-  return zipUrl.startsWith('http') ? zipUrl : `${apiImageUrl}${zipUrl}`;
+  return `${apiImageUrl}${zipUrl}`;
 };
 
 const exportQRCodes = async () => {
@@ -143,6 +143,10 @@ const startBulkWhatsAppSend = async (payload: {
   showWhatsAppSendStatusModal.value = true;
   waSummary.value = null;
 
+  dismissedWhatsAppJobKeys.value = dismissedWhatsAppJobKeys.value.filter(
+    (key) => key !== whatsAppJobKey.value,
+  );
+
   await backgroundJobs.startTrackedJob({
     key: whatsAppJobKey.value,
     kind: 'whatsapp-send',
@@ -183,41 +187,36 @@ const startBulkWhatsAppSend = async (payload: {
 };
 
 const closeWhatsAppSendStatusModal = () => {
-  waSummary.value = null;
+  if (waJob.value?.key) {
+    if (!dismissedWhatsAppJobKeys.value.includes(waJob.value.key)) {
+      dismissedWhatsAppJobKeys.value.push(waJob.value.key);
+    }
+  }
+
   showWhatsAppSendStatusModal.value = false;
 };
 
+const dismissedWhatsAppJobKeys = ref<string[]>([]);
+
 watch(
   waJob,
-  (job) => {
+  (job, previousJob) => {
     if (!job) return;
 
     const isActive = job.status === 'Pending' || job.status === 'Running';
-    if (isActive) {
+    const wasActive =
+      previousJob?.status === 'Pending' || previousJob?.status === 'Running';
+
+    if (
+      isActive &&
+      !wasActive &&
+      !dismissedWhatsAppJobKeys.value.includes(job.key)
+    ) {
       showWhatsAppSendStatusModal.value = true;
     }
   },
   { immediate: true },
 );
-
-const activeExport = computed(() => {
-  if (
-    qrJob.value &&
-    (qrJob.value.status === 'Pending' || qrJob.value.status === 'Running')
-  ) {
-    return qrJob.value;
-  }
-
-  if (
-    invitationJob.value &&
-    (invitationJob.value.status === 'Pending' ||
-      invitationJob.value.status === 'Running')
-  ) {
-    return invitationJob.value;
-  }
-
-  return null;
-});
 
 const anyExportRunning = computed(
   () =>
@@ -235,6 +234,27 @@ const startExport = (exportOptions: ExportQROptions) => {
   exportQRCodes();
   showExportFormatModal.value = false;
 };
+
+const activeTrackedJob = computed(() => {
+  if (!backgroundJobs.activeJobKey) return null;
+
+  return (
+    backgroundJobs.jobs.find(
+      (job) => job.key === backgroundJobs.activeJobKey,
+    ) ?? null
+  );
+});
+
+const activeExportModalJob = computed(() => {
+  const job = activeTrackedJob.value;
+  if (!job) return null;
+
+  if (job.kind === 'qr-export' || job.kind === 'invitation-export') {
+    return job;
+  }
+
+  return null;
+});
 </script>
 <template>
   <BaseCard
@@ -364,11 +384,11 @@ const startExport = (exportOptions: ExportQROptions) => {
     />
 
     <GuestsExportStatusModal
-      v-if="activeExport"
+      v-if="activeExportModalJob"
       :show="true"
-      :export-total="activeExport.total"
-      :export-processed="activeExport.processed"
-      :export-percent="activeExport.percent"
+      :export-total="activeExportModalJob.total"
+      :export-processed="activeExportModalJob.processed"
+      :export-percent="activeExportModalJob.percent"
       @close-modal="backgroundJobs.closeJob()"
     />
 

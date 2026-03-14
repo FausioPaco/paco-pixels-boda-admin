@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 const route = useRoute();
+// const jobsStore = useBackgroundJobsStore();
 </script>
 
 <template>
