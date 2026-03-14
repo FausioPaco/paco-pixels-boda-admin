@@ -21,6 +21,7 @@ const eventService = getEventService(nuxtApp.$api);
 const invitationService = getInvitationService(nuxtApp.$api);
 
 const { clientCode, apiImageUrl } = useRuntimeConfig().public;
+const { refreshGuests } = await useGuestsList();
 
 const textColorExport = ref<ExportTextColor>('black');
 const showExportFormatModal = ref<boolean>(false);
@@ -102,15 +103,34 @@ const waExport = useExportJob({
     return { jobId: res.jobId, total: res.total };
   },
   getStatus: (jobId) => eventService.getExportStatus(jobId),
+  autoResetOnCompleted: false,
+  autoResetOnFailed: false,
+  autoResetOnCancelled: false,
   onCompleted: async () => {
-    waSummary.value = await eventService.getSendQrCardsWhatsappSummary(
-      eventStore.eventId!,
-    );
+    try {
+      waSummary.value = await eventService.getSendQrCardsWhatsappSummary(
+        eventStore.eventId!,
+      );
+
+      await refreshGuests({ force: true });
+    } catch (error) {
+      waSummary.value = null;
+      console.error('Erro ao obter resumo do envio WhatsApp:', error);
+    }
   },
   onFailed: async () => {
-    waSummary.value = await eventService.getSendQrCardsWhatsappSummary(
-      eventStore.eventId!,
-    );
+    try {
+      waSummary.value = await eventService.getSendQrCardsWhatsappSummary(
+        eventStore.eventId!,
+      );
+    } catch (error) {
+      waSummary.value = null;
+      console.error('Erro ao obter resumo do envio WhatsApp:', error);
+    }
+  },
+
+  onCancelled: () => {
+    waSummary.value = null;
   },
 });
 
@@ -128,13 +148,18 @@ const startBulkWhatsAppSend = async (payload: {
   await waExport.start();
 };
 
+const closeWhatsAppSendStatusModal = () => {
+  waSummary.value = null;
+  waExport.reset();
+};
+
 const activeExport = computed(() => {
   if (qrExport.isRunning.value || qrExport.showProgressModal.value)
     return qrExport;
+
   if (invExport.isRunning.value || invExport.showProgressModal.value)
     return invExport;
-  if (waExport.isRunning.value || waExport.showProgressModal.value)
-    return waExport;
+
   return null;
 });
 
@@ -295,7 +320,7 @@ const anyExportRunning = computed(
       :export-processed="waExport.processed.value"
       :export-percent="waExport.percent.value"
       :summary="waSummary"
-      @close-modal="waExport.showProgressModal.value = false"
+      @close-modal="closeWhatsAppSendStatusModal"
     />
   </BaseCard>
 </template>

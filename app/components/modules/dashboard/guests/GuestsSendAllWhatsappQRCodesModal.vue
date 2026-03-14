@@ -110,8 +110,7 @@ const closeModal = () => {
 
         <p class="text-grey-500 text-xs">
           O envio inicial indica apenas que a plataforma aceitou a mensagem. A
-          confirmação de entrega e visualização acontece depois, através dos
-          reports do provider.
+          confirmação de entrega e visualização acontece depois.
         </p>
 
         <div class="my-4 flex items-center justify-center space-x-3">

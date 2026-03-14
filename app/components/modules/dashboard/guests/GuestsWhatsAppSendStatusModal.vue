@@ -7,7 +7,7 @@ interface Props {
   summary?: WhatsAppQrLogsSummary | null;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   show: false,
   exportTotal: 0,
   exportProcessed: 0,
@@ -16,6 +16,7 @@ withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits(['closeModal']);
+const isFinished = computed(() => !!props.summary);
 </script>
 
 <template>
@@ -111,7 +112,7 @@ const emit = defineEmits(['closeModal']);
           btn-size="sm"
           @click="emit('closeModal')"
         >
-          Continuar a usar o sistema
+          {{ isFinished ? 'Fechar' : 'Continuar a usar o sistema' }}
         </BaseButton>
       </div>
     </div>
