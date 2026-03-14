@@ -3,9 +3,8 @@ import { getEventService } from '~/services/eventService';
 import GuestList from './GuestsList.vue';
 import GuestsQRCode from './GuestsQRCode.vue';
 import InvitationsManagement from '../invitations/InvitationsManagement.vue';
-import { useToast } from 'vue-toastification';
 import { getInvitationService } from '~/services/invitationService';
-import { useExportJob } from '~/composables/useExportJob';
+
 type GuestTab = 'LIST' | 'QRCODE' | 'INVITATIONS';
 
 const activeTab = ref<GuestTab>('LIST');
@@ -25,114 +24,111 @@ const { refreshGuests } = await useGuestsList();
 
 const textColorExport = ref<ExportTextColor>('black');
 const showExportFormatModal = ref<boolean>(false);
-const toast = useToast();
 const { canExport } = await useInvitationSettings();
 
-const showWhatsAppSendModal = ref(false);
 const whatsAppTextColor = ref<ExportTextColor>('black');
 const whatsAppForce = ref(false);
 const whatsAppReason = ref<string | undefined>(undefined);
+const waSummary = ref<WhatsAppQrLogsSummary | null>(null);
+const showWhatsAppSendStatusModal = ref(false);
+const showWhatsAppSendModal = ref(false);
 
-const startExport = (exportOptions: ExportQROptions) => {
-  textColorExport.value = exportOptions.color;
+const backgroundJobs = useBackgroundJobsStore();
 
-  exportQRCodes();
-  showExportFormatModal.value = false;
+const qrJobKey = computed(
+  () =>
+    `qr-export:${eventStore.eventId}:${textColorExport.value}:${clientCode}`,
+);
+
+const invitationJobKey = computed(
+  () => `invitation-export:${eventStore.eventId}:${clientCode}`,
+);
+
+const whatsAppJobKey = computed(
+  () =>
+    `whatsapp-send:${eventStore.eventId}:${eventStore.eventSlug}:${whatsAppTextColor.value}:${whatsAppForce.value}:${whatsAppReason.value ?? ''}`,
+);
+
+const qrJob = computed(() => backgroundJobs.getJobByKey(qrJobKey.value).value);
+const invitationJob = computed(
+  () => backgroundJobs.getJobByKey(invitationJobKey.value).value,
+);
+const waJob = computed(
+  () => backgroundJobs.getJobByKey(whatsAppJobKey.value).value,
+);
+
+const normalizeZipUrl = (zipUrl?: string | null) => {
+  if (!zipUrl) return null;
+  return zipUrl.startsWith('http') ? zipUrl : `${apiImageUrl}${zipUrl}`;
 };
-
-const qrExport = useExportJob({
-  toast,
-  toastId: `export-qrcodes-${eventStore.eventId}-${textColorExport.value}-${clientCode}`,
-  toastTitle: 'Exportação de QR Codes',
-  start: () =>
-    eventService.startExportQRCards(
-      eventStore.eventId!,
-      textColorExport.value,
-      clientCode,
-    ),
-  getStatus: (jobId) => eventService.getExportStatus(jobId),
-  onCompleted: async (status) => {
-    if (!status.zipUrl) return;
-
-    const url = status.zipUrl.startsWith('http')
-      ? status.zipUrl
-      : `${apiImageUrl}${status.zipUrl}`;
-
-    window.location.assign(url);
-  },
-});
-
-const invExport = useExportJob({
-  toast,
-  toastId: `export-invitations-${eventStore.eventId}-${clientCode}`,
-  toastTitle: 'Exportação de convites',
-  start: () => invitationService.startExportAll(eventStore.eventId!, false),
-  getStatus: (jobId) => eventService.getExportStatus(jobId),
-  onCompleted: async (status) => {
-    if (!status?.zipUrl) {
-      console.warn('[Invites Export] zipUrl inexistente', status);
-      return;
-    }
-
-    const url = status.zipUrl.startsWith('http')
-      ? status.zipUrl
-      : `${apiImageUrl}${status.zipUrl}`;
-
-    window.location.assign(url);
-  },
-});
 
 const exportQRCodes = async () => {
-  await qrExport.start();
+  await backgroundJobs.startTrackedJob({
+    key: qrJobKey.value,
+    kind: 'qr-export',
+    title: 'Exportação de QR Codes',
+    toastId: qrJobKey.value,
+    eventId: eventStore.eventId!,
+    eventSlug: eventStore.eventSlug ?? undefined,
+    eventName: eventStore.eventName,
+    start: async () => {
+      const res = await eventService.startExportQRCards(
+        eventStore.eventId!,
+        textColorExport.value,
+        clientCode,
+      );
+
+      return {
+        jobId: res.jobId,
+        total: res.total,
+      };
+    },
+    onCompleted: async (job) => {
+      const url = normalizeZipUrl(job.zipUrl);
+      if (!url) return;
+      window.location.assign(url);
+    },
+  });
 };
 
-const waSummary = ref<WhatsAppQrLogsSummary | null>(null);
+const exportInvitations = async () => {
+  await backgroundJobs.startTrackedJob({
+    key: invitationJobKey.value,
+    kind: 'invitation-export',
+    title: 'Exportação de convites',
+    toastId: invitationJobKey.value,
+    eventId: eventStore.eventId!,
+    eventSlug: eventStore.eventSlug ?? undefined,
+    eventName: eventStore.eventName,
+    start: async () => {
+      const res = await invitationService.startExportAll(
+        eventStore.eventId!,
+        false,
+      );
 
-const waExport = useExportJob({
-  toast,
-  toastId: `send-whatsapp-qrcodes-${eventStore.eventSlug}`,
-  toastTitle: 'Envio de QR Codes via WhatsApp',
-  start: async () => {
-    const res = await eventService.startSendQrCardsWhatsapp(
+      return {
+        jobId: res.jobId,
+        total: res.total,
+      };
+    },
+    onCompleted: async (job) => {
+      const url = normalizeZipUrl(job.zipUrl);
+      if (!url) return;
+      window.location.assign(url);
+    },
+  });
+};
+
+const fetchWhatsAppSummary = async () => {
+  try {
+    waSummary.value = await eventService.getSendQrCardsWhatsappSummary(
       eventStore.eventId!,
-      whatsAppTextColor.value,
-      clientCode,
-      whatsAppForce.value,
-      whatsAppReason.value,
     );
-    return { jobId: res.jobId, total: res.total };
-  },
-  getStatus: (jobId) => eventService.getExportStatus(jobId),
-  autoResetOnCompleted: false,
-  autoResetOnFailed: false,
-  autoResetOnCancelled: false,
-  onCompleted: async () => {
-    try {
-      waSummary.value = await eventService.getSendQrCardsWhatsappSummary(
-        eventStore.eventId!,
-      );
-
-      await refreshGuests({ force: true });
-    } catch (error) {
-      waSummary.value = null;
-      console.error('Erro ao obter resumo do envio WhatsApp:', error);
-    }
-  },
-  onFailed: async () => {
-    try {
-      waSummary.value = await eventService.getSendQrCardsWhatsappSummary(
-        eventStore.eventId!,
-      );
-    } catch (error) {
-      waSummary.value = null;
-      console.error('Erro ao obter resumo do envio WhatsApp:', error);
-    }
-  },
-
-  onCancelled: () => {
+  } catch (error) {
     waSummary.value = null;
-  },
-});
+    console.error('Erro ao obter resumo do envio WhatsApp:', error);
+  }
+};
 
 const startBulkWhatsAppSend = async (payload: {
   color: ExportTextColor;
@@ -144,31 +140,101 @@ const startBulkWhatsAppSend = async (payload: {
   whatsAppReason.value = payload.reason;
 
   showWhatsAppSendModal.value = false;
+  showWhatsAppSendStatusModal.value = true;
   waSummary.value = null;
-  await waExport.start();
+
+  await backgroundJobs.startTrackedJob({
+    key: whatsAppJobKey.value,
+    kind: 'whatsapp-send',
+    title: 'Envio de QR Codes via WhatsApp',
+    toastId: whatsAppJobKey.value,
+    eventId: eventStore.eventId!,
+    eventSlug: eventStore.eventSlug ?? undefined,
+    eventName: eventStore.eventName,
+    start: async () => {
+      const res = await eventService.startSendQrCardsWhatsapp(
+        eventStore.eventId!,
+        whatsAppTextColor.value,
+        clientCode,
+        whatsAppForce.value,
+        whatsAppReason.value,
+      );
+
+      return {
+        jobId: res.jobId,
+        total: res.total,
+        uiNote: res.uiNote,
+      };
+    },
+    onCompleted: async () => {
+      await fetchWhatsAppSummary();
+      await refreshGuests({ force: true });
+      showWhatsAppSendStatusModal.value = true;
+    },
+    onFailed: async () => {
+      await fetchWhatsAppSummary();
+      showWhatsAppSendStatusModal.value = true;
+    },
+    onCancelled: async () => {
+      waSummary.value = null;
+      showWhatsAppSendStatusModal.value = false;
+    },
+  });
 };
 
 const closeWhatsAppSendStatusModal = () => {
   waSummary.value = null;
-  waExport.reset();
+  showWhatsAppSendStatusModal.value = false;
 };
 
-const activeExport = computed(() => {
-  if (qrExport.isRunning.value || qrExport.showProgressModal.value)
-    return qrExport;
+watch(
+  waJob,
+  (job) => {
+    if (!job) return;
 
-  if (invExport.isRunning.value || invExport.showProgressModal.value)
-    return invExport;
+    const isActive = job.status === 'Pending' || job.status === 'Running';
+    if (isActive) {
+      showWhatsAppSendStatusModal.value = true;
+    }
+  },
+  { immediate: true },
+);
+
+const activeExport = computed(() => {
+  if (
+    qrJob.value &&
+    (qrJob.value.status === 'Pending' || qrJob.value.status === 'Running')
+  ) {
+    return qrJob.value;
+  }
+
+  if (
+    invitationJob.value &&
+    (invitationJob.value.status === 'Pending' ||
+      invitationJob.value.status === 'Running')
+  ) {
+    return invitationJob.value;
+  }
 
   return null;
 });
 
 const anyExportRunning = computed(
   () =>
-    qrExport.isRunning.value ||
-    invExport.isRunning.value ||
-    waExport.isRunning.value,
+    qrJob.value?.status === 'Pending' ||
+    qrJob.value?.status === 'Running' ||
+    invitationJob.value?.status === 'Pending' ||
+    invitationJob.value?.status === 'Running' ||
+    waJob.value?.status === 'Pending' ||
+    waJob.value?.status === 'Running',
 );
+
+const startExport = (exportOptions: ExportQROptions) => {
+  textColorExport.value = exportOptions.color;
+
+  exportQRCodes();
+  showExportFormatModal.value = false;
+};
 </script>
 <template>
   <BaseCard
@@ -197,12 +263,13 @@ const anyExportRunning = computed(
           :disabled="anyExportRunning"
           class="animate-fadeIn"
           @click="showExportFormatModal = true"
-          >{{
-            qrExport.isRunning.value
-              ? `A exportar... ${qrExport.percent.value}%`
-              : 'Exportar QRCodes'
-          }}</BaseButton
         >
+          {{
+            qrJob?.status === 'Pending' || qrJob?.status === 'Running'
+              ? `A exportar... ${qrJob?.percent ?? 0}%`
+              : 'Exportar QRCodes'
+          }}
+        </BaseButton>
 
         <BaseButton
           v-if="canManageInvitations && canExport && !eventStore.eventModeView"
@@ -210,11 +277,12 @@ const anyExportRunning = computed(
           icon="download"
           :disabled="anyExportRunning"
           class="animate-fadeIn"
-          @click="invExport.start()"
+          @click="exportInvitations()"
         >
           {{
-            invExport.isRunning.value
-              ? `A exportar... ${invExport.percent.value}%`
+            invitationJob?.status === 'Pending' ||
+            invitationJob?.status === 'Running'
+              ? `A exportar... ${invitationJob?.percent ?? 0}%`
               : 'Exportar convites'
           }}
         </BaseButton>
@@ -229,8 +297,8 @@ const anyExportRunning = computed(
           @click="showWhatsAppSendModal = true"
         >
           {{
-            waExport.isRunning.value
-              ? `A enviar... ${waExport.percent.value}%`
+            waJob?.status === 'Pending' || waJob?.status === 'Running'
+              ? `A enviar... ${waJob?.percent ?? 0}%`
               : 'Enviar QRs via WhatsApp'
           }}
         </BaseButton>
@@ -295,17 +363,13 @@ const anyExportRunning = computed(
       @export="startExport"
     />
 
-    <LazyGuestsExportStatusModal
+    <GuestsExportStatusModal
       v-if="activeExport"
-      :show="activeExport?.showProgressModal.value"
-      :export-total="activeExport?.total.value"
-      :export-processed="activeExport?.processed.value"
-      :export-percent="activeExport?.percent.value"
-      @close-modal="
-        () => {
-          activeExport!.showProgressModal.value = false;
-        }
-      "
+      :show="true"
+      :export-total="activeExport.total"
+      :export-processed="activeExport.processed"
+      :export-percent="activeExport.percent"
+      @close-modal="backgroundJobs.closeJob()"
     />
 
     <LazyGuestsSendAllWhatsappQRCodesModal
@@ -314,11 +378,11 @@ const anyExportRunning = computed(
       @send="startBulkWhatsAppSend"
     />
 
-    <LazyGuestsWhatsAppSendStatusModal
-      :show="waExport.showProgressModal.value"
-      :export-total="waExport.total.value"
-      :export-processed="waExport.processed.value"
-      :export-percent="waExport.percent.value"
+    <GuestsWhatsAppSendStatusModal
+      :show="showWhatsAppSendStatusModal"
+      :export-total="waJob?.total ?? 0"
+      :export-processed="waJob?.processed ?? 0"
+      :export-percent="waJob?.percent ?? 0"
       :summary="waSummary"
       @close-modal="closeWhatsAppSendStatusModal"
     />
