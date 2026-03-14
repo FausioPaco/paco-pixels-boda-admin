@@ -22,7 +22,7 @@ const isFinished = computed(() => !!props.summary);
 <template>
   <BaseModal
     :show="show"
-    title="A enviar QR Codes via WhatsApp"
+    :title="isFinished ? 'Envio concluído' : 'A enviar QR Codes via WhatsApp'"
     @close-modal="emit('closeModal')"
   >
     <div class="space-y-3">
@@ -41,7 +41,7 @@ const isFinished = computed(() => !!props.summary);
       </div>
 
       <div v-if="summary" class="bg-grey-50 rounded-lg p-3">
-        <p class="text-grey-700 mb-2 text-xs font-semibold">Resumo</p>
+        <p class="text-grey-700 mb-2 text-xs font-semibold">Resumo de envio</p>
 
         <div class="grid grid-cols-2 gap-2 text-xs">
           <p class="text-grey-700">Pendentes</p>
@@ -94,16 +94,12 @@ const isFinished = computed(() => !!props.summary);
             {{ summary.needsReview }}
           </p>
         </div>
-
-        <p v-if="summary.uiNote" class="text-grey-500 mt-3 text-xs">
-          {{ summary.uiNote }}
-        </p>
       </div>
 
       <p class="text-grey-500 text-xs">
         Os processados incluem mensagens aceites pela plataforma, falhas e
         convidados ignorados. A entrega final é confirmada posteriormente pelo
-        provider.
+        nosso parceiro.
       </p>
 
       <div class="flex justify-end">
