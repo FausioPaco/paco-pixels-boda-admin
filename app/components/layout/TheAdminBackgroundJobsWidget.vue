@@ -116,10 +116,6 @@ const { apiImageUrl } = useRuntimeConfig().public;
               </span>
             </div>
 
-            <p v-if="job.uiNote" class="text-grey-500 mb-2 text-xs">
-              {{ job.uiNote }}
-            </p>
-
             <p v-if="job.error" class="text-danger-600 mb-2 text-xs">
               {{ job.error }}
             </p>
