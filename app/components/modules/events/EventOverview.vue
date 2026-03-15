@@ -97,8 +97,8 @@ const eventContextItems = computed(() => [
     value: formatFallback(event.value?.godparentsCount),
   },
   {
-    label: 'Tipo de decoração',
-    value: formatFallback(event.value?.decorationType),
+    label: 'Início previsto',
+    value: formatTime(event.value?.event_Start_Time),
   },
   {
     label: 'Término previsto',
@@ -107,6 +107,10 @@ const eventContextItems = computed(() => [
 ]);
 
 const preferencesItems = computed(() => [
+  {
+    label: 'Tipo de decoração',
+    value: formatFallback(event.value?.decorationType),
+  },
   {
     label: 'Restrições dietéticas',
     value: formatFallback(event.value?.dietaryRestrictions),
@@ -167,6 +171,7 @@ const hasAdministrativeDetails = computed(() =>
     event.value?.dietaryRestrictions,
     event.value?.guestProfile,
     event.value?.colorPalette,
+    event.value?.event_Start_Time,
     event.value?.event_End_Time,
     event.value?.brideNationality,
     event.value?.groomNationality,
@@ -203,7 +208,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <BaseCard title="Informações do evento">
+  <BaseCard id="overview" title="Informações do evento">
     <template #right-content>
       <div
         v-if="event && isMultiEventStaffUser(authStore.user?.roleName)"

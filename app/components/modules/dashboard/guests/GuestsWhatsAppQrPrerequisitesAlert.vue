@@ -20,15 +20,24 @@ withDefaults(defineProps<Props>(), {
 <template>
   <div
     v-if="isPartner && blockingIssues.length"
-    class="border-warning-200 bg-warning-50 rounded-2xl border p-4"
+    class="border-warning-100 bg-warning-50 rounded-2xl border p-4"
   >
-    <p class="text-warning-700 text-sm font-semibold">
+    <p class="text-warning-800 text-sm font-semibold">
       {{ blockingTitle }}
     </p>
 
-    <ul class="text-warning-700 mt-2 space-y-1 text-sm">
-      <li v-for="issue in blockingIssues" :key="issue">• {{ issue }}</li>
+    <ul class="text-warning-800 mt-2 space-y-1 text-sm">
+      <li v-for="issue in blockingIssues" :key="issue">{{ issue }}</li>
     </ul>
+
+    <BaseButtonLink
+      :to="`/admin#overview`"
+      btn-size="sm"
+      btn-type="outline-primary"
+      class="my-2"
+    >
+      Preencher agora
+    </BaseButtonLink>
   </div>
 
   <div

@@ -84,6 +84,12 @@ const { errors, handleSubmit, defineField, resetForm } =
           .nullable()
           .optional(),
 
+        event_Start_Time: string()
+          .trim()
+          .matches(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Hora inválida')
+          .nullable()
+          .optional(),
+
         event_End_Time: string()
           .trim()
           .matches(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Hora inválida')
@@ -146,6 +152,7 @@ const [dietaryRestrictions, dietaryRestrictionsAttrs] = defineField(
 );
 const [guestProfile, guestProfileAttrs] = defineField('guestProfile');
 const [colorPalette, colorPaletteAttrs] = defineField('colorPalette');
+const [event_Start_Time, eventStartTimeAttrs] = defineField('event_Start_Time');
 const [event_End_Time, eventEndTimeAttrs] = defineField('event_End_Time');
 
 const [brideNationality, brideNationalityAttrs] =
@@ -180,6 +187,7 @@ const onSubmit = handleSubmit((values) => {
     dietaryRestrictions: values.dietaryRestrictions?.trim() || null,
     guestProfile: values.guestProfile?.trim() || null,
     colorPalette: values.colorPalette?.trim() || null,
+    event_Start_Time: normalizeTimeString(values.event_Start_Time),
     event_End_Time: normalizeTimeString(values.event_End_Time),
     brideNationality: values.brideNationality?.trim() || null,
     groomNationality: values.groomNationality?.trim() || null,
@@ -218,6 +226,7 @@ watch(
         dietaryRestrictions: current?.dietaryRestrictions ?? '',
         guestProfile: current?.guestProfile ?? '',
         colorPalette: current?.colorPalette ?? '',
+        event_Start_Time: current?.event_Start_Time?.slice(0, 5) ?? null,
         event_End_Time: current?.event_End_Time?.slice(0, 5) ?? null,
         brideNationality: current?.brideNationality ?? '',
         groomNationality: current?.groomNationality ?? '',
@@ -292,18 +301,34 @@ watch(
           disable-margins
         />
 
-        <BaseInput
-          id="decorationType"
-          v-model="decorationType"
-          v-bind="decorationTypeAttrs"
-          :error-message="errors.decorationType"
-          :readonly="isSubmiting"
-          label="Tipo de decoração:"
-          name="decorationType"
-          type="text"
-          placeholder="Ex.: Clássica / Minimalista / Rústica"
-          disable-margins
-        />
+        <div>
+          <label class="mb-1 block text-sm font-medium"
+            >Horário de início</label
+          >
+
+          <DatePicker
+            v-model="event_Start_Time"
+            v-bind="eventStartTimeAttrs"
+            locale="pt-PT"
+            time-picker
+            model-type="HH:mm"
+            :is-24="true"
+            :minutes-increment="1"
+            :teleport="true"
+            :disabled="isSubmiting"
+            :clearable="true"
+            placeholder="Selecione o horário"
+            select-text="Selecionar"
+            cancel-text="Cancelar"
+          />
+
+          <p
+            v-if="errors.event_Start_Time"
+            class="text-danger-800 mt-1 animate-fadeIn text-sm"
+          >
+            {{ errors.event_Start_Time }}
+          </p>
+        </div>
 
         <div>
           <label class="mb-1 block text-sm font-medium"
@@ -334,6 +359,18 @@ watch(
           </p>
         </div>
       </div>
+
+      <BaseInput
+        id="decorationType"
+        v-model="decorationType"
+        v-bind="decorationTypeAttrs"
+        :error-message="errors.decorationType"
+        :readonly="isSubmiting"
+        label="Tipo de decoração:"
+        name="decorationType"
+        type="text"
+        placeholder="Ex.: Clássica / Minimalista / Rústica"
+      />
 
       <BaseTextArea
         id="dietaryRestrictions"

@@ -40,6 +40,7 @@ export const useWhatsAppQrPrerequisites = (
       eventName: !hasText(currentEvent?.name),
       eventDate: !hasValidDate(currentEvent?.event_Date),
       location: !hasText(currentEvent?.location),
+      eventStartTime: !hasText(currentEvent?.event_Start_Time),
       eventEndTime: !hasText(currentEvent?.event_End_Time),
     };
   });
@@ -64,6 +65,11 @@ export const useWhatsAppQrPrerequisites = (
     if (missingFields.value.location) {
       issues.push(
         'Preencha a localização do evento antes de enviar QR Codes por WhatsApp.',
+      );
+    }
+    if (missingFields.value.eventStartTime) {
+      issues.push(
+        'Preencha o horário de início do evento antes de enviar QR Codes por WhatsApp.',
       );
     }
 

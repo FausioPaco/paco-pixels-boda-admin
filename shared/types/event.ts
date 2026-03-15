@@ -25,6 +25,7 @@ export interface BodaEvent {
   dietaryRestrictions?: string | undefined;
   guestProfile?: string | undefined;
   colorPalette?: string | undefined;
+  event_Start_Time?: string | undefined;
   event_End_Time?: string | undefined;
 
   brideNationality?: string | undefined;
@@ -78,6 +79,7 @@ export interface EventDetailsInput {
   dietaryRestrictions?: string | null | undefined;
   guestProfile?: string | null | undefined;
   colorPalette?: string | null | undefined;
+  event_Start_Time?: string | null | undefined;
   event_End_Time?: string | null | undefined;
 
   brideNationality?: string | null | undefined;
@@ -103,6 +105,7 @@ export interface EventDetailsFormValues {
   dietaryRestrictions?: string | null | undefined;
   guestProfile?: string | null | undefined;
   colorPalette?: string | null | undefined;
+  event_Start_Time?: string | null | undefined;
   event_End_Time?: string | null | undefined;
   brideNationality?: string | null | undefined;
   groomNationality?: string | null | undefined;
