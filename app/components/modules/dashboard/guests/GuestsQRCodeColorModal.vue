@@ -41,6 +41,17 @@ const onSubmit = () => {
     isSubmiting.value = false;
   }, 200);
 };
+
+const { eventId } = useEventStore();
+const { clientCode } = useRuntimeConfig().public;
+const { event, refreshEvent } = await useEvent(eventId!);
+
+const { isPartner, canSend, blockingIssues, warnings } =
+  useWhatsAppQrPrerequisites(event, clientCode);
+
+onMounted(() => {
+  refreshEvent({ force: true });
+});
 </script>
 <template>
   <BaseModal
@@ -50,6 +61,13 @@ const onSubmit = () => {
     :show="show"
     @close-modal="$emit('closeModal')"
   >
+    <LazyGuestsWhatsAppQrPrerequisitesAlert
+      v-if="!canSend && mode === 'whatsapp'"
+      :is-partner="isPartner"
+      :blocking-issues="blockingIssues"
+      :warnings="warnings"
+    />
+
     <div class="my-2 animate-fadeIn">
       <form @submit.prevent="onSubmit">
         <p class="text-grey-400 text-left text-base md:text-lg">
@@ -85,7 +103,7 @@ const onSubmit = () => {
             class="my-1"
             size="md"
             :loading="isSubmiting"
-            :disabled="isSubmiting"
+            :disabled="isSubmiting || (mode === 'whatsapp' && !canSend)"
             >{{
               mode === 'export' ? 'Baixar agora' : 'Enviar agora'
             }}</BaseButton

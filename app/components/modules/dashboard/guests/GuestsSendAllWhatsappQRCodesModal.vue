@@ -58,6 +58,17 @@ const closeModal = () => {
   resetForm();
   emit('closeModal');
 };
+
+const { eventId } = useEventStore();
+const { clientCode } = useRuntimeConfig().public;
+const { event, refreshEvent } = await useEvent(eventId!);
+
+const { isPartner, canSend, blockingIssues, warnings } =
+  useWhatsAppQrPrerequisites(event, clientCode);
+
+onMounted(() => {
+  refreshEvent({ force: true });
+});
 </script>
 
 <template>
@@ -66,6 +77,13 @@ const closeModal = () => {
     :show="show"
     @close-modal="closeModal"
   >
+    <LazyGuestsWhatsAppQrPrerequisitesAlert
+      v-if="!canSend"
+      :is-partner="isPartner"
+      :blocking-issues="blockingIssues"
+      :warnings="warnings"
+    />
+
     <div class="my-2 animate-fadeIn">
       <form class="space-y-3" @submit.prevent="onSubmit">
         <p class="text-grey-400 text-left text-base md:text-lg">
@@ -120,7 +138,7 @@ const closeModal = () => {
             class="my-1"
             size="md"
             :loading="isSubmitting"
-            :disabled="isSubmitting || !canSubmit"
+            :disabled="isSubmitting || !canSubmit || !canSend"
           >
             Enviar agora
           </BaseButton>

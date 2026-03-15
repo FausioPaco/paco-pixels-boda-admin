@@ -14,6 +14,17 @@ withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   (e: 'closeModal' | 'confirm'): void;
 }>();
+
+const { eventId } = useEventStore();
+const { clientCode } = useRuntimeConfig().public;
+const { event, refreshEvent } = await useEvent(eventId!);
+
+const { isPartner, canSend, blockingIssues, warnings } =
+  useWhatsAppQrPrerequisites(event, clientCode);
+
+onMounted(() => {
+  refreshEvent({ force: true });
+});
 </script>
 
 <template>
@@ -22,6 +33,13 @@ const emit = defineEmits<{
     title="Reenviar convite por WhatsApp?"
     @close-modal="emit('closeModal')"
   >
+    <LazyGuestsWhatsAppQrPrerequisitesAlert
+      v-if="!canSend"
+      :is-partner="isPartner"
+      :blocking-issues="blockingIssues"
+      :warnings="warnings"
+    />
+
     <div class="my-2 animate-fadeIn space-y-4">
       <p class="text-grey-700 text-left text-base md:text-lg">
         Este convidado já possui histórico de envio por WhatsApp.
@@ -47,7 +65,7 @@ const emit = defineEmits<{
           class="my-1"
           size="md"
           :loading="loading"
-          :disabled="loading"
+          :disabled="loading || !canSend"
           @click="emit('confirm')"
         >
           Reenviar convite
