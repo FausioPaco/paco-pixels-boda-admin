@@ -196,6 +196,7 @@ const openArrivalAction = (g: Guest) => {
 
 onMounted(() => {
   refreshDesks({ force: true });
+  refreshGuests({ force: true });
 });
 </script>
 <template>
