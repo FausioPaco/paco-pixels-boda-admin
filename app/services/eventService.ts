@@ -33,6 +33,16 @@ export const getEventService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
     });
   },
 
+  async updateEventDetails(
+    eventId: number,
+    updatedDetails: EventDetailsInput,
+  ): Promise<unknown> {
+    return $fetch<unknown>(`${RESOURCE}/UpdateDetails/${eventId}`, {
+      method: 'put',
+      body: updatedDetails,
+    });
+  },
+
   async removeEvent(eventId: number): Promise<unknown> {
     return $fetch<unknown>(`${RESOURCE}/Remove/${eventId}`, {
       method: 'delete',
@@ -96,6 +106,53 @@ export const getEventService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
   async downloadExportQrCards(jobId: string): Promise<{ zipUrl: string }> {
     return $fetch<{ zipUrl: string }>(
       `${RESOURCE}/ExportQrCards/Download/${jobId}`,
+    );
+  },
+
+  async startSendQrCardsWhatsapp(
+    eventId: number,
+    color: ExportTextColor,
+    clientCode: string,
+    force = false,
+    reason?: string,
+  ): Promise<{ jobId: string; total: number; uiNote?: string }> {
+    const qs = new URLSearchParams();
+    qs.set('color', color);
+    qs.set('clientCode', clientCode);
+    if (force) qs.set('force', 'true');
+    if (reason) qs.set('reason', reason);
+
+    return $fetch<{ jobId: string; total: number; uiNote?: string }>(
+      `${RESOURCE}/SendQrCardsWhatsapp/Start/${eventId}?${qs.toString()}`,
+      { method: 'post' },
+    );
+  },
+
+  async sendQrCardWhatsappToGuest(
+    eventId: number,
+    guestId: number,
+    color: ExportTextColor,
+    clientCode: string,
+    force = false,
+    reason?: string,
+  ): Promise<SendQrToGuestResponse> {
+    const qs = new URLSearchParams();
+    qs.set('color', color);
+    qs.set('clientCode', clientCode);
+    if (force) qs.set('force', 'true');
+    if (reason) qs.set('reason', reason);
+
+    return $fetch<SendQrToGuestResponse>(
+      `${RESOURCE}/SendQrCardsWhatsapp/Guest/${eventId}/${guestId}?${qs.toString()}`,
+      { method: 'post' },
+    );
+  },
+
+  async getSendQrCardsWhatsappSummary(
+    eventId: number,
+  ): Promise<WhatsAppQrLogsSummary> {
+    return $fetch<WhatsAppQrLogsSummary>(
+      `${RESOURCE}/SendQrCardsWhatsapp/Summary/${eventId}`,
     );
   },
 });

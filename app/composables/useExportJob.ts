@@ -29,6 +29,9 @@ type Options = {
   onCancelled?: () => void;
 
   pollMs?: number; // default 1200
+  autoResetOnCompleted?: boolean;
+  autoResetOnFailed?: boolean;
+  autoResetOnCancelled?: boolean;
 };
 
 export const useExportJob = (opts: Options) => {
@@ -45,6 +48,9 @@ export const useExportJob = (opts: Options) => {
 
   let pollTimer: number | null = null;
   const toastRef = ref<ToastID | null>(null);
+  const autoResetOnCompleted = opts.autoResetOnCompleted ?? true;
+  const autoResetOnFailed = opts.autoResetOnFailed ?? true;
+  const autoResetOnCancelled = opts.autoResetOnCancelled ?? true;
 
   const clearPoll = () => {
     if (pollTimer) {
@@ -104,6 +110,7 @@ export const useExportJob = (opts: Options) => {
 
           if (status.status === 'Completed') {
             clearPoll();
+            isRunning.value = false;
 
             if (toastRef.value) {
               opts.toast.update(toastRef.value, {
@@ -113,11 +120,15 @@ export const useExportJob = (opts: Options) => {
             }
 
             await opts.onCompleted?.(status);
-            reset();
+
+            if (autoResetOnCompleted) {
+              reset();
+            }
           }
 
           if (status.status === 'Failed') {
             clearPoll();
+            isRunning.value = false;
 
             if (toastRef.value) {
               opts.toast.update(toastRef.value, {
@@ -127,11 +138,15 @@ export const useExportJob = (opts: Options) => {
             }
 
             opts.onFailed?.(status);
-            reset();
+
+            if (autoResetOnFailed) {
+              reset();
+            }
           }
 
           if (status.status === 'Cancelled') {
             clearPoll();
+            isRunning.value = false;
 
             if (toastRef.value) {
               opts.toast.update(toastRef.value, {
@@ -141,7 +156,10 @@ export const useExportJob = (opts: Options) => {
             }
 
             opts.onCancelled?.();
-            reset();
+
+            if (autoResetOnCancelled) {
+              reset();
+            }
           }
         } catch (err: unknown) {
           console.log(err);
@@ -172,6 +190,14 @@ export const useExportJob = (opts: Options) => {
     }
   };
 
+  const closeProgressModal = () => {
+    showProgressModal.value = false;
+  };
+
+  const dismiss = () => {
+    reset();
+  };
+
   onBeforeUnmount(() => {
     clearPoll();
   });
@@ -188,5 +214,7 @@ export const useExportJob = (opts: Options) => {
     start,
     reset,
     clearPoll,
+    closeProgressModal,
+    dismiss,
   };
 };

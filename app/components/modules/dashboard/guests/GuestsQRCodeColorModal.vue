@@ -3,10 +3,12 @@ import type { ExportTextColor } from '~~/shared/types/guest';
 
 interface IGuestExportQRCodeModalProps {
   show?: boolean;
+  mode?: 'export' | 'whatsapp';
 }
 
 withDefaults(defineProps<IGuestExportQRCodeModalProps>(), {
   show: false,
+  mode: 'export',
 });
 
 const emit = defineEmits<{
@@ -39,17 +41,41 @@ const onSubmit = () => {
     isSubmiting.value = false;
   }, 200);
 };
+
+const { eventId } = useEventStore();
+const { clientCode } = useRuntimeConfig().public;
+const { event, refreshEvent } = await useEvent(eventId!);
+
+const { isPartner, canSend, blockingIssues, warnings } =
+  useWhatsAppQrPrerequisites(event, clientCode);
+
+onMounted(() => {
+  refreshEvent({ force: true });
+});
 </script>
 <template>
   <BaseModal
-    title="Exportar QRCode"
+    :title="
+      mode === 'export' ? 'Exportar QRCode' : 'Enviar QRCode via WhatsApp'
+    "
     :show="show"
     @close-modal="$emit('closeModal')"
   >
+    <LazyGuestsWhatsAppQrPrerequisitesAlert
+      v-if="!canSend && mode === 'whatsapp'"
+      :is-partner="isPartner"
+      :blocking-issues="blockingIssues"
+      :warnings="warnings"
+    />
+
     <div class="my-2 animate-fadeIn">
       <form @submit.prevent="onSubmit">
         <p class="text-grey-400 text-left text-base md:text-lg">
-          Selecione o formato que pretende baixar o QRCode
+          {{
+            mode === 'export'
+              ? 'Selecione o formato que pretende baixar o QRCode'
+              : 'Selecione o formato que pretende enviar o QRCode via WhatsApp'
+          }}
         </p>
 
         <BaseSelect
@@ -77,8 +103,10 @@ const onSubmit = () => {
             class="my-1"
             size="md"
             :loading="isSubmiting"
-            :disabled="isSubmiting"
-            >Baixar agora</BaseButton
+            :disabled="isSubmiting || (mode === 'whatsapp' && !canSend)"
+            >{{
+              mode === 'export' ? 'Baixar agora' : 'Enviar agora'
+            }}</BaseButton
           >
 
           <BaseButton

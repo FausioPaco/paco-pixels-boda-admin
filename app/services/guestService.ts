@@ -127,4 +127,16 @@ export const getGuestService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
       body: payload,
     });
   },
+
+  async getWhatsAppStatusSummary(
+    params: GuestParameters,
+  ): Promise<GuestWhatsAppQrStatusSummary> {
+    return $fetch<GuestWhatsAppQrStatusSummary>(
+      `${RESOURCE}/WhatsAppQRStatusSummary`,
+      {
+        method: 'get',
+        params,
+      },
+    );
+  },
 });

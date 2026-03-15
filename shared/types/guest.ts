@@ -1,3 +1,15 @@
+export type GuestWhatsAppQrStatus =
+  | 'not_sent'
+  | 'pending'
+  | 'accepted'
+  | 'delivered'
+  | 'seen'
+  | 'invalid_phone'
+  | 'failed_temporary'
+  | 'failed'
+  | 'delivery_unknown'
+  | 'needs_review';
+
 export interface Guest {
   id: number;
   localId: number;
@@ -19,6 +31,25 @@ export interface Guest {
   absence_Declared?: boolean;
   absence_Declared_At?: string | Date | null;
   created_At: Date;
+  hasWhatsAppQrSent?: boolean;
+  hasWhatsAppQrDelivered?: boolean;
+  hasWhatsAppQrSeen?: boolean;
+  whatsAppQrStatus?: GuestWhatsAppQrStatus;
+  whatsAppQrStatusLabel?: string;
+
+  whatsAppQrSentAt?: string | Date | null;
+
+  whatsAppQrAcceptedAt?: string | Date | null;
+  whatsAppQrDeliveredAt?: string | Date | null;
+  whatsAppQrSeenAt?: string | Date | null;
+
+  whatsAppQrLastAttemptAt?: string | Date | null;
+  whatsAppQrErrorMessage?: string | null;
+  whatsAppQrSkipReason?: string | null;
+
+  whatsAppQrCanRetry?: boolean;
+  whatsAppQrWasForced?: boolean;
+  whatsAppQrNeedsReview?: boolean;
 }
 
 export interface GuestParameters {
@@ -33,6 +64,7 @@ export interface GuestParameters {
   endDate: string;
   pageNumber: number;
   pageSize: number;
+  whatsAppQrStatus?: GuestWhatsAppQrStatus | '';
 }
 
 export interface GuestInput {
@@ -66,4 +98,18 @@ export type ExportQROptions = {
 
 export interface DeclareAbsenceInput {
   additional_Comments?: string;
+}
+
+export interface GuestWhatsAppQrStatusSummary {
+  totalGuests: number;
+  notSent: number;
+  pending: number;
+  accepted: number;
+  delivered: number;
+  seen: number;
+  invalidPhone: number;
+  failedTemporary: number;
+  failed: number;
+  deliveryUnknown: number;
+  needsReview: number;
 }

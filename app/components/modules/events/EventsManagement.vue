@@ -475,7 +475,7 @@ onMounted(() => {
             >
               <!-- Month Header -->
               <div
-                class="sticky top-0 z-10 -mx-2 mb-3 flex items-center justify-between rounded-xl border border-white/10 bg-white/60 px-4 py-3 shadow-sm backdrop-blur md:mx-0 dark:bg-slate-900/60"
+                class="sticky top-0 z-10 -mx-2 mb-3 flex items-center justify-between rounded-xl border border-white/10 bg-white/60 px-4 py-3 shadow-sm backdrop-blur md:mx-0"
               >
                 <div class="flex items-center gap-3">
                   <IconCalendar
@@ -488,7 +488,7 @@ onMounted(() => {
                 </div>
 
                 <div
-                  class="bg-grey-50 text-grey-700 dark:text-primary-200 rounded-full px-3 py-1 text-sm font-medium dark:bg-slate-800"
+                  class="bg-grey-50 text-grey-700 rounded-full px-3 py-1 text-sm font-medium"
                 >
                   {{ group.items.length }}
                   {{ group.items.length === 1 ? 'evento' : 'eventos' }}

@@ -8,6 +8,7 @@ const queryParameters = reactive<GuestParameters>({
   guestLocalId: undefined,
   categoryId: undefined,
   availability_Type: '',
+  whatsAppQrStatus: '',
   searchQuery: '',
   startDate: '',
   endDate: '',
@@ -52,6 +53,27 @@ const availabilityOptions: SelectOption[] = [
 const giftOptions: SelectOption[] = [
   { id: 'true', value: true, name: 'Levou presente' },
   { id: 'false', value: false, name: 'Não levou presente' },
+];
+
+const whatsAppStatusOptions: SelectOption[] = [
+  { id: 'not_sent', value: 'not_sent', name: 'Por enviar' },
+  { id: 'pending', value: 'pending', name: 'Em processamento' },
+  { id: 'accepted', value: 'accepted', name: 'Aceite pela plataforma' },
+  { id: 'delivered', value: 'delivered', name: 'Entregue' },
+  { id: 'seen', value: 'seen', name: 'Vista' },
+  { id: 'invalid_phone', value: 'invalid_phone', name: 'Número inválido' },
+  {
+    id: 'failed_temporary',
+    value: 'failed_temporary',
+    name: 'Falha temporária',
+  },
+  { id: 'failed', value: 'failed', name: 'Falha no envio' },
+  {
+    id: 'delivery_unknown',
+    value: 'delivery_unknown',
+    name: 'Entrega por confirmar',
+  },
+  { id: 'needs_review', value: 'needs_review', name: 'Precisa de verificação' },
 ];
 
 const debouncedSearch = useDebounceFn(() => {
@@ -148,21 +170,33 @@ const openConfirmModal = (g: Guest) => {
   showManageModal.value = true;
 };
 
-const openArrivedModal = (g: Guest) => {
-  guestSelected.value = g;
-  showArrivedModal.value = true;
-};
-
 const onGuestUpdated = () => {
   refreshGuests({ force: true });
   refreshDesks({ force: true });
 };
+
 const absenceRowClass = (g: Guest) => {
   if (g.absence_Declared) {
-    return 'opacity-60 grayscale';
+    return 'opacity-60';
   }
+
   return '';
 };
+
+const openArrivalAction = (g: Guest) => {
+  guestSelected.value = g;
+
+  if (g.arrived) {
+    showCancelArrivedModal.value = true;
+    return;
+  }
+
+  showArrivedModal.value = true;
+};
+
+onMounted(() => {
+  refreshDesks({ force: true });
+});
 </script>
 <template>
   <section
@@ -228,6 +262,14 @@ const absenceRowClass = (g: Guest) => {
             label="Presentes: "
             :options="giftOptions"
             empty-message="Todos"
+          />
+
+          <BaseSelect
+            id="whatsAppStatus"
+            v-model="queryParameters.whatsAppQrStatus"
+            label="Envios por WhatsApp (QR Codes): "
+            :options="whatsAppStatusOptions"
+            empty-message="Todos estados"
           />
         </div>
       </div>
@@ -328,7 +370,7 @@ const absenceRowClass = (g: Guest) => {
             <td>{{ `${eventInitials}-${guest.localId}` }}</td>
             <td class="flex gap-2">
               <GuestsStatusIcon :guest="guest" />
-              <span>{{ guest.name }}</span>
+              <span class="truncate">{{ guest.name }}</span>
             </td>
             <td>{{ guest.people_Count }}</td>
             <td>
@@ -343,13 +385,16 @@ const absenceRowClass = (g: Guest) => {
                 :title="
                   guest.absence_Declared
                     ? 'Convidado marcado como ausente'
-                    : 'Confirmar chegada'
+                    : guest.arrived
+                      ? 'Cancelar chegada'
+                      : 'Confirmar chegada'
                 "
-                @click.prevent="openArrivedModal(guest)"
+                @click.prevent="openArrivalAction(guest)"
               >
                 {{ guest.arrived ? 'Não chegou' : 'Chegou' }}
               </BaseButton>
 
+              <!-- Ver detalhes -->
               <BaseButton
                 btn-size="sm"
                 btn-type="outline-primary"
