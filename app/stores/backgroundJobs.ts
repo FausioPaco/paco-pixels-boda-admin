@@ -52,7 +52,7 @@ const STORAGE_KEY = 'boda-background-jobs';
 
 export const backgroundJobStatusLabels: Record<BackgroundJobStatus, string> = {
   Pending: 'Pendente',
-  Running: 'Em processamento',
+  Running: 'A processar',
   Completed: 'Concluída',
   Failed: 'Falhada',
   Cancelled: 'Cancelada',

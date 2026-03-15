@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 const route = useRoute();
-// const jobsStore = useBackgroundJobsStore();
+const jobsStore = useBackgroundJobsStore();
 </script>
 
 <template>
@@ -11,8 +11,8 @@ const route = useRoute();
       {{ route.meta['pageName'] }}
     </h1>
 
-    <div class="flex items-center gap-4 md:gap-6">
-      <LazyTheAdminBackgroundJobsWidget />
+    <div class="flex items-center gap-4 md:gap-5">
+      <LazyTheAdminBackgroundJobsWidget v-if="jobsStore.jobs.length > 0" />
       <LazyTheOnlineUsersWidget />
       <LazyTheHeaderUser />
     </div>

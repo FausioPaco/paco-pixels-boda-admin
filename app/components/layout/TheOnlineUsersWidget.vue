@@ -63,14 +63,14 @@ const refreshUsers = () => {
   <div class="relative hidden md:block">
     <button
       type="button"
-      class="hover:bg-primary-100 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-transparent px-3 py-1.5 text-sm text-gray-700 shadow-sm transition-colors ease-in"
+      class="hover:bg-primary-100 border-grey-100 inline-flex items-center gap-2 rounded-full border bg-transparent px-3 py-1.5 text-sm text-gray-700 shadow-sm transition-colors ease-in"
       @click.prevent="toggle"
     >
       <span
         class="block size-[8px] rounded-full"
-        :class="onlineCount === 0 ? 'bg-gray-400' : 'bg-success-600'"
+        :class="onlineCount === 0 ? 'bg-grey-400' : 'bg-success-600'"
       ></span>
-      <span class="opacity-80">Online:</span>
+      <span class="text-xs font-medium opacity-80">Online:</span>
       <span class="font-semibold">
         {{ onlineCount }}
       </span>

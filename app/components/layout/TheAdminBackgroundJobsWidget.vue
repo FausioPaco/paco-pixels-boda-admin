@@ -1,23 +1,29 @@
 <script setup lang="ts">
+import { onClickOutside } from '@vueuse/core';
+
 const jobsStore = useBackgroundJobsStore();
 const showDropdown = ref(false);
+const backgroundMenuRef = ref<HTMLElement | null>(null);
 
-const activeLabel = computed(() => {
-  if (jobsStore.activeCount === 0) return 'Sem tarefas';
-  if (jobsStore.activeCount === 1) return '1 tarefa';
-  return `${jobsStore.activeCount} tarefas`;
-});
 const { apiImageUrl } = useRuntimeConfig().public;
+
+onClickOutside(backgroundMenuRef, () => {
+  if (!showDropdown.value) return;
+  showDropdown.value = false;
+});
 </script>
 
 <template>
-  <div class="relative z-40">
+  <div class="relative z-40 hidden md:block">
     <button
-      class="border-primary-100 text-grey-700 hover:border-primary-300 hover:text-primary-700 flex items-center gap-2 rounded-full border px-3 py-2 shadow-sm transition-colors"
+      class="text-grey-700 hover:border-primary-300 hover:bg-primary-100 border-grey-100 flex items-center gap-2 rounded-full border px-3 py-2 shadow-sm transition-colors hover:text-white"
       @click="showDropdown = !showDropdown"
     >
       <div class="relative">
-        <icon-download :font-controlled="false" class="size-[18px]" />
+        <icon-download
+          :font-controlled="false"
+          class="text-grey-400 size-[18px]"
+        />
         <span
           v-if="jobsStore.activeCount > 0"
           class="bg-primary-500 absolute -right-2 -top-2 flex size-[18px] items-center justify-center rounded-full text-[10px] font-bold text-white"
@@ -27,16 +33,14 @@ const { apiImageUrl } = useRuntimeConfig().public;
       </div>
 
       <div class="hidden text-left lg:block">
-        <p class="text-xs font-semibold">Processamentos</p>
-        <small class="text-grey-400 text-[10]">
-          {{ activeLabel }}
-        </small>
+        <p class="text-grey-400 text-xs font-medium">Processamentos</p>
       </div>
     </button>
 
     <transition name="fade">
       <div
         v-if="showDropdown"
+        ref="backgroundMenuRef"
         class="absolute right-0 top-[calc(100%+10px)] w-[360px] max-w-[90vw] rounded-2xl border bg-white px-4 py-3 shadow-xl"
       >
         <div class="mb-3 flex items-center justify-between">
