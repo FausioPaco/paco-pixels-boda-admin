@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { getChecklistService } from '~/services/checklistService';
 import Draggable from 'vuedraggable';
+import { useToast } from 'vue-toastification';
 
 type SortableEvent = {
   item: HTMLElement;
@@ -8,8 +9,29 @@ type SortableEvent = {
   newIndex?: number;
 };
 
+type ChecklistPdfTask = {
+  id: number;
+  title: string;
+  notes?: string | null;
+  due_Date?: string | null;
+  has_Indefinite_Date?: boolean;
+  is_Completed: boolean;
+};
+
+type ChecklistPdfSection = {
+  id: number;
+  title: string;
+  tasks: ChecklistPdfTask[];
+};
+
 const eventStore = useEventStore();
 const EVENT_ID = eventStore.eventId!;
+
+const toast = useToast();
+const nuxtApp = useNuxtApp();
+const pdfRef = ref<HTMLElement | null>(null);
+const isGeneratingPdf = ref(false);
+const tasksBySection = ref<Record<number, ChecklistTask[]>>({});
 
 const statusOptions = [
   { id: '', name: 'Todas tarefas' },
@@ -125,7 +147,6 @@ watch(rangeDates, (val) => {
 // Reordenar secção
 const draggingId = ref<number | null>(null);
 const isReorderingSections = ref(false);
-const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
 
 async function applySectionsReorder(newOrder: ChecklistSection[]) {
@@ -186,6 +207,97 @@ function onDragEnd(newOrder: ChecklistSection[]) {
   draggingId.value = null;
   applySectionsReorder(newOrder);
 }
+
+function onSectionTasksLoaded(payload: {
+  sectionId: number;
+  tasks: ChecklistTask[];
+}) {
+  tasksBySection.value = {
+    ...tasksBySection.value,
+    [payload.sectionId]: payload.tasks,
+  };
+}
+
+const pdfSections = computed<ChecklistPdfSection[]>(() => {
+  return sections.value.map((section) => ({
+    id: section.id,
+    title: section.title,
+    tasks: (tasksBySection.value[section.id] ?? []).map((task) => ({
+      id: task.id,
+      title: task.title,
+      notes: task.notes,
+      due_Date: task.due_Date,
+      has_Indefinite_Date: task.has_Indefinite_Date,
+      is_Completed: task.is_Completed,
+    })),
+  }));
+});
+
+const getCoupleName = () => {
+  return eventStore!.eventName ?? 'Noivos';
+};
+
+const generatePdf = async () => {
+  if (!pdfRef.value) return;
+
+  if (!sections.value.length) {
+    toast.info('Ainda não existem secções no checklist.');
+    return;
+  }
+
+  const loadedSectionsCount = Object.keys(tasksBySection.value).length;
+
+  if (loadedSectionsCount < sections.value.length) {
+    toast.info(
+      'A preparar os dados do checklist. Tente novamente em alguns instantes.',
+    );
+    return;
+  }
+
+  isGeneratingPdf.value = true;
+
+  try {
+    const canvas = await nuxtApp.$html2canvas(pdfRef.value, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+
+    const doc = new nuxtApp.$jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'a4',
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+      doc.addPage();
+      position -= pageHeight;
+      doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    doc.save(`checklist-evento-${eventStore!.eventSlug ?? 'evento'}.pdf`);
+  } catch (e) {
+    console.error(e);
+    toast.error('Não foi possível gerar o PDF do checklist.');
+  } finally {
+    isGeneratingPdf.value = false;
+  }
+};
 </script>
 
 <template>
@@ -193,8 +305,8 @@ function onDragEnd(newOrder: ChecklistSection[]) {
     id="checklistManagement"
     class="relative flex min-h-[450px] w-full flex-col items-center px-4 py-5"
   >
-    <div class="w-full">
-      <div class="flex flex-wrap items-center gap-2">
+    <div class="flex w-full flex-wrap gap-2 md:justify-between">
+      <div class="flex flex-wrap items-center gap-4">
         <BaseButton
           btn-type="outline-primary"
           class="w-fit"
@@ -208,6 +320,16 @@ function onDragEnd(newOrder: ChecklistSection[]) {
           >Adicionar secção</BaseButton
         >
       </div>
+      <BaseButton
+        btn-type="outline-primary"
+        icon="download"
+        :icon-size="24"
+        :disabled="isGeneratingPdf"
+        class="w-fit"
+        @click="generatePdf"
+      >
+        {{ isGeneratingPdf ? 'Gerando PDF...' : 'Exportar PDF' }}
+      </BaseButton>
     </div>
 
     <div
@@ -314,6 +436,7 @@ function onDragEnd(newOrder: ChecklistSection[]) {
                 @task-updated="refreshSections({ force: true })"
                 @move-up="moveSection(element.id, 'up')"
                 @move-down="moveSection(element.id, 'down')"
+                @tasks-loaded="onSectionTasksLoaded"
               />
             </div>
           </template>
@@ -344,6 +467,16 @@ function onDragEnd(newOrder: ChecklistSection[]) {
         @close-modal="showRemoveModal = false"
         @success="onSectionRemoved"
       />
+
+      <div class="fixed left-[-99999px] top-0">
+        <div ref="pdfRef">
+          <ChecklistPdfDocument
+            :couple-name="getCoupleName()"
+            document-title="Cronograma"
+            :sections="pdfSections"
+          />
+        </div>
+      </div>
     </div>
   </section>
 </template>
