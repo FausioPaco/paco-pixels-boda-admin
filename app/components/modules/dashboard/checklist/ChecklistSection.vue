@@ -18,6 +18,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'edit-section' | 'remove-section', value: ChecklistSection): void;
   (e: 'task-created' | 'task-updated' | 'task-removed' | 'reordered'): void;
+  (
+    e: 'tasks-loaded',
+    payload: { sectionId: number; tasks: ChecklistTask[] },
+  ): void;
 }>();
 
 const toast = useToast();
@@ -83,9 +87,14 @@ async function loadTasks() {
   query.has_Indefinite_Date = props.globalFilters.has_Indefinite_Date;
   query.pageNumber = 1;
 
-  await refreshTasks();
+  await refreshTasks({ force: true });
   localTasks.value = [...tasks.value];
   tasksCount.value = tasks.value.length;
+
+  emit('tasks-loaded', {
+    sectionId: props.section.id,
+    tasks: localTasks.value,
+  });
 }
 
 async function toggleOpen() {
@@ -99,7 +108,7 @@ async function toggleTask(task: ChecklistTask) {
   task.is_Completed = !task.is_Completed;
   try {
     await checklistService.toggleTaskComplete(task.id);
-    refreshTasks();
+    await loadTasks();
     emit('task-updated');
   } catch (e) {
     task.is_Completed = before;
@@ -135,6 +144,20 @@ async function onRemovedTask() {
 watch(props.globalFilters, async () => {
   if (open.value) await loadTasks();
 });
+
+watch(
+  tasks,
+  (val) => {
+    localTasks.value = [...val];
+    tasksCount.value = val.length;
+
+    emit('tasks-loaded', {
+      sectionId: props.section.id,
+      tasks: localTasks.value,
+    });
+  },
+  { deep: true },
+);
 
 // function onTaskCreated() {
 //   refreshTasks();

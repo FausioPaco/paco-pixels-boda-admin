@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { getChecklistService } from '~/services/checklistService';
 import Draggable from 'vuedraggable';
+import { useToast } from 'vue-toastification';
 
 type SortableEvent = {
   item: HTMLElement;
@@ -8,8 +9,33 @@ type SortableEvent = {
   newIndex?: number;
 };
 
+type ChecklistPdfTask = {
+  id: number;
+  title: string;
+  notes?: string | null;
+  due_Date?: string | null;
+  has_Indefinite_Date?: boolean;
+  is_Completed: boolean;
+};
+
+type ChecklistPdfSection = {
+  id: number;
+  title: string;
+  tasks: ChecklistPdfTask[];
+};
+
+type ChecklistPdfPage = {
+  sections: ChecklistPdfSection[];
+};
+
 const eventStore = useEventStore();
 const EVENT_ID = eventStore.eventId!;
+
+const toast = useToast();
+const nuxtApp = useNuxtApp();
+const pdfPageRefs = ref<HTMLElement[]>([]);
+const isGeneratingPdf = ref(false);
+const tasksBySection = ref<Record<number, ChecklistTask[]>>({});
 
 const statusOptions = [
   { id: '', name: 'Todas tarefas' },
@@ -125,7 +151,6 @@ watch(rangeDates, (val) => {
 // Reordenar secção
 const draggingId = ref<number | null>(null);
 const isReorderingSections = ref(false);
-const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
 
 async function applySectionsReorder(newOrder: ChecklistSection[]) {
@@ -186,6 +211,240 @@ function onDragEnd(newOrder: ChecklistSection[]) {
   draggingId.value = null;
   applySectionsReorder(newOrder);
 }
+
+function onSectionTasksLoaded(payload: {
+  sectionId: number;
+  tasks: ChecklistTask[];
+}) {
+  tasksBySection.value = {
+    ...tasksBySection.value,
+    [payload.sectionId]: payload.tasks,
+  };
+}
+
+const pdfSections = computed<ChecklistPdfSection[]>(() => {
+  return sections.value.map((section) => ({
+    id: section.id,
+    title: section.title,
+    tasks: (tasksBySection.value[section.id] ?? []).map((task) => ({
+      id: task.id,
+      title: task.title,
+      notes: task.notes,
+      due_Date: task.due_Date,
+      has_Indefinite_Date: task.has_Indefinite_Date,
+      is_Completed: task.is_Completed,
+    })),
+  }));
+});
+
+const getCoupleName = () => {
+  return eventStore!.eventName ?? 'Noivos';
+};
+
+const PDF_PAGE_CAPACITY = 46;
+const PDF_SECTION_HEADER_UNITS = 4;
+const PDF_EMPTY_SECTION_UNITS = 3;
+
+function estimateTaskUnits(task: ChecklistPdfTask) {
+  let units = 4.5;
+
+  const titleLength = task.title?.length ?? 0;
+  const notesLength = task.notes?.length ?? 0;
+
+  if (titleLength > 55) units += 1;
+  if (titleLength > 110) units += 1;
+
+  if (task.due_Date || task.has_Indefinite_Date) {
+    units += 1.2;
+  }
+
+  if (notesLength > 0) {
+    units += 1.5;
+    if (notesLength > 120) units += 1.5;
+    if (notesLength > 260) units += 1.5;
+    if (notesLength > 420) units += 1.5;
+  }
+
+  return units;
+}
+
+function setPdfPageRef(
+  el: Element | ComponentPublicInstance | null,
+  index: number,
+) {
+  if (!el) return;
+
+  const htmlEl = el as HTMLElement;
+
+  if (htmlEl) {
+    pdfPageRefs.value[index] = htmlEl;
+  }
+}
+
+const pdfPages = computed<ChecklistPdfPage[]>(() => {
+  const pages: ChecklistPdfPage[] = [];
+
+  let currentPage: ChecklistPdfPage = { sections: [] };
+  let currentUnits = 0;
+
+  const pushCurrentPage = () => {
+    if (currentPage.sections.length > 0) {
+      pages.push(currentPage);
+    }
+
+    currentPage = { sections: [] };
+    currentUnits = 0;
+  };
+
+  for (const section of pdfSections.value) {
+    const tasks = section.tasks ?? [];
+
+    if (!tasks.length) {
+      const requiredUnits = PDF_SECTION_HEADER_UNITS + PDF_EMPTY_SECTION_UNITS;
+
+      if (
+        currentUnits + requiredUnits > PDF_PAGE_CAPACITY &&
+        currentPage.sections.length > 0
+      ) {
+        pushCurrentPage();
+      }
+
+      currentPage.sections.push({
+        id: section.id,
+        title: section.title,
+        tasks: [],
+      });
+
+      currentUnits += requiredUnits;
+      continue;
+    }
+
+    let currentSectionChunk: ChecklistPdfSection = {
+      id: section.id,
+      title: section.title,
+      tasks: [],
+    };
+
+    let sectionHasBeenStarted = false;
+
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i];
+      if (!task) continue;
+
+      const taskUnits = estimateTaskUnits(task);
+      const headerUnits = sectionHasBeenStarted ? 0 : PDF_SECTION_HEADER_UNITS;
+      const requiredUnits = headerUnits + taskUnits;
+
+      if (
+        currentUnits + requiredUnits > PDF_PAGE_CAPACITY &&
+        currentPage.sections.length > 0
+      ) {
+        if (currentSectionChunk.tasks.length > 0) {
+          currentPage.sections.push(currentSectionChunk);
+          currentSectionChunk = {
+            id: section.id,
+            title: section.title,
+            tasks: [],
+          };
+        }
+
+        pushCurrentPage();
+        sectionHasBeenStarted = false;
+      }
+
+      if (!sectionHasBeenStarted) {
+        currentUnits += PDF_SECTION_HEADER_UNITS;
+        sectionHasBeenStarted = true;
+      }
+
+      currentSectionChunk.tasks.push(task);
+      currentUnits += taskUnits;
+
+      const isLastTask = i === tasks.length - 1;
+
+      if (isLastTask) {
+        currentPage.sections.push(currentSectionChunk);
+      }
+    }
+  }
+
+  if (currentPage.sections.length > 0) {
+    pages.push(currentPage);
+  }
+
+  return pages;
+});
+
+const generatePdf = async () => {
+  if (!sections.value.length) {
+    toast.info('Ainda não existem secções no checklist.');
+    return;
+  }
+
+  const loadedSectionsCount = Object.keys(tasksBySection.value).length;
+
+  if (loadedSectionsCount < sections.value.length) {
+    toast.info(
+      'A preparar os dados do checklist. Tente novamente em alguns instantes.',
+    );
+    return;
+  }
+
+  isGeneratingPdf.value = true;
+
+  try {
+    await nextTick();
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    if (!pdfPageRefs.value.length) {
+      toast.error('Não foi possível preparar as páginas do PDF.');
+      return;
+    }
+
+    const doc = new nuxtApp.$jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'a4',
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    for (let i = 0; i < pdfPageRefs.value.length; i++) {
+      const pageEl = pdfPageRefs.value[i];
+      if (!pageEl) continue;
+
+      const canvas = await nuxtApp.$html2canvas(pageEl, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+
+      if (i > 0) {
+        doc.addPage();
+      }
+
+      doc.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
+    }
+
+    doc.save(`checklist-evento-${eventStore!.eventSlug ?? 'evento'}.pdf`);
+  } catch (e) {
+    console.error(e);
+    toast.error('Não foi possível gerar o PDF do checklist.');
+  } finally {
+    isGeneratingPdf.value = false;
+  }
+};
+
+watch(
+  pdfPages,
+  () => {
+    pdfPageRefs.value = [];
+  },
+  { deep: true },
+);
 </script>
 
 <template>
@@ -193,8 +452,8 @@ function onDragEnd(newOrder: ChecklistSection[]) {
     id="checklistManagement"
     class="relative flex min-h-[450px] w-full flex-col items-center px-4 py-5"
   >
-    <div class="w-full">
-      <div class="flex flex-wrap items-center gap-2">
+    <div class="flex w-full flex-wrap gap-2 md:justify-between">
+      <div class="flex flex-wrap items-center gap-4">
         <BaseButton
           btn-type="outline-primary"
           class="w-fit"
@@ -208,6 +467,16 @@ function onDragEnd(newOrder: ChecklistSection[]) {
           >Adicionar secção</BaseButton
         >
       </div>
+      <BaseButton
+        btn-type="outline-primary"
+        icon="download"
+        :icon-size="24"
+        :disabled="isGeneratingPdf"
+        class="w-fit"
+        @click="generatePdf"
+      >
+        {{ isGeneratingPdf ? 'Gerando PDF...' : 'Exportar PDF' }}
+      </BaseButton>
     </div>
 
     <div
@@ -314,6 +583,7 @@ function onDragEnd(newOrder: ChecklistSection[]) {
                 @task-updated="refreshSections({ force: true })"
                 @move-up="moveSection(element.id, 'up')"
                 @move-down="moveSection(element.id, 'down')"
+                @tasks-loaded="onSectionTasksLoaded"
               />
             </div>
           </template>
@@ -344,6 +614,20 @@ function onDragEnd(newOrder: ChecklistSection[]) {
         @close-modal="showRemoveModal = false"
         @success="onSectionRemoved"
       />
+
+      <div class="fixed left-[-99999px] top-0 flex flex-col gap-6">
+        <div
+          v-for="(page, index) in pdfPages"
+          :key="`pdf-page-${index}`"
+          :ref="(el) => setPdfPageRef(el, index)"
+        >
+          <ChecklistPdfDocument
+            :couple-name="getCoupleName()"
+            document-title="Cronograma do Evento"
+            :sections="page.sections"
+          />
+        </div>
+      </div>
     </div>
   </section>
 </template>

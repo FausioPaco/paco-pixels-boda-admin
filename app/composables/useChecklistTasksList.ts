@@ -43,7 +43,7 @@ export const useChecklistTasksList = (
   const nuxtApp = useNuxtApp();
 
   const { data, refresh, status } = useLazyAsyncData(
-    () => `checklist-tasks-fetch:${key.value}`,
+    key,
     () => getChecklistService(nuxtApp.$api).getAllTasks(p.value),
     {
       watch: [p],
@@ -65,6 +65,13 @@ export const useChecklistTasksList = (
     }
   });
 
+  const refreshTasks = async (opts?: { force?: boolean }) => {
+    if (opts?.force) {
+      clearNuxtData(key.value);
+    }
+    await refresh();
+  };
+
   return {
     tasks,
     pagination,
@@ -72,7 +79,7 @@ export const useChecklistTasksList = (
     isRefreshing: computed(() => status.value === 'pending'),
     isError: computed(() => status.value === 'error'),
     isSuccess: computed(() => status.value === 'success'),
-    refreshTasks: refresh,
+    refreshTasks,
     params: p,
   };
 };
