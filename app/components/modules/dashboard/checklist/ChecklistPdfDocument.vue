@@ -38,7 +38,7 @@ const getTaskStatusLabel = (task: {
 </script>
 
 <template>
-  <div class="w-[794px] bg-white">
+  <div class="flex h-[1123px] w-[794px] flex-col overflow-hidden bg-white">
     <div
       class="bg-primary-800 flex items-center justify-between px-10 pb-5 pt-3 text-white"
     >
@@ -51,7 +51,7 @@ const getTaskStatusLabel = (task: {
       </div>
     </div>
 
-    <div class="px-10 py-8">
+    <div class="flex-1 px-10 py-8">
       <div
         v-if="sections.length === 0"
         class="text-grey-500 font-sans text-base"
@@ -59,7 +59,7 @@ const getTaskStatusLabel = (task: {
         Sem secções para apresentar.
       </div>
 
-      <div v-for="section in sections" :key="section.id" class="mb-8">
+      <div v-for="section in sections" :key="section.id" class="mb-7 last:mb-0">
         <div class="border-primary-400 mb-4 border-b pb-4">
           <h2 class="text-primary-800 font-sans text-xl font-semibold">
             {{ section.title }}
@@ -77,11 +77,11 @@ const getTaskStatusLabel = (task: {
           <li
             v-for="task in section.tasks"
             :key="task.id"
-            class="border-grey-100 rounded-2xl border px-5 py-4"
+            class="border-grey-200 break-inside-avoid rounded-2xl border px-6 py-4"
           >
-            <div class="flex items-start gap-3">
+            <div class="flex items-start gap-4">
               <div
-                class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border p-3"
+                class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border"
                 :class="
                   task.is_Completed
                     ? 'border-success-500 bg-success-500'
@@ -90,33 +90,37 @@ const getTaskStatusLabel = (task: {
               >
                 <span
                   v-if="task.is_Completed"
-                  class="pb-3 text-xs font-bold text-white"
+                  class="text-[11px] font-bold leading-none text-white"
                 >
                   ✓
                 </span>
               </div>
 
               <div class="min-w-0 flex-1">
-                <div class="flex items-start justify-between gap-4">
-                  <div class="text-grey-900 font-sans text-base font-semibold">
+                <div class="flex items-center justify-between gap-4">
+                  <div
+                    class="text-grey-900 font-sans text-[15px] font-semibold leading-6"
+                  >
                     {{ task.title }}
                   </div>
 
-                  <div class="text-primary-700 text-xs font-semibold uppercase">
+                  <div
+                    class="text-primary-700 shrink-0 pt-0.5 text-[11px] font-semibold uppercase tracking-[0.5px]"
+                  >
                     {{ getTaskStatusLabel(task) }}
                   </div>
                 </div>
 
                 <div
                   v-if="task.due_Date && !task.has_Indefinite_Date"
-                  class="text-grey-500 mt-2 font-sans text-sm"
+                  class="text-grey-500 mt-1.5 font-sans text-sm leading-5"
                 >
                   Data limite: {{ formatDate(task.due_Date) }}
                 </div>
 
                 <div
                   v-else-if="task.has_Indefinite_Date"
-                  class="text-grey-500 mt-2 font-sans text-sm"
+                  class="text-grey-500 mt-1.5 font-sans text-sm leading-5"
                 >
                   Sem data limite
                 </div>

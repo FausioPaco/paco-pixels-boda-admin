@@ -24,12 +24,16 @@ type ChecklistPdfSection = {
   tasks: ChecklistPdfTask[];
 };
 
+type ChecklistPdfPage = {
+  sections: ChecklistPdfSection[];
+};
+
 const eventStore = useEventStore();
 const EVENT_ID = eventStore.eventId!;
 
 const toast = useToast();
 const nuxtApp = useNuxtApp();
-const pdfRef = ref<HTMLElement | null>(null);
+const pdfPageRefs = ref<HTMLElement[]>([]);
 const isGeneratingPdf = ref(false);
 const tasksBySection = ref<Record<number, ChecklistTask[]>>({});
 
@@ -237,9 +241,141 @@ const getCoupleName = () => {
   return eventStore!.eventName ?? 'Noivos';
 };
 
-const generatePdf = async () => {
-  if (!pdfRef.value) return;
+const PDF_PAGE_CAPACITY = 46;
+const PDF_SECTION_HEADER_UNITS = 4;
+const PDF_EMPTY_SECTION_UNITS = 3;
 
+function estimateTaskUnits(task: ChecklistPdfTask) {
+  let units = 4.5;
+
+  const titleLength = task.title?.length ?? 0;
+  const notesLength = task.notes?.length ?? 0;
+
+  if (titleLength > 55) units += 1;
+  if (titleLength > 110) units += 1;
+
+  if (task.due_Date || task.has_Indefinite_Date) {
+    units += 1.2;
+  }
+
+  if (notesLength > 0) {
+    units += 1.5;
+    if (notesLength > 120) units += 1.5;
+    if (notesLength > 260) units += 1.5;
+    if (notesLength > 420) units += 1.5;
+  }
+
+  return units;
+}
+
+function setPdfPageRef(
+  el: Element | ComponentPublicInstance | null,
+  index: number,
+) {
+  if (!el) return;
+
+  const htmlEl = el as HTMLElement;
+
+  if (htmlEl) {
+    pdfPageRefs.value[index] = htmlEl;
+  }
+}
+
+const pdfPages = computed<ChecklistPdfPage[]>(() => {
+  const pages: ChecklistPdfPage[] = [];
+
+  let currentPage: ChecklistPdfPage = { sections: [] };
+  let currentUnits = 0;
+
+  const pushCurrentPage = () => {
+    if (currentPage.sections.length > 0) {
+      pages.push(currentPage);
+    }
+
+    currentPage = { sections: [] };
+    currentUnits = 0;
+  };
+
+  for (const section of pdfSections.value) {
+    const tasks = section.tasks ?? [];
+
+    if (!tasks.length) {
+      const requiredUnits = PDF_SECTION_HEADER_UNITS + PDF_EMPTY_SECTION_UNITS;
+
+      if (
+        currentUnits + requiredUnits > PDF_PAGE_CAPACITY &&
+        currentPage.sections.length > 0
+      ) {
+        pushCurrentPage();
+      }
+
+      currentPage.sections.push({
+        id: section.id,
+        title: section.title,
+        tasks: [],
+      });
+
+      currentUnits += requiredUnits;
+      continue;
+    }
+
+    let currentSectionChunk: ChecklistPdfSection = {
+      id: section.id,
+      title: section.title,
+      tasks: [],
+    };
+
+    let sectionHasBeenStarted = false;
+
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i];
+      if (!task) continue;
+
+      const taskUnits = estimateTaskUnits(task);
+      const headerUnits = sectionHasBeenStarted ? 0 : PDF_SECTION_HEADER_UNITS;
+      const requiredUnits = headerUnits + taskUnits;
+
+      if (
+        currentUnits + requiredUnits > PDF_PAGE_CAPACITY &&
+        currentPage.sections.length > 0
+      ) {
+        if (currentSectionChunk.tasks.length > 0) {
+          currentPage.sections.push(currentSectionChunk);
+          currentSectionChunk = {
+            id: section.id,
+            title: section.title,
+            tasks: [],
+          };
+        }
+
+        pushCurrentPage();
+        sectionHasBeenStarted = false;
+      }
+
+      if (!sectionHasBeenStarted) {
+        currentUnits += PDF_SECTION_HEADER_UNITS;
+        sectionHasBeenStarted = true;
+      }
+
+      currentSectionChunk.tasks.push(task);
+      currentUnits += taskUnits;
+
+      const isLastTask = i === tasks.length - 1;
+
+      if (isLastTask) {
+        currentPage.sections.push(currentSectionChunk);
+      }
+    }
+  }
+
+  if (currentPage.sections.length > 0) {
+    pages.push(currentPage);
+  }
+
+  return pages;
+});
+
+const generatePdf = async () => {
   if (!sections.value.length) {
     toast.info('Ainda não existem secções no checklist.');
     return;
@@ -257,13 +393,13 @@ const generatePdf = async () => {
   isGeneratingPdf.value = true;
 
   try {
-    const canvas = await nuxtApp.$html2canvas(pdfRef.value, {
-      scale: 2,
-      backgroundColor: '#ffffff',
-      useCORS: true,
-    });
+    await nextTick();
+    await new Promise((resolve) => setTimeout(resolve, 150));
 
-    const imgData = canvas.toDataURL('image/png');
+    if (!pdfPageRefs.value.length) {
+      toast.error('Não foi possível preparar as páginas do PDF.');
+      return;
+    }
 
     const doc = new nuxtApp.$jsPDF({
       orientation: 'portrait',
@@ -274,20 +410,23 @@ const generatePdf = async () => {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
 
-    const imgWidth = pageWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    for (let i = 0; i < pdfPageRefs.value.length; i++) {
+      const pageEl = pdfPageRefs.value[i];
+      if (!pageEl) continue;
 
-    let heightLeft = imgHeight;
-    let position = 0;
+      const canvas = await nuxtApp.$html2canvas(pageEl, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+      });
 
-    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
+      const imgData = canvas.toDataURL('image/png');
 
-    while (heightLeft > 0) {
-      doc.addPage();
-      position -= pageHeight;
-      doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      if (i > 0) {
+        doc.addPage();
+      }
+
+      doc.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
     }
 
     doc.save(`checklist-evento-${eventStore!.eventSlug ?? 'evento'}.pdf`);
@@ -298,6 +437,14 @@ const generatePdf = async () => {
     isGeneratingPdf.value = false;
   }
 };
+
+watch(
+  pdfPages,
+  () => {
+    pdfPageRefs.value = [];
+  },
+  { deep: true },
+);
 </script>
 
 <template>
@@ -468,12 +615,16 @@ const generatePdf = async () => {
         @success="onSectionRemoved"
       />
 
-      <div class="fixed left-[-99999px] top-0">
-        <div ref="pdfRef">
+      <div class="fixed left-[-99999px] top-0 flex flex-col gap-6">
+        <div
+          v-for="(page, index) in pdfPages"
+          :key="`pdf-page-${index}`"
+          :ref="(el) => setPdfPageRef(el, index)"
+        >
           <ChecklistPdfDocument
             :couple-name="getCoupleName()"
-            document-title="Cronograma"
-            :sections="pdfSections"
+            document-title="Checklist do Evento"
+            :sections="page.sections"
           />
         </div>
       </div>

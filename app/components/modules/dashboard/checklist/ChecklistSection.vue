@@ -87,7 +87,7 @@ async function loadTasks() {
   query.has_Indefinite_Date = props.globalFilters.has_Indefinite_Date;
   query.pageNumber = 1;
 
-  await refreshTasks();
+  await refreshTasks({ force: true });
   localTasks.value = [...tasks.value];
   tasksCount.value = tasks.value.length;
 
@@ -108,7 +108,7 @@ async function toggleTask(task: ChecklistTask) {
   task.is_Completed = !task.is_Completed;
   try {
     await checklistService.toggleTaskComplete(task.id);
-    refreshTasks();
+    await loadTasks();
     emit('task-updated');
   } catch (e) {
     task.is_Completed = before;
