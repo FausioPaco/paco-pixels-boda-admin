@@ -81,7 +81,7 @@ const getTaskStatusLabel = (task: {
           >
             <div class="flex items-start gap-4">
               <div
-                class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border"
+                class="mt-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border"
                 :class="
                   task.is_Completed
                     ? 'border-success-500 bg-success-500'
@@ -90,16 +90,16 @@ const getTaskStatusLabel = (task: {
               >
                 <span
                   v-if="task.is_Completed"
-                  class="text-[11px] font-bold leading-none text-white"
+                  class="pb-3 text-[11px] font-bold leading-none text-white"
                 >
                   ✓
                 </span>
               </div>
 
-              <div class="min-w-0 flex-1">
+              <div class="min-w-0 flex-1 pb-2">
                 <div class="flex items-center justify-between gap-4">
                   <div
-                    class="text-grey-900 font-sans text-[15px] font-semibold leading-6"
+                    class="text-grey-900 font-sans text-[15px] font-semibold"
                   >
                     {{ task.title }}
                   </div>

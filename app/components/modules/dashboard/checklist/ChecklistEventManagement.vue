@@ -623,7 +623,7 @@ watch(
         >
           <ChecklistPdfDocument
             :couple-name="getCoupleName()"
-            document-title="Checklist do Evento"
+            document-title="Cronograma do Evento"
             :sections="page.sections"
           />
         </div>
