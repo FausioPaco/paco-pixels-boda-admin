@@ -97,4 +97,44 @@ export const getInvitationService = <T>(
       { method: 'post' },
     );
   },
+
+  async sendInvitationWhatsappToGuest(
+    eventId: number,
+    guestId: number,
+  ): Promise<SendWhatsAppOutboundToGuestResponse> {
+    return $fetch<SendWhatsAppOutboundToGuestResponse>(
+      `${INVITATIONS_RESOURCE}/Whatsapp/Guest`,
+      {
+        method: 'post',
+        query: { eventId, guestId },
+      },
+    );
+  },
+
+  async startSendInvitationsWhatsapp(
+    eventId: number,
+  ): Promise<StartWhatsAppOutboundJobResponse> {
+    return $fetch<StartWhatsAppOutboundJobResponse>(
+      `${INVITATIONS_RESOURCE}/Whatsapp/Start/${eventId}`,
+      {
+        method: 'post',
+      },
+    );
+  },
+
+  async getInvitationWhatsappJobStatus(
+    jobId: string,
+  ): Promise<WhatsAppOutboundJobStatus> {
+    return $fetch<WhatsAppOutboundJobStatus>(
+      `${INVITATIONS_RESOURCE}/Whatsapp/Status/${jobId}`,
+    );
+  },
+
+  async getInvitationWhatsappSummary(
+    eventId: number,
+  ): Promise<WhatsAppDeliverySummary> {
+    return $fetch<WhatsAppDeliverySummary>(
+      `${INVITATIONS_RESOURCE}/Whatsapp/Summary/${eventId}`,
+    );
+  },
 });

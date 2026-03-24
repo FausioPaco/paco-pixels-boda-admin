@@ -33,6 +33,13 @@ const waSummary = ref<WhatsAppQrLogsSummary | null>(null);
 const showWhatsAppSendStatusModal = ref(false);
 const showWhatsAppSendModal = ref(false);
 
+const showInvitationWhatsAppSendModal = ref(false);
+const activeWhatsAppMessageType = ref<GuestWhatsAppOutboundType>(
+  GuestWhatsAppOutboundType.QrCode,
+);
+
+const invitationWaSummary = ref<WhatsAppDeliverySummary | null>(null);
+
 const backgroundJobs = useBackgroundJobsStore();
 
 const qrJobKey = computed(
@@ -46,7 +53,15 @@ const invitationJobKey = computed(
 
 const whatsAppJobKey = computed(
   () =>
-    `whatsapp-send:${eventStore.eventId}:${eventStore.eventSlug}:${whatsAppTextColor.value}:${whatsAppForce.value}:${whatsAppReason.value ?? ''}`,
+    `whatsapp-send-qr:${eventStore.eventId}:${eventStore.eventSlug}:${whatsAppTextColor.value}:${whatsAppForce.value}:${whatsAppReason.value ?? ''}`,
+);
+
+const invitationWhatsAppJobKey = computed(
+  () => `whatsapp-send-invitation:${eventStore.eventId}`,
+);
+
+const invitationWhatsAppJob = computed(
+  () => backgroundJobs.getJobByKey(invitationWhatsAppJobKey.value).value,
 );
 
 const qrJob = computed(() => backgroundJobs.getJobByKey(qrJobKey.value).value);
@@ -55,6 +70,18 @@ const invitationJob = computed(
 );
 const waJob = computed(
   () => backgroundJobs.getJobByKey(whatsAppJobKey.value).value,
+);
+
+const activeWhatsAppJob = computed(() =>
+  activeWhatsAppMessageType.value === GuestWhatsAppOutboundType.Invitation
+    ? invitationWhatsAppJob.value
+    : waJob.value,
+);
+
+const activeWhatsAppSummary = computed(() =>
+  activeWhatsAppMessageType.value === GuestWhatsAppOutboundType.Invitation
+    ? invitationWaSummary.value
+    : waSummary.value,
 );
 
 const normalizeZipUrl = (zipUrl?: string | null) => {
@@ -130,7 +157,7 @@ const fetchWhatsAppSummary = async () => {
   }
 };
 
-const startBulkWhatsAppSend = async (payload: {
+const startBulkQRWhatsAppSend = async (payload: {
   color: ExportTextColor;
   force: boolean;
   reason?: string;
@@ -186,6 +213,58 @@ const startBulkWhatsAppSend = async (payload: {
   });
 };
 
+const startBulkInvitationWhatsAppSend = async () => {
+  activeWhatsAppMessageType.value = GuestWhatsAppOutboundType.Invitation;
+
+  showInvitationWhatsAppSendModal.value = false;
+  showWhatsAppSendStatusModal.value = true;
+  invitationWaSummary.value = null;
+
+  dismissedWhatsAppJobKeys.value = dismissedWhatsAppJobKeys.value.filter(
+    (key) => key !== invitationWhatsAppJobKey.value,
+  );
+
+  await backgroundJobs.startTrackedJob({
+    key: invitationWhatsAppJobKey.value,
+    kind: 'whatsapp-send',
+    title: 'Envio de convites via WhatsApp',
+    toastId: invitationWhatsAppJobKey.value,
+    eventId: eventStore.eventId!,
+    eventSlug: eventStore.eventSlug ?? undefined,
+    eventName: eventStore.eventName,
+    start: async () => {
+      const res = await invitationService.startSendInvitationsWhatsapp(
+        eventStore.eventId!,
+      );
+
+      return {
+        jobId: res.jobId,
+        total: res.total,
+        uiNote: res.uiNote ?? undefined,
+      };
+    },
+    onCompleted: async () => {
+      invitationWaSummary.value =
+        await invitationService.getInvitationWhatsappSummary(
+          eventStore.eventId!,
+        );
+      await refreshGuests({ force: true });
+      showWhatsAppSendStatusModal.value = true;
+    },
+    onFailed: async () => {
+      invitationWaSummary.value =
+        await invitationService.getInvitationWhatsappSummary(
+          eventStore.eventId!,
+        );
+      showWhatsAppSendStatusModal.value = true;
+    },
+    onCancelled: async () => {
+      invitationWaSummary.value = null;
+      showWhatsAppSendStatusModal.value = false;
+    },
+  });
+};
+
 const closeWhatsAppSendStatusModal = () => {
   if (waJob.value?.key) {
     if (!dismissedWhatsAppJobKeys.value.includes(waJob.value.key)) {
@@ -199,7 +278,7 @@ const closeWhatsAppSendStatusModal = () => {
 const dismissedWhatsAppJobKeys = ref<string[]>([]);
 
 watch(
-  waJob,
+  activeWhatsAppJob,
   (job, previousJob) => {
     if (!job) return;
 
@@ -225,7 +304,9 @@ const anyExportRunning = computed(
     invitationJob.value?.status === 'Pending' ||
     invitationJob.value?.status === 'Running' ||
     waJob.value?.status === 'Pending' ||
-    waJob.value?.status === 'Running',
+    waJob.value?.status === 'Running' ||
+    invitationWhatsAppJob.value?.status === 'Pending' ||
+    invitationWhatsAppJob.value?.status === 'Running',
 );
 
 const startExport = (exportOptions: ExportQROptions) => {
@@ -322,6 +403,23 @@ const activeExportModalJob = computed(() => {
               : 'Enviar QRs via WhatsApp'
           }}
         </BaseButton>
+
+        <BaseButton
+          v-if="canManageInvitations && canExport && !eventStore.eventModeView"
+          btn-type="outline-primary"
+          btn-size="sm"
+          icon="whatsapp"
+          :disabled="anyExportRunning"
+          class="animate-fadeIn"
+          @click="showInvitationWhatsAppSendModal = true"
+        >
+          {{
+            invitationWhatsAppJob?.status === 'Pending' ||
+            invitationWhatsAppJob?.status === 'Running'
+              ? `A enviar... ${invitationWhatsAppJob?.percent ?? 0}%`
+              : 'Enviar convites via WhatsApp'
+          }}
+        </BaseButton>
       </div>
     </template>
 
@@ -395,16 +493,23 @@ const activeExportModalJob = computed(() => {
     <LazyGuestsSendAllWhatsappQRCodesModal
       :show="showWhatsAppSendModal"
       @close-modal="showWhatsAppSendModal = false"
-      @send="startBulkWhatsAppSend"
+      @send="startBulkQRWhatsAppSend"
     />
 
     <GuestsWhatsAppSendStatusModal
       :show="showWhatsAppSendStatusModal"
-      :export-total="waJob?.total ?? 0"
-      :export-processed="waJob?.processed ?? 0"
-      :export-percent="waJob?.percent ?? 0"
-      :summary="waSummary"
+      :message-type="activeWhatsAppMessageType"
+      :export-total="activeWhatsAppJob?.total ?? 0"
+      :export-processed="activeWhatsAppJob?.processed ?? 0"
+      :export-percent="activeWhatsAppJob?.percent ?? 0"
+      :summary="activeWhatsAppSummary"
       @close-modal="closeWhatsAppSendStatusModal"
+    />
+
+    <LazyGuestsSendAllWhatsappInvitationsModal
+      :show="showInvitationWhatsAppSendModal"
+      @close-modal="showInvitationWhatsAppSendModal = false"
+      @send="startBulkInvitationWhatsAppSend"
     />
   </BaseCard>
 </template>

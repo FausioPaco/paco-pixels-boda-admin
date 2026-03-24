@@ -18,8 +18,6 @@ const toast = useToast();
 const showFormModal = ref<boolean>(false);
 const showRemoveModal = ref<boolean>(false);
 const showExportFormatModal = ref<boolean>(false);
-const showWhatsAppColorModal = ref(false);
-const showWhatsAppResendModal = ref(false);
 
 const eventStore = useEventStore();
 
@@ -41,28 +39,14 @@ const { apiImageUrl } = useRuntimeConfig().public;
 
 const eventService = getEventService(nuxtApp.$api);
 const { clientCode } = useRuntimeConfig().public;
-const isSendingWhatsApp = ref(false);
 
-const hasPreviousWhatsAppSend = computed(() => {
-  const status = guestDetails.value?.whatsAppQrStatus?.toLowerCase();
+const showWhatsAppColorModal = ref(false);
+const showWhatsAppResendQRCodeModal = ref(false);
 
-  return Boolean(
-    guestDetails.value?.whatsAppQrAcceptedAt ||
-      guestDetails.value?.whatsAppQrDeliveredAt ||
-      guestDetails.value?.whatsAppQrSeenAt ||
-      guestDetails.value?.whatsAppQrSentAt ||
-      (status &&
-        [
-          'accepted',
-          'delivered',
-          'seen',
-          'delivery_unknown',
-          'failed_temporary',
-          'failed',
-          'needs_review',
-        ].includes(status)),
-  );
-});
+const isSendingQRCodeWhatsApp = ref(false);
+const isSendingInvitationWhatsApp = ref(false);
+
+const showInvitationWhatsAppResendModal = ref(false);
 
 async function fetchDeskById(id: number) {
   if (!id) return;
@@ -190,16 +174,16 @@ const onConfirmWhatsAppColor = async (options: ExportQROptions) => {
   textColorExport.value = options.color;
   showWhatsAppColorModal.value = false;
 
-  if (hasPreviousWhatsAppSend.value) {
-    showWhatsAppResendModal.value = true;
+  if (hasPreviousQRCodeWhatsAppSend.value) {
+    showWhatsAppResendQRCodeModal.value = true;
     return;
   }
 
   await sendQrWhatsapp();
 };
 
-const confirmWhatsAppResend = async () => {
-  showWhatsAppResendModal.value = false;
+const confirmWhatsAppQrResend = async () => {
+  showWhatsAppResendQRCodeModal.value = false;
   await sendQrWhatsapp(true);
 };
 
@@ -248,9 +232,50 @@ const generateInvitationPng = async () => {
   }
 };
 
+const sortedOutbounds = computed(() =>
+  sortOutboundsByPriority(guestDetails.value?.whatsAppOutbounds),
+);
+
+const outboundTypeLabelMap: Record<GuestWhatsAppOutboundType, string> = {
+  [GuestWhatsAppOutboundType.Unknown]: 'Desconhecido',
+  [GuestWhatsAppOutboundType.QrCode]: 'QR Code',
+  [GuestWhatsAppOutboundType.Invitation]: 'Convite',
+  [GuestWhatsAppOutboundType.SaveTheDate]: 'Save the date',
+  [GuestWhatsAppOutboundType.Reminder]: 'Lembrete',
+};
+
+const getOutboundTypeLabel = (type: GuestWhatsAppOutboundType) =>
+  outboundTypeLabelMap[type] ?? 'Desconhecido';
+
+const visibleOutbounds = computed(() =>
+  (sortedOutbounds.value ?? []).filter((item) => {
+    return item.type !== GuestWhatsAppOutboundType.QrCode;
+  }),
+);
+
+const invitationOutbound = computed(() => {
+  return (guestDetails.value?.whatsAppOutbounds ?? []).find(
+    (item) => item.type === GuestWhatsAppOutboundType.Invitation,
+  );
+});
+
+const onSendInvitationWhatsapp = async () => {
+  if (hasPreviousInvitationWhatsAppSend.value) {
+    showInvitationWhatsAppResendModal.value = true;
+    return;
+  }
+
+  await sendInvitationWhatsapp();
+};
+
+const confirmInvitationWhatsAppResend = async () => {
+  showInvitationWhatsAppResendModal.value = false;
+  await sendInvitationWhatsapp();
+};
+
 const sendQrWhatsapp = async (force = false) => {
   try {
-    isSendingWhatsApp.value = true;
+    isSendingQRCodeWhatsApp.value = true;
 
     const eventId = eventStore.ensureSelected();
 
@@ -291,30 +316,99 @@ const sendQrWhatsapp = async (force = false) => {
     console.error(err);
     toast.error('Erro ao enviar o QR via WhatsApp.');
   } finally {
-    isSendingWhatsApp.value = false;
+    isSendingQRCodeWhatsApp.value = false;
   }
 };
 
-const sortedOutbounds = computed(() =>
-  sortOutboundsByPriority(guestDetails.value?.whatsAppOutbounds),
-);
+const sendInvitationWhatsapp = async () => {
+  try {
+    isSendingInvitationWhatsApp.value = true;
 
-const outboundTypeLabelMap: Record<GuestWhatsAppOutboundType, string> = {
-  [GuestWhatsAppOutboundType.Unknown]: 'Desconhecido',
-  [GuestWhatsAppOutboundType.QrCode]: 'QR Code',
-  [GuestWhatsAppOutboundType.Invitation]: 'Convite',
-  [GuestWhatsAppOutboundType.SaveTheDate]: 'Save the date',
-  [GuestWhatsAppOutboundType.Reminder]: 'Lembrete',
+    const eventId = eventStore.ensureSelected();
+
+    const res: SendWhatsAppOutboundToGuestResponse =
+      await invitationService.sendInvitationWhatsappToGuest(
+        eventId,
+        guestDetails.value.id,
+      );
+
+    await refreshGuest({ force: true });
+
+    const normalizedStatus = res.status?.toLowerCase();
+
+    if (normalizedStatus === 'invalid_phone') {
+      toast.info(res.reason || 'O convidado não possui um número válido.');
+      return;
+    }
+
+    if (normalizedStatus === 'accepted') {
+      toast.success(
+        'Convite enviado via WhatsApp com sucesso. A mensagem foi aceite pela plataforma e aguarda confirmação final.',
+      );
+      return;
+    }
+
+    if (normalizedStatus === 'failed') {
+      toast.error(res.reason || 'Erro ao enviar o convite via WhatsApp.');
+      return;
+    }
+
+    if (res.note) {
+      toast.info(res.note);
+      return;
+    }
+
+    toast.success('Envio do convite via WhatsApp iniciado com sucesso.');
+  } catch (err) {
+    console.error(err);
+    toast.error('Erro ao enviar o convite via WhatsApp.');
+  } finally {
+    isSendingInvitationWhatsApp.value = false;
+  }
 };
 
-const getOutboundTypeLabel = (type: GuestWhatsAppOutboundType) =>
-  outboundTypeLabelMap[type] ?? 'Desconhecido';
+const hasPreviousQRCodeWhatsAppSend = computed(() => {
+  const status = guestDetails.value?.whatsAppQrStatus?.toLowerCase();
 
-const visibleOutbounds = computed(() =>
-  (sortedOutbounds.value ?? []).filter((item) => {
-    return item.type !== GuestWhatsAppOutboundType.QrCode;
-  }),
-);
+  return Boolean(
+    guestDetails.value?.whatsAppQrAcceptedAt ||
+      guestDetails.value?.whatsAppQrDeliveredAt ||
+      guestDetails.value?.whatsAppQrSeenAt ||
+      guestDetails.value?.whatsAppQrSentAt ||
+      (status &&
+        [
+          'accepted',
+          'delivered',
+          'seen',
+          'delivery_unknown',
+          'failed_temporary',
+          'failed',
+          'needs_review',
+        ].includes(status)),
+  );
+});
+
+const hasPreviousInvitationWhatsAppSend = computed(() => {
+  const outbound = invitationOutbound.value;
+
+  if (!outbound) return false;
+
+  return Boolean(
+    outbound.acceptedAt ||
+      outbound.deliveredAt ||
+      outbound.seenAt ||
+      outbound.sentAt ||
+      [
+        'accepted',
+        'delivered',
+        'seen',
+        'delivery_unknown',
+        'failed_temporary',
+        'failed',
+        'needs_review',
+      ].includes(outbound.status),
+  );
+});
 
 onMounted(() => {
   const componentName = siteConfig.qrCodeComponent;
@@ -376,11 +470,26 @@ onMounted(() => {
               btn-type="outline-primary"
               btn-size="sm"
               icon="whatsapp"
-              :disabled="isSendingWhatsApp"
+              :disabled="isSendingQRCodeWhatsApp"
               class="animate-fadeIn"
               @click="showWhatsAppColorModal = true"
             >
-              {{ isSendingWhatsApp ? 'A enviar...' : 'Enviar QR Code' }}
+              {{ isSendingQRCodeWhatsApp ? 'A enviar...' : 'Enviar QR Code' }}
+            </BaseButton>
+
+            <BaseButton
+              v-if="canExportInvitation"
+              btn-type="outline-primary"
+              btn-size="sm"
+              icon="whatsapp"
+              :disabled="isSendingInvitationWhatsApp"
+              @click="onSendInvitationWhatsapp"
+            >
+              {{
+                isSendingInvitationWhatsApp
+                  ? 'A enviar convite...'
+                  : 'Enviar convite'
+              }}
             </BaseButton>
           </div>
         </div>
@@ -580,12 +689,20 @@ onMounted(() => {
       @export="onConfirmWhatsAppColor"
     />
 
-    <LazyGuestsWhatsAppResendModal
-      :show="showWhatsAppResendModal"
-      :loading="isSendingWhatsApp"
+    <LazyGuestsWhatsAppResendQRCodeModal
+      :show="showWhatsAppResendQRCodeModal"
+      :loading="isSendingQRCodeWhatsApp"
       :status-label="guestDetails?.whatsAppQrStatusLabel"
-      @close-modal="showWhatsAppResendModal = false"
-      @confirm="confirmWhatsAppResend"
+      @close-modal="showWhatsAppResendQRCodeModal = false"
+      @confirm="confirmWhatsAppQrResend"
+    />
+
+    <LazyGuestsWhatsAppResendInvitationModal
+      :show="showInvitationWhatsAppResendModal"
+      :loading="isSendingInvitationWhatsApp"
+      :status-label="invitationOutbound?.statusLabel"
+      @close-modal="showInvitationWhatsAppResendModal = false"
+      @confirm="confirmInvitationWhatsAppResend"
     />
   </BaseCard>
 </template>

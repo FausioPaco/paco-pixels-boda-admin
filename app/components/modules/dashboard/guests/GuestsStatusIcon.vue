@@ -27,11 +27,14 @@ const showQr = computed(
 
 const visibleOutbounds = computed(() => {
   return sortOutboundsByPriority(props.guest.whatsAppOutbounds).filter(
-    hasVisibleOutboundActivity,
+    (item) =>
+      item.type !== GuestWhatsAppOutboundType.QrCode &&
+      hasVisibleOutboundActivity(item),
   );
 });
 
 const inlineOutbounds = computed(() => visibleOutbounds.value.slice(0, 2));
+
 const hiddenOutboundsCount = computed(() =>
   Math.max(visibleOutbounds.value.length - inlineOutbounds.value.length, 0),
 );
