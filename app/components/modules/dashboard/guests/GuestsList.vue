@@ -4,11 +4,15 @@ import { useGuestCategories } from '~/composables/useGuestCategories';
 import { getGuestService } from '~/services/guestService';
 
 const { eventInitials } = useEventStore();
+
 const queryParameters = reactive<GuestParameters>({
   guestLocalId: undefined,
   categoryId: undefined,
   availability_Type: '',
   whatsAppQrStatus: '',
+  whatsAppOutboundType: '',
+  whatsAppOutboundStatus: '',
+  whatsAppFilter: '',
   searchQuery: '',
   startDate: '',
   endDate: '',
@@ -16,6 +20,7 @@ const queryParameters = reactive<GuestParameters>({
   pageNumber: 1,
   pageSize: 10,
 });
+
 const { isAdministrator, isSuperAdministrator } = useAuthStore();
 const { guests, pagination, isRefreshing, isError, refreshGuests } =
   await useGuestsList(queryParameters);
@@ -55,25 +60,182 @@ const giftOptions: SelectOption[] = [
   { id: 'false', value: false, name: 'Não levou presente' },
 ];
 
-const whatsAppStatusOptions: SelectOption[] = [
-  { id: 'not_sent', value: 'not_sent', name: 'Por enviar' },
-  { id: 'pending', value: 'pending', name: 'Em processamento' },
-  { id: 'accepted', value: 'accepted', name: 'Aceite pela plataforma' },
-  { id: 'delivered', value: 'delivered', name: 'Entregue' },
-  { id: 'seen', value: 'seen', name: 'Vista' },
-  { id: 'invalid_phone', value: 'invalid_phone', name: 'Número inválido' },
+const whatsAppFilterOptions: SelectOption[] = [
+  { id: 'qr_not_sent', value: 'qr:not_sent', name: 'QR Code — Por enviar' },
+  { id: 'qr_pending', value: 'qr:pending', name: 'QR Code — Em processamento' },
   {
-    id: 'failed_temporary',
-    value: 'failed_temporary',
-    name: 'Falha temporária',
+    id: 'qr_accepted',
+    value: 'qr:accepted',
+    name: 'QR Code — Aceite pela plataforma',
   },
-  { id: 'failed', value: 'failed', name: 'Falha no envio' },
+  { id: 'qr_delivered', value: 'qr:delivered', name: 'QR Code — Entregue' },
+  { id: 'qr_seen', value: 'qr:seen', name: 'QR Code — Visualizado' },
   {
-    id: 'delivery_unknown',
-    value: 'delivery_unknown',
-    name: 'Entrega por confirmar',
+    id: 'qr_invalid_phone',
+    value: 'qr:invalid_phone',
+    name: 'QR Code — Número inválido',
   },
-  { id: 'needs_review', value: 'needs_review', name: 'Precisa de verificação' },
+  {
+    id: 'qr_failed_temporary',
+    value: 'qr:failed_temporary',
+    name: 'QR Code — Falha temporária',
+  },
+  { id: 'qr_failed', value: 'qr:failed', name: 'QR Code — Falha no envio' },
+  {
+    id: 'qr_delivery_unknown',
+    value: 'qr:delivery_unknown',
+    name: 'QR Code — Entrega por confirmar',
+  },
+  {
+    id: 'qr_needs_review',
+    value: 'qr:needs_review',
+    name: 'QR Code — Precisa de verificação',
+  },
+
+  {
+    id: 'invitation_not_sent',
+    value: '2:not_sent',
+    name: 'Convite — Por enviar',
+  },
+  {
+    id: 'invitation_pending',
+    value: '2:pending',
+    name: 'Convite — Em processamento',
+  },
+  {
+    id: 'invitation_accepted',
+    value: '2:accepted',
+    name: 'Convite — Aceite pela plataforma',
+  },
+  {
+    id: 'invitation_delivered',
+    value: '2:delivered',
+    name: 'Convite — Entregue',
+  },
+  { id: 'invitation_seen', value: '2:seen', name: 'Convite — Visualizado' },
+  {
+    id: 'invitation_invalid_phone',
+    value: '2:invalid_phone',
+    name: 'Convite — Número inválido',
+  },
+  {
+    id: 'invitation_failed_temporary',
+    value: '2:failed_temporary',
+    name: 'Convite — Falha temporária',
+  },
+  {
+    id: 'invitation_failed',
+    value: '2:failed',
+    name: 'Convite — Falha no envio',
+  },
+  {
+    id: 'invitation_delivery_unknown',
+    value: '2:delivery_unknown',
+    name: 'Convite — Entrega por confirmar',
+  },
+  {
+    id: 'invitation_needs_review',
+    value: '2:needs_review',
+    name: 'Convite — Precisa de verificação',
+  },
+
+  {
+    id: 'save_the_date_not_sent',
+    value: '3:not_sent',
+    name: 'Save the date — Por enviar',
+  },
+  {
+    id: 'save_the_date_pending',
+    value: '3:pending',
+    name: 'Save the date — Em processamento',
+  },
+  {
+    id: 'save_the_date_accepted',
+    value: '3:accepted',
+    name: 'Save the date — Aceite pela plataforma',
+  },
+  {
+    id: 'save_the_date_delivered',
+    value: '3:delivered',
+    name: 'Save the date — Entregue',
+  },
+  {
+    id: 'save_the_date_seen',
+    value: '3:seen',
+    name: 'Save the date — Visualizado',
+  },
+  {
+    id: 'save_the_date_invalid_phone',
+    value: '3:invalid_phone',
+    name: 'Save the date — Número inválido',
+  },
+  {
+    id: 'save_the_date_failed_temporary',
+    value: '3:failed_temporary',
+    name: 'Save the date — Falha temporária',
+  },
+  {
+    id: 'save_the_date_failed',
+    value: '3:failed',
+    name: 'Save the date — Falha no envio',
+  },
+  {
+    id: 'save_the_date_delivery_unknown',
+    value: '3:delivery_unknown',
+    name: 'Save the date — Entrega por confirmar',
+  },
+  {
+    id: 'save_the_date_needs_review',
+    value: '3:needs_review',
+    name: 'Save the date — Precisa de verificação',
+  },
+
+  {
+    id: 'reminder_not_sent',
+    value: '4:not_sent',
+    name: 'Lembrete — Por enviar',
+  },
+  {
+    id: 'reminder_pending',
+    value: '4:pending',
+    name: 'Lembrete — Em processamento',
+  },
+  {
+    id: 'reminder_accepted',
+    value: '4:accepted',
+    name: 'Lembrete — Aceite pela plataforma',
+  },
+  {
+    id: 'reminder_delivered',
+    value: '4:delivered',
+    name: 'Lembrete — Entregue',
+  },
+  { id: 'reminder_seen', value: '4:seen', name: 'Lembrete — Visualizado' },
+  {
+    id: 'reminder_invalid_phone',
+    value: '4:invalid_phone',
+    name: 'Lembrete — Número inválido',
+  },
+  {
+    id: 'reminder_failed_temporary',
+    value: '4:failed_temporary',
+    name: 'Lembrete — Falha temporária',
+  },
+  {
+    id: 'reminder_failed',
+    value: '4:failed',
+    name: 'Lembrete — Falha no envio',
+  },
+  {
+    id: 'reminder_delivery_unknown',
+    value: '4:delivery_unknown',
+    name: 'Lembrete — Entrega por confirmar',
+  },
+  {
+    id: 'reminder_needs_review',
+    value: '4:needs_review',
+    name: 'Lembrete — Precisa de verificação',
+  },
 ];
 
 const debouncedSearch = useDebounceFn(() => {
@@ -198,6 +360,38 @@ onMounted(() => {
   refreshDesks({ force: true });
   refreshGuests({ force: true });
 });
+
+watch(
+  () => queryParameters.whatsAppFilter,
+  (value) => {
+    queryParameters.whatsAppQrStatus = '';
+    queryParameters.whatsAppOutboundType = '';
+    queryParameters.whatsAppOutboundStatus = '';
+
+    if (!value) {
+      queryParameters.pageNumber = 1;
+      return;
+    }
+
+    const [channel, status] = String(value).split(':');
+
+    if (channel === 'qr') {
+      queryParameters.whatsAppQrStatus =
+        (status as GuestWhatsAppQrStatus) || '';
+    } else {
+      const parsedType = Number(channel);
+
+      queryParameters.whatsAppOutboundType = Number.isNaN(parsedType)
+        ? ''
+        : (parsedType as GuestWhatsAppOutboundType);
+
+      queryParameters.whatsAppOutboundStatus =
+        (status as GuestWhatsAppDeliveryStatus) || '';
+    }
+
+    queryParameters.pageNumber = 1;
+  },
+);
 </script>
 <template>
   <section
@@ -266,10 +460,10 @@ onMounted(() => {
           />
 
           <BaseSelect
-            id="whatsAppStatus"
-            v-model="queryParameters.whatsAppQrStatus"
-            label="Envios por WhatsApp (QR Codes): "
-            :options="whatsAppStatusOptions"
+            id="whatsAppFilter"
+            v-model="queryParameters.whatsAppFilter"
+            label="Envios por WhatsApp: "
+            :options="whatsAppFilterOptions"
             empty-message="Todos estados"
           />
         </div>

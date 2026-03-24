@@ -57,13 +57,24 @@ export const getGuestService = <T>($fetch: $Fetch<T, NitroFetchRequest>) => ({
     });
   },
 
-  async getGuest(guestId: number | string): Promise<Guest> {
-    return $fetch<Guest>(`${RESOURCE}/Get/${guestId}`);
+  async getGuest(
+    guestId: number | string,
+    whatsAppOutboundType?: GuestWhatsAppOutboundType,
+  ): Promise<Guest> {
+    return $fetch<Guest>(`${RESOURCE}/Get/${guestId}`, {
+      params: {
+        whatsAppOutboundType,
+      },
+    });
   },
 
-  async getGuestByLocalId(eventId: number, guestId: number): Promise<Guest> {
+  async getGuestByLocalId(
+    eventId: number,
+    guestId: number,
+    whatsAppOutboundType?: GuestWhatsAppOutboundType,
+  ): Promise<Guest> {
     return $fetch<Guest>(`${RESOURCE}/GetLocal/${eventId}`, {
-      params: { guestId },
+      params: { guestId, whatsAppOutboundType },
     });
   },
 

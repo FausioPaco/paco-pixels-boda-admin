@@ -94,7 +94,7 @@ watch(
   { immediate: true },
 );
 
-const exportInvitationAsImage = async () => {
+const exportQRImage = async () => {
   try {
     if (!import.meta.client) return;
 
@@ -129,7 +129,7 @@ const exportInvitationAsImage = async () => {
   }
 };
 
-const exportInvitationAsPdf = async () => {
+const exportQRPDF = async () => {
   try {
     isExporting.value = true;
     showForExport.value = true;
@@ -178,9 +178,9 @@ const startExport = (exportOptions: ExportQROptions) => {
   textColorExport.value = exportOptions.color;
 
   if (exportOptions.format === 'png') {
-    exportInvitationAsImage();
+    exportQRImage();
   } else if (exportOptions.format === 'pdf') {
-    exportInvitationAsPdf();
+    exportQRPDF();
   }
 
   showExportFormatModal.value = false;
@@ -295,6 +295,27 @@ const sendQrWhatsapp = async (force = false) => {
   }
 };
 
+const sortedOutbounds = computed(() =>
+  sortOutboundsByPriority(guestDetails.value?.whatsAppOutbounds),
+);
+
+const outboundTypeLabelMap: Record<GuestWhatsAppOutboundType, string> = {
+  [GuestWhatsAppOutboundType.Unknown]: 'Desconhecido',
+  [GuestWhatsAppOutboundType.QrCode]: 'QR Code',
+  [GuestWhatsAppOutboundType.Invitation]: 'Convite',
+  [GuestWhatsAppOutboundType.SaveTheDate]: 'Save the date',
+  [GuestWhatsAppOutboundType.Reminder]: 'Lembrete',
+};
+
+const getOutboundTypeLabel = (type: GuestWhatsAppOutboundType) =>
+  outboundTypeLabelMap[type] ?? 'Desconhecido';
+
+const visibleOutbounds = computed(() =>
+  (sortedOutbounds.value ?? []).filter((item) => {
+    return item.type !== GuestWhatsAppOutboundType.QrCode;
+  }),
+);
+
 onMounted(() => {
   const componentName = siteConfig.qrCodeComponent;
 
@@ -407,7 +428,7 @@ onMounted(() => {
             :description="guest.additional_Comments"
           />
 
-          <BaseDescriptionListItem title="WhatsApp">
+          <BaseDescriptionListItem title="WhatsApp - QR Code">
             <GuestsWhatsAppStatusChip
               :status="guestDetails.whatsAppQrStatus"
               :label="guestDetails.whatsAppQrStatusLabel"
@@ -416,13 +437,13 @@ onMounted(() => {
 
           <BaseDescriptionListItem
             v-if="guestDetails.whatsAppQrAcceptedAt"
-            title="Aceite pela plataforma em"
+            title="WhatsApp - QR Code aceite em"
             :description="formatDateWithTime(guestDetails.whatsAppQrAcceptedAt)"
           />
 
           <BaseDescriptionListItem
             v-if="guestDetails.whatsAppQrDeliveredAt"
-            title="Entregue em"
+            title="WhatsApp - QR Code entregue em"
             :description="
               formatDateWithTime(guestDetails.whatsAppQrDeliveredAt)
             "
@@ -430,21 +451,62 @@ onMounted(() => {
 
           <BaseDescriptionListItem
             v-if="guestDetails.whatsAppQrSeenAt"
-            title="Visualizado em"
+            title="WhatsApp - QR Code visualizado em"
             :description="formatDateWithTime(guestDetails.whatsAppQrSeenAt)"
           />
 
           <BaseDescriptionListItem
             v-if="guestDetails.whatsAppQrErrorMessage"
-            title="Detalhe do envio (WhatsApp)"
+            title="WhatsApp - Detalhe do QR Code"
             :description="guestDetails.whatsAppQrErrorMessage"
           />
 
           <BaseDescriptionListItem
             v-else-if="guestDetails.whatsAppQrSkipReason"
-            title="Detalhe do envio (WhatsApp)"
+            title="WhatsApp - Detalhe do QR Code"
             :description="guestDetails.whatsAppQrSkipReason"
           />
+
+          <template v-for="item in visibleOutbounds" :key="item.type">
+            <BaseDescriptionListItem
+              :title="`WhatsApp - ${getOutboundTypeLabel(item.type)}`"
+            >
+              <GuestsWhatsAppStatusChip
+                :status="item.status"
+                :label="item.statusLabel"
+              />
+            </BaseDescriptionListItem>
+
+            <BaseDescriptionListItem
+              v-if="item.acceptedAt"
+              :title="`WhatsApp - ${getOutboundTypeLabel(item.type)} aceite em`"
+              :description="formatDateWithTime(item.acceptedAt)"
+            />
+
+            <BaseDescriptionListItem
+              v-if="item.deliveredAt"
+              :title="`WhatsApp - ${getOutboundTypeLabel(item.type)} entregue em`"
+              :description="formatDateWithTime(item.deliveredAt)"
+            />
+
+            <BaseDescriptionListItem
+              v-if="item.seenAt"
+              :title="`WhatsApp - ${getOutboundTypeLabel(item.type)} visualizado em`"
+              :description="formatDateWithTime(item.seenAt)"
+            />
+
+            <BaseDescriptionListItem
+              v-if="item.errorMessage"
+              :title="`WhatsApp - Detalhe do ${getOutboundTypeLabel(item.type)}`"
+              :description="item.errorMessage"
+            />
+
+            <BaseDescriptionListItem
+              v-else-if="item.skipReason"
+              :title="`WhatsApp - Detalhe do ${getOutboundTypeLabel(item.type)}`"
+              :description="item.skipReason"
+            />
+          </template>
         </BaseDescriptionList>
 
         <div class="my-4 flex flex-wrap items-center space-x-2">

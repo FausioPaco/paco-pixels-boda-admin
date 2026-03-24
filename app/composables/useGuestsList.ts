@@ -11,7 +11,6 @@ export const useGuestsList = async (
 
   const eventStore = useEventStore();
   const eventId = eventStore.ensureSelected();
-
   const queryParameters =
     (overrides as GuestParameters | undefined) ??
     reactive<GuestParameters>({
@@ -20,6 +19,8 @@ export const useGuestsList = async (
       availability_Type: '',
       giftBrought: undefined,
       whatsAppQrStatus: undefined,
+      whatsAppOutboundType: undefined,
+      whatsAppOutboundStatus: undefined,
       searchQuery: '',
       startDate: '',
       endDate: '',
@@ -41,6 +42,8 @@ export const useGuestsList = async (
       queryParameters.availability_Type,
       queryParameters.giftBrought,
       queryParameters.whatsAppQrStatus,
+      queryParameters.whatsAppOutboundType,
+      queryParameters.whatsAppOutboundStatus,
       queryParameters.searchQuery,
       queryParameters.startDate,
       queryParameters.endDate,
