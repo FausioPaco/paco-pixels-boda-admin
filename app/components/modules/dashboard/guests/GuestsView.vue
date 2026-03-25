@@ -249,7 +249,11 @@ const getOutboundTypeLabel = (type: GuestWhatsAppOutboundType) =>
 
 const visibleOutbounds = computed(() =>
   (sortedOutbounds.value ?? []).filter((item) => {
-    return item.type !== GuestWhatsAppOutboundType.QrCode;
+    return (
+      item.type !== GuestWhatsAppOutboundType.QrCode &&
+      item.type !== GuestWhatsAppOutboundType.SaveTheDate &&
+      item.type !== GuestWhatsAppOutboundType.Reminder
+    );
   }),
 );
 
@@ -439,58 +443,66 @@ onMounted(() => {
         <div
           class="mb-3 flex flex-col justify-between md:items-center lg:flex-row"
         >
-          <div class="my-3 flex gap-2">
-            <BaseButton
-              v-if="eventStore.eventQRCodeUrl"
-              btn-type="outline-primary"
-              btn-size="sm"
-              icon="download"
-              :disabled="isExporting"
-              class="animate-fadeIn"
-              @click="showExportFormatModal = true"
-            >
-              {{ isExporting ? 'A gerar QR Code...' : 'Gerar QR Code' }}
-            </BaseButton>
+          <div class="flex flex-col gap-2">
+            <div class="flex flex-wrap gap-2">
+              <BaseButton
+                v-if="eventStore.eventQRCodeUrl"
+                btn-type="outline-primary"
+                btn-size="sm"
+                icon="download"
+                :icon-size="16"
+                :disabled="isExporting"
+                class="animate-fadeIn"
+                @click="showExportFormatModal = true"
+              >
+                {{ isExporting ? 'A gerar QR Code...' : 'Gerar QR Code' }}
+              </BaseButton>
 
-            <BaseButton
-              v-if="canExportInvitation"
-              btn-type="outline-primary"
-              btn-size="sm"
-              icon="download"
-              :disabled="isGeneratingInvitation"
-              @click="generateInvitationPng"
-            >
-              {{
-                isGeneratingInvitation ? 'A gerar convite...' : 'Gerar Convite'
-              }}
-            </BaseButton>
-
-            <BaseButton
-              v-if="eventStore.eventQRCodeUrl"
-              btn-type="outline-primary"
-              btn-size="sm"
-              icon="whatsapp"
-              :disabled="isSendingQRCodeWhatsApp"
-              class="animate-fadeIn"
-              @click="showWhatsAppColorModal = true"
-            >
-              {{ isSendingQRCodeWhatsApp ? 'A enviar...' : 'Enviar QR Code' }}
-            </BaseButton>
-
-            <BaseButton
-              v-if="canExportInvitation"
-              btn-type="outline-primary"
-              btn-size="sm"
-              icon="whatsapp"
-              :disabled="isSendingInvitationWhatsApp"
-              @click="onSendInvitationWhatsapp"
-            >
-              {{
-                isSendingInvitationWhatsApp
-                  ? 'A enviar convite...'
-                  : 'Enviar convite'
-              }}
-            </BaseButton>
+              <BaseButton
+                v-if="eventStore.eventQRCodeUrl"
+                btn-type="outline-primary"
+                btn-size="sm"
+                icon="whatsapp"
+                :icon-size="16"
+                :disabled="isSendingQRCodeWhatsApp"
+                class="animate-fadeIn"
+                @click="showWhatsAppColorModal = true"
+              >
+                {{ isSendingQRCodeWhatsApp ? 'A enviar...' : 'Enviar QR Code' }}
+              </BaseButton>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <BaseButton
+                v-if="canExportInvitation"
+                btn-type="outline-primary"
+                btn-size="sm"
+                icon="download"
+                :icon-size="16"
+                :disabled="isGeneratingInvitation"
+                @click="generateInvitationPng"
+              >
+                {{
+                  isGeneratingInvitation
+                    ? 'A gerar convite...'
+                    : 'Gerar Convite'
+                }}
+              </BaseButton>
+              <BaseButton
+                v-if="canExportInvitation"
+                btn-type="outline-primary"
+                btn-size="sm"
+                icon="whatsapp"
+                :icon-size="16"
+                :disabled="isSendingInvitationWhatsApp"
+                @click="onSendInvitationWhatsapp"
+              >
+                {{
+                  isSendingInvitationWhatsApp
+                    ? 'A enviar convite...'
+                    : 'Enviar convite'
+                }}
+              </BaseButton>
+            </div>
           </div>
         </div>
 

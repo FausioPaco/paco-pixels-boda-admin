@@ -11,6 +11,7 @@ export const useGuestsList = async (
 
   const eventStore = useEventStore();
   const eventId = eventStore.ensureSelected();
+
   const queryParameters =
     (overrides as GuestParameters | undefined) ??
     reactive<GuestParameters>({
@@ -32,6 +33,7 @@ export const useGuestsList = async (
   queryParameters.eventId = eventId;
 
   const nuxtApp = useNuxtApp();
+
   const key = computed(() =>
     [
       'guests-list',
@@ -52,10 +54,28 @@ export const useGuestsList = async (
     ].join('|'),
   );
 
+  const watchedQueryParams = computed(() => [
+    queryParameters.eventId,
+    queryParameters.guestId,
+    queryParameters.guestLocalId,
+    queryParameters.categoryId,
+    queryParameters.availability_Type,
+    queryParameters.giftBrought,
+    queryParameters.whatsAppQrStatus,
+    queryParameters.whatsAppOutboundType,
+    queryParameters.whatsAppOutboundStatus,
+    queryParameters.searchQuery,
+    queryParameters.startDate,
+    queryParameters.endDate,
+    queryParameters.pageNumber,
+    queryParameters.pageSize,
+  ]);
+
   const { data, refresh, status } = await useLazyAsyncData(
     key,
     () => getGuestService(nuxtApp.$api).getAllGuests(toRaw(queryParameters)),
     {
+      watch: [watchedQueryParams],
       transform(input) {
         const { data, ...paginationData } = input;
         return {
@@ -90,10 +110,10 @@ export const useGuestsList = async (
   return {
     guests,
     pagination,
-    isIdle: status.value === 'idle',
-    isRefreshing: status.value === 'pending',
-    isError: status.value === 'error',
-    isSuccess: status.value === 'success',
+    isIdle: computed(() => status.value === 'idle'),
+    isRefreshing: computed(() => status.value === 'pending'),
+    isError: computed(() => status.value === 'error'),
+    isSuccess: computed(() => status.value === 'success'),
     refreshGuests,
   };
 };

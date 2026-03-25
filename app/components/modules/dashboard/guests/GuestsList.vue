@@ -262,8 +262,8 @@ function onPageSelected(newPage: number) {
 
 const isFirstTime = computed(
   () =>
-    !isRefreshing &&
-    !isError &&
+    !isRefreshing.value &&
+    !isError.value &&
     guests.value.length === 0 &&
     searchQuery.value === '' &&
     queryParameters.availability_Type === '',
@@ -356,42 +356,74 @@ const openArrivalAction = (g: Guest) => {
   showArrivedModal.value = true;
 };
 
-onMounted(() => {
-  refreshDesks({ force: true });
-  refreshGuests({ force: true });
-});
-
 watch(
   () => queryParameters.whatsAppFilter,
-  (value) => {
+  async (value) => {
     queryParameters.whatsAppQrStatus = '';
     queryParameters.whatsAppOutboundType = '';
     queryParameters.whatsAppOutboundStatus = '';
+    queryParameters.pageNumber = 1;
 
-    if (!value) {
-      queryParameters.pageNumber = 1;
+    if (!value) return;
+
+    const filter = String(value).trim();
+
+    // Formato QR: qr_delivered, qr_pending, qr_seen...
+    if (filter.startsWith('qr_')) {
+      queryParameters.whatsAppQrStatus = filter.replace(
+        /^qr_/,
+        '',
+      ) as GuestWhatsAppQrStatus;
+
+      // await refreshGuests({ force: true });
       return;
     }
 
-    const [channel, status] = String(value).split(':');
+    // Formato outbound por nome: invitation_delivered, reminder_pending...
+    const outboundTypeMap: Record<string, GuestWhatsAppOutboundType> = {
+      qrcode: GuestWhatsAppOutboundType.QrCode,
+      invitation: GuestWhatsAppOutboundType.Invitation,
+      savethedate: GuestWhatsAppOutboundType.SaveTheDate,
+      reminder: GuestWhatsAppOutboundType.Reminder,
+    };
 
-    if (channel === 'qr') {
-      queryParameters.whatsAppQrStatus =
-        (status as GuestWhatsAppQrStatus) || '';
-    } else {
-      const parsedType = Number(channel);
+    const lastUnderscoreIndex = filter.lastIndexOf('_');
 
-      queryParameters.whatsAppOutboundType = Number.isNaN(parsedType)
-        ? ''
-        : (parsedType as GuestWhatsAppOutboundType);
+    if (lastUnderscoreIndex > 0) {
+      const rawType = filter.slice(0, lastUnderscoreIndex).toLowerCase();
+      const rawStatus = filter.slice(lastUnderscoreIndex + 1);
 
-      queryParameters.whatsAppOutboundStatus =
-        (status as GuestWhatsAppDeliveryStatus) || '';
+      const mappedType = outboundTypeMap[rawType];
+
+      if (mappedType !== undefined) {
+        queryParameters.whatsAppOutboundType = mappedType;
+        queryParameters.whatsAppOutboundStatus =
+          rawStatus as GuestWhatsAppDeliveryStatus;
+
+        // await refreshGuests({ force: true });
+        return;
+      }
     }
 
-    queryParameters.pageNumber = 1;
+    // Compatibilidade com formato antigo: 2:delivered
+    const [channel, status] = filter.split(':');
+    const parsedType = Number(channel);
+
+    if (!Number.isNaN(parsedType) && status) {
+      queryParameters.whatsAppOutboundType =
+        parsedType as GuestWhatsAppOutboundType;
+      queryParameters.whatsAppOutboundStatus =
+        status as GuestWhatsAppDeliveryStatus;
+    }
+
+    // await refreshGuests({ force: true });
   },
 );
+
+onMounted(() => {
+  refreshDesks({ force: true });
+  // refreshGuests({ force: true });
+});
 </script>
 <template>
   <section
