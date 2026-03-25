@@ -24,7 +24,7 @@ withDefaults(defineProps<ICardProps>(), {
   >
     <header
       v-if="title || description"
-      class="mb-4 flex flex-col space-y-2 md:flex-row md:items-end md:justify-between md:space-y-0"
+      class="mb-4 flex flex-col space-y-2 md:flex-row md:justify-between md:space-y-0"
     >
       <div class="py-1 md:py-3">
         <div class="flex items-center gap-2">

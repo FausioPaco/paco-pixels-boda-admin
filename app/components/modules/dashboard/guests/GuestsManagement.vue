@@ -343,56 +343,31 @@ const activeExportModalJob = computed(() => {
     description="Faça a gestão dos convidados deste evento aqui"
   >
     <template #right-content>
+      <BaseButton
+        btn-type="outline-primary"
+        btn-size="sm"
+        :icon-size="24"
+        :icon="eventStore.eventModeView ? 'hide' : 'view'"
+        @click="eventStore.toggleEventMode()"
+      >
+        {{
+          eventStore.eventModeView
+            ? 'Desactivar modo evento'
+            : 'Ver em modo evento'
+        }}
+      </BaseButton>
+    </template>
+
+    <div
+      class="mb-8 mt-3 flex flex-wrap justify-start gap-2 md:justify-between"
+    >
       <div class="flex flex-wrap gap-2">
-        <BaseButton
-          btn-type="outline-primary"
-          btn-size="sm"
-          :icon="eventStore.eventModeView ? 'hide' : 'view'"
-          @click="eventStore.toggleEventMode()"
-        >
-          {{
-            eventStore.eventModeView
-              ? 'Desactivar modo evento'
-              : 'Ver em modo evento'
-          }}
-        </BaseButton>
-        <BaseButton
-          v-if="eventStore.eventQRCodeUrl && !eventStore.eventModeView"
-          btn-type="outline-primary"
-          btn-size="sm"
-          icon="download"
-          :disabled="anyExportRunning"
-          class="animate-fadeIn"
-          @click="showExportFormatModal = true"
-        >
-          {{
-            qrJob?.status === 'Pending' || qrJob?.status === 'Running'
-              ? `A exportar... ${qrJob?.percent ?? 0}%`
-              : 'Exportar QRCodes'
-          }}
-        </BaseButton>
-
-        <BaseButton
-          v-if="canManageInvitations && canExport && !eventStore.eventModeView"
-          btn-size="sm"
-          icon="download"
-          :disabled="anyExportRunning"
-          class="animate-fadeIn"
-          @click="exportInvitations()"
-        >
-          {{
-            invitationJob?.status === 'Pending' ||
-            invitationJob?.status === 'Running'
-              ? `A exportar... ${invitationJob?.percent ?? 0}%`
-              : 'Exportar convites'
-          }}
-        </BaseButton>
-
         <BaseButton
           v-if="eventStore.eventQRCodeUrl && !eventStore.eventModeView"
           btn-type="outline-primary"
           btn-size="sm"
           icon="whatsapp"
+          :icon-size="20"
           :disabled="anyExportRunning"
           class="animate-fadeIn"
           @click="showWhatsAppSendModal = true"
@@ -400,7 +375,7 @@ const activeExportModalJob = computed(() => {
           {{
             waJob?.status === 'Pending' || waJob?.status === 'Running'
               ? `A enviar... ${waJob?.percent ?? 0}%`
-              : 'Enviar QRs via WhatsApp'
+              : 'Enviar QRs'
           }}
         </BaseButton>
 
@@ -409,6 +384,7 @@ const activeExportModalJob = computed(() => {
           btn-type="outline-primary"
           btn-size="sm"
           icon="whatsapp"
+          :icon-size="20"
           :disabled="anyExportRunning"
           class="animate-fadeIn"
           @click="showInvitationWhatsAppSendModal = true"
@@ -417,11 +393,47 @@ const activeExportModalJob = computed(() => {
             invitationWhatsAppJob?.status === 'Pending' ||
             invitationWhatsAppJob?.status === 'Running'
               ? `A enviar... ${invitationWhatsAppJob?.percent ?? 0}%`
-              : 'Enviar convites via WhatsApp'
+              : 'Enviar convites'
           }}
         </BaseButton>
       </div>
-    </template>
+
+      <div class="flex flex-wrap gap-2">
+        <BaseButton
+          v-if="eventStore.eventQRCodeUrl && !eventStore.eventModeView"
+          btn-type="outline-primary"
+          btn-size="sm"
+          :icon-size="20"
+          icon="download"
+          :disabled="anyExportRunning"
+          class="animate-fadeIn"
+          @click="showExportFormatModal = true"
+        >
+          {{
+            qrJob?.status === 'Pending' || qrJob?.status === 'Running'
+              ? `A exportar... ${qrJob?.percent ?? 0}%`
+              : 'Exportar QR Codes'
+          }}
+        </BaseButton>
+        <BaseButton
+          v-if="canManageInvitations && canExport && !eventStore.eventModeView"
+          btn-size="sm"
+          :icon-size="20"
+          icon="download"
+          :disabled="anyExportRunning"
+          class="animate-fadeIn"
+          btn-type="outline-primary"
+          @click="exportInvitations()"
+        >
+          {{
+            invitationJob?.status === 'Pending' ||
+            invitationJob?.status === 'Running'
+              ? `A exportar... ${invitationJob?.percent ?? 0}%`
+              : 'Exportar Convites'
+          }}
+        </BaseButton>
+      </div>
+    </div>
 
     <!-- Tabs -->
     <BaseTab>
