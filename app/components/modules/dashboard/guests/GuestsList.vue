@@ -139,103 +139,103 @@ const whatsAppFilterOptions: SelectOption[] = [
     name: 'Convite — Precisa de verificação',
   },
 
-  {
-    id: 'save_the_date_not_sent',
-    value: '3:not_sent',
-    name: 'Save the date — Por enviar',
-  },
-  {
-    id: 'save_the_date_pending',
-    value: '3:pending',
-    name: 'Save the date — Em processamento',
-  },
-  {
-    id: 'save_the_date_accepted',
-    value: '3:accepted',
-    name: 'Save the date — Aceite pela plataforma',
-  },
-  {
-    id: 'save_the_date_delivered',
-    value: '3:delivered',
-    name: 'Save the date — Entregue',
-  },
-  {
-    id: 'save_the_date_seen',
-    value: '3:seen',
-    name: 'Save the date — Visualizado',
-  },
-  {
-    id: 'save_the_date_invalid_phone',
-    value: '3:invalid_phone',
-    name: 'Save the date — Número inválido',
-  },
-  {
-    id: 'save_the_date_failed_temporary',
-    value: '3:failed_temporary',
-    name: 'Save the date — Falha temporária',
-  },
-  {
-    id: 'save_the_date_failed',
-    value: '3:failed',
-    name: 'Save the date — Falha no envio',
-  },
-  {
-    id: 'save_the_date_delivery_unknown',
-    value: '3:delivery_unknown',
-    name: 'Save the date — Entrega por confirmar',
-  },
-  {
-    id: 'save_the_date_needs_review',
-    value: '3:needs_review',
-    name: 'Save the date — Precisa de verificação',
-  },
+  // {
+  //   id: 'save_the_date_not_sent',
+  //   value: '3:not_sent',
+  //   name: 'Save the date — Por enviar',
+  // },
+  // {
+  //   id: 'save_the_date_pending',
+  //   value: '3:pending',
+  //   name: 'Save the date — Em processamento',
+  // },
+  // {
+  //   id: 'save_the_date_accepted',
+  //   value: '3:accepted',
+  //   name: 'Save the date — Aceite pela plataforma',
+  // },
+  // {
+  //   id: 'save_the_date_delivered',
+  //   value: '3:delivered',
+  //   name: 'Save the date — Entregue',
+  // },
+  // {
+  //   id: 'save_the_date_seen',
+  //   value: '3:seen',
+  //   name: 'Save the date — Visualizado',
+  // },
+  // {
+  //   id: 'save_the_date_invalid_phone',
+  //   value: '3:invalid_phone',
+  //   name: 'Save the date — Número inválido',
+  // },
+  // {
+  //   id: 'save_the_date_failed_temporary',
+  //   value: '3:failed_temporary',
+  //   name: 'Save the date — Falha temporária',
+  // },
+  // {
+  //   id: 'save_the_date_failed',
+  //   value: '3:failed',
+  //   name: 'Save the date — Falha no envio',
+  // },
+  // {
+  //   id: 'save_the_date_delivery_unknown',
+  //   value: '3:delivery_unknown',
+  //   name: 'Save the date — Entrega por confirmar',
+  // },
+  // {
+  //   id: 'save_the_date_needs_review',
+  //   value: '3:needs_review',
+  //   name: 'Save the date — Precisa de verificação',
+  // },
 
-  {
-    id: 'reminder_not_sent',
-    value: '4:not_sent',
-    name: 'Lembrete — Por enviar',
-  },
-  {
-    id: 'reminder_pending',
-    value: '4:pending',
-    name: 'Lembrete — Em processamento',
-  },
-  {
-    id: 'reminder_accepted',
-    value: '4:accepted',
-    name: 'Lembrete — Aceite pela plataforma',
-  },
-  {
-    id: 'reminder_delivered',
-    value: '4:delivered',
-    name: 'Lembrete — Entregue',
-  },
-  { id: 'reminder_seen', value: '4:seen', name: 'Lembrete — Visualizado' },
-  {
-    id: 'reminder_invalid_phone',
-    value: '4:invalid_phone',
-    name: 'Lembrete — Número inválido',
-  },
-  {
-    id: 'reminder_failed_temporary',
-    value: '4:failed_temporary',
-    name: 'Lembrete — Falha temporária',
-  },
-  {
-    id: 'reminder_failed',
-    value: '4:failed',
-    name: 'Lembrete — Falha no envio',
-  },
-  {
-    id: 'reminder_delivery_unknown',
-    value: '4:delivery_unknown',
-    name: 'Lembrete — Entrega por confirmar',
-  },
-  {
-    id: 'reminder_needs_review',
-    value: '4:needs_review',
-    name: 'Lembrete — Precisa de verificação',
-  },
+  // {
+  //   id: 'reminder_not_sent',
+  //   value: '4:not_sent',
+  //   name: 'Lembrete — Por enviar',
+  // },
+  // {
+  //   id: 'reminder_pending',
+  //   value: '4:pending',
+  //   name: 'Lembrete — Em processamento',
+  // },
+  // {
+  //   id: 'reminder_accepted',
+  //   value: '4:accepted',
+  //   name: 'Lembrete — Aceite pela plataforma',
+  // },
+  // {
+  //   id: 'reminder_delivered',
+  //   value: '4:delivered',
+  //   name: 'Lembrete — Entregue',
+  // },
+  // { id: 'reminder_seen', value: '4:seen', name: 'Lembrete — Visualizado' },
+  // {
+  //   id: 'reminder_invalid_phone',
+  //   value: '4:invalid_phone',
+  //   name: 'Lembrete — Número inválido',
+  // },
+  // {
+  //   id: 'reminder_failed_temporary',
+  //   value: '4:failed_temporary',
+  //   name: 'Lembrete — Falha temporária',
+  // },
+  // {
+  //   id: 'reminder_failed',
+  //   value: '4:failed',
+  //   name: 'Lembrete — Falha no envio',
+  // },
+  // {
+  //   id: 'reminder_delivery_unknown',
+  //   value: '4:delivery_unknown',
+  //   name: 'Lembrete — Entrega por confirmar',
+  // },
+  // {
+  //   id: 'reminder_needs_review',
+  //   value: '4:needs_review',
+  //   name: 'Lembrete — Precisa de verificação',
+  // },
 ];
 
 const debouncedSearch = useDebounceFn(() => {

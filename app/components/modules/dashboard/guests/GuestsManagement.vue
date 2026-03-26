@@ -114,6 +114,7 @@ const exportQRCodes = async () => {
       const url = normalizeZipUrl(job.zipUrl);
       if (!url) return;
       window.location.assign(url);
+      refreshGuests({ force: true });
     },
   });
 };
@@ -142,6 +143,7 @@ const exportInvitations = async () => {
       const url = normalizeZipUrl(job.zipUrl);
       if (!url) return;
       window.location.assign(url);
+      refreshGuests({ force: true });
     },
   });
 };
