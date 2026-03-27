@@ -3,7 +3,7 @@ import {
   getOutboundTypeShortLabel,
   hasVisibleOutboundActivity,
   sortOutboundsByPriority,
-} from '~/utils/guestWhatsapp';
+} from '~/utils/whatsappUtils';
 
 type Props = {
   guest: Guest;
