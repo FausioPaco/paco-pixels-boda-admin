@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import type { GuestWhatsAppQrStatus } from '~~/shared/types/guest';
-
 defineOptions({
   name: 'GuestsWhatsAppStatusChip',
 });
 
 interface Props {
-  status?: GuestWhatsAppQrStatus | null;
+  status?: GuestWhatsAppDeliveryStatus | null;
   label?: string | null;
   compact?: boolean;
+  typeLabel?: string | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   status: 'not_sent',
   label: null,
   compact: false,
+  typeLabel: null,
 });
 
-const fallbackLabelMap: Record<GuestWhatsAppQrStatus, string> = {
+const fallbackLabelMap: Record<GuestWhatsAppDeliveryStatus, string> = {
   not_sent: 'Por enviar',
   pending: 'Em processamento',
   accepted: 'Aceite pela plataforma',
@@ -30,7 +30,7 @@ const fallbackLabelMap: Record<GuestWhatsAppQrStatus, string> = {
   needs_review: 'Precisa de verificação',
 };
 
-const normalizedStatus = computed<GuestWhatsAppQrStatus>(() => {
+const normalizedStatus = computed<GuestWhatsAppDeliveryStatus>(() => {
   return props.status ?? 'not_sent';
 });
 
@@ -38,13 +38,23 @@ const chipLabel = computed(() => {
   return props.label?.trim() || fallbackLabelMap[normalizedStatus.value];
 });
 
+const tooltipText = computed(() => {
+  if (props.typeLabel) {
+    return `${props.typeLabel}: ${chipLabel.value}`;
+  }
+
+  return chipLabel.value;
+});
+
 const chipClasses = computed(() => {
   const base =
     'inline-flex items-center rounded-md border font-medium whitespace-nowrap';
 
-  const size = 'text-xs px-1.5 py-0.5';
+  const size = props.compact
+    ? 'text-[11px] px-1.5 py-0.5'
+    : 'text-xs px-2 py-1';
 
-  const paletteMap: Record<GuestWhatsAppQrStatus, string> = {
+  const paletteMap: Record<GuestWhatsAppDeliveryStatus, string> = {
     not_sent: 'border-grey-200 bg-grey-50 text-grey-700',
     pending: 'border-warning-200 bg-warning-50 text-warning-700',
     accepted: 'border-primary-200 bg-primary-50 text-primary-700',
@@ -61,7 +71,7 @@ const chipClasses = computed(() => {
 });
 
 const iconClasses = computed(() => {
-  const colorMap: Record<GuestWhatsAppQrStatus, string> = {
+  const colorMap: Record<GuestWhatsAppDeliveryStatus, string> = {
     not_sent: 'text-grey-400',
     pending: 'text-warning-500',
     accepted: 'text-primary-500',
@@ -74,12 +84,12 @@ const iconClasses = computed(() => {
     needs_review: 'text-danger-600',
   };
 
-  return [colorMap[normalizedStatus.value]].join(' ');
+  return colorMap[normalizedStatus.value];
 });
 </script>
 
 <template>
-  <BaseTooltip :text="chipLabel" placement="top">
+  <BaseTooltip :text="tooltipText" placement="top">
     <template #trigger>
       <div :class="chipClasses">
         <IconWhatsapp
@@ -87,7 +97,14 @@ const iconClasses = computed(() => {
           class="size-[16px]"
           :class="iconClasses"
         />
-        <span v-if="label" class="ml-1">{{ label }}</span>
+
+        <span v-if="typeLabel" class="ml-1">
+          {{ typeLabel }}
+        </span>
+
+        <span v-else-if="label" class="ml-1">
+          {{ label }}
+        </span>
       </div>
     </template>
   </BaseTooltip>

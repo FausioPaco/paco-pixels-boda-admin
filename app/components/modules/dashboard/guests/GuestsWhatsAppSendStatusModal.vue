@@ -4,7 +4,8 @@ interface Props {
   exportTotal?: number;
   exportProcessed?: number;
   exportPercent?: number;
-  summary?: WhatsAppQrLogsSummary | null;
+  summary?: WhatsAppDeliverySummary | null;
+  messageType?: GuestWhatsAppOutboundType;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -13,16 +14,32 @@ const props = withDefaults(defineProps<Props>(), {
   exportProcessed: 0,
   exportPercent: 0,
   summary: null,
+  messageType: GuestWhatsAppOutboundType.QrCode,
 });
 
 const emit = defineEmits(['closeModal']);
-const isFinished = computed(() => !!props.summary);
+
+const messageLabel = computed(() => {
+  return props.messageType === GuestWhatsAppOutboundType.Invitation
+    ? 'convites'
+    : 'QR Codes';
+});
+
+const progressTitle = computed(() => {
+  return props.messageType === GuestWhatsAppOutboundType.Invitation
+    ? 'A enviar convites via WhatsApp'
+    : 'A enviar QR Codes via WhatsApp';
+});
+
+const finishButtonLabel = computed(() =>
+  props.summary ? 'Fechar' : 'Continuar a usar o sistema',
+);
 </script>
 
 <template>
   <BaseModal
     :show="show"
-    :title="isFinished ? 'Envio concluído' : 'A enviar QR Codes via WhatsApp'"
+    :title="progressTitle"
     @close-modal="emit('closeModal')"
   >
     <div class="space-y-3">
@@ -97,9 +114,9 @@ const isFinished = computed(() => !!props.summary);
       </div>
 
       <p class="text-grey-500 text-xs">
-        Os processados incluem mensagens aceites pela plataforma, falhas e
-        convidados ignorados. A entrega final é confirmada posteriormente pelo
-        nosso parceiro.
+        Os processados incluem {{ messageLabel }} aceites pela plataforma,
+        falhas e convidados ignorados. A entrega final é confirmada
+        posteriormente.
       </p>
 
       <div class="flex justify-end">
@@ -108,7 +125,7 @@ const isFinished = computed(() => !!props.summary);
           btn-size="sm"
           @click="emit('closeModal')"
         >
-          {{ isFinished ? 'Fechar' : 'Continuar a usar o sistema' }}
+          {{ finishButtonLabel }}
         </BaseButton>
       </div>
     </div>

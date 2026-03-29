@@ -33,6 +33,13 @@ const waSummary = ref<WhatsAppQrLogsSummary | null>(null);
 const showWhatsAppSendStatusModal = ref(false);
 const showWhatsAppSendModal = ref(false);
 
+const showInvitationWhatsAppSendModal = ref(false);
+const activeWhatsAppMessageType = ref<GuestWhatsAppOutboundType>(
+  GuestWhatsAppOutboundType.QrCode,
+);
+
+const invitationWaSummary = ref<WhatsAppDeliverySummary | null>(null);
+
 const backgroundJobs = useBackgroundJobsStore();
 
 const qrJobKey = computed(
@@ -46,7 +53,15 @@ const invitationJobKey = computed(
 
 const whatsAppJobKey = computed(
   () =>
-    `whatsapp-send:${eventStore.eventId}:${eventStore.eventSlug}:${whatsAppTextColor.value}:${whatsAppForce.value}:${whatsAppReason.value ?? ''}`,
+    `whatsapp-send-qr:${eventStore.eventId}:${eventStore.eventSlug}:${whatsAppTextColor.value}:${whatsAppForce.value}:${whatsAppReason.value ?? ''}`,
+);
+
+const invitationWhatsAppJobKey = computed(
+  () => `whatsapp-send-invitation:${eventStore.eventId}`,
+);
+
+const invitationWhatsAppJob = computed(
+  () => backgroundJobs.getJobByKey(invitationWhatsAppJobKey.value).value,
 );
 
 const qrJob = computed(() => backgroundJobs.getJobByKey(qrJobKey.value).value);
@@ -55,6 +70,18 @@ const invitationJob = computed(
 );
 const waJob = computed(
   () => backgroundJobs.getJobByKey(whatsAppJobKey.value).value,
+);
+
+const activeWhatsAppJob = computed(() =>
+  activeWhatsAppMessageType.value === GuestWhatsAppOutboundType.Invitation
+    ? invitationWhatsAppJob.value
+    : waJob.value,
+);
+
+const activeWhatsAppSummary = computed(() =>
+  activeWhatsAppMessageType.value === GuestWhatsAppOutboundType.Invitation
+    ? invitationWaSummary.value
+    : waSummary.value,
 );
 
 const normalizeZipUrl = (zipUrl?: string | null) => {
@@ -87,6 +114,7 @@ const exportQRCodes = async () => {
       const url = normalizeZipUrl(job.zipUrl);
       if (!url) return;
       window.location.assign(url);
+      refreshGuests({ force: true });
     },
   });
 };
@@ -115,6 +143,7 @@ const exportInvitations = async () => {
       const url = normalizeZipUrl(job.zipUrl);
       if (!url) return;
       window.location.assign(url);
+      refreshGuests({ force: true });
     },
   });
 };
@@ -130,7 +159,7 @@ const fetchWhatsAppSummary = async () => {
   }
 };
 
-const startBulkWhatsAppSend = async (payload: {
+const startBulkQRWhatsAppSend = async (payload: {
   color: ExportTextColor;
   force: boolean;
   reason?: string;
@@ -186,6 +215,58 @@ const startBulkWhatsAppSend = async (payload: {
   });
 };
 
+const startBulkInvitationWhatsAppSend = async () => {
+  activeWhatsAppMessageType.value = GuestWhatsAppOutboundType.Invitation;
+
+  showInvitationWhatsAppSendModal.value = false;
+  showWhatsAppSendStatusModal.value = true;
+  invitationWaSummary.value = null;
+
+  dismissedWhatsAppJobKeys.value = dismissedWhatsAppJobKeys.value.filter(
+    (key) => key !== invitationWhatsAppJobKey.value,
+  );
+
+  await backgroundJobs.startTrackedJob({
+    key: invitationWhatsAppJobKey.value,
+    kind: 'whatsapp-send',
+    title: 'Envio de convites via WhatsApp',
+    toastId: invitationWhatsAppJobKey.value,
+    eventId: eventStore.eventId!,
+    eventSlug: eventStore.eventSlug ?? undefined,
+    eventName: eventStore.eventName,
+    start: async () => {
+      const res = await invitationService.startSendInvitationsWhatsapp(
+        eventStore.eventId!,
+      );
+
+      return {
+        jobId: res.jobId,
+        total: res.total,
+        uiNote: res.uiNote ?? undefined,
+      };
+    },
+    onCompleted: async () => {
+      invitationWaSummary.value =
+        await invitationService.getInvitationWhatsappSummary(
+          eventStore.eventId!,
+        );
+      await refreshGuests({ force: true });
+      showWhatsAppSendStatusModal.value = true;
+    },
+    onFailed: async () => {
+      invitationWaSummary.value =
+        await invitationService.getInvitationWhatsappSummary(
+          eventStore.eventId!,
+        );
+      showWhatsAppSendStatusModal.value = true;
+    },
+    onCancelled: async () => {
+      invitationWaSummary.value = null;
+      showWhatsAppSendStatusModal.value = false;
+    },
+  });
+};
+
 const closeWhatsAppSendStatusModal = () => {
   if (waJob.value?.key) {
     if (!dismissedWhatsAppJobKeys.value.includes(waJob.value.key)) {
@@ -199,7 +280,7 @@ const closeWhatsAppSendStatusModal = () => {
 const dismissedWhatsAppJobKeys = ref<string[]>([]);
 
 watch(
-  waJob,
+  activeWhatsAppJob,
   (job, previousJob) => {
     if (!job) return;
 
@@ -225,8 +306,124 @@ const anyExportRunning = computed(
     invitationJob.value?.status === 'Pending' ||
     invitationJob.value?.status === 'Running' ||
     waJob.value?.status === 'Pending' ||
-    waJob.value?.status === 'Running',
+    waJob.value?.status === 'Running' ||
+    invitationWhatsAppJob.value?.status === 'Pending' ||
+    invitationWhatsAppJob.value?.status === 'Running',
 );
+
+const sendBulkOptions = computed(() => {
+  const options: Array<{ id: string; label: string }> = [];
+
+  if (eventStore.eventQRCodeUrl && !eventStore.eventModeView) {
+    options.push({
+      id: 'send-qrs',
+      label:
+        waJob.value?.status === 'Pending' || waJob.value?.status === 'Running'
+          ? `QR Codes — A enviar... ${waJob.value?.percent ?? 0}%`
+          : 'Enviar QRs',
+    });
+  }
+
+  if (
+    canManageInvitations.value &&
+    canExport.value &&
+    !eventStore.eventModeView
+  ) {
+    options.push({
+      id: 'send-invitations',
+      label:
+        invitationWhatsAppJob.value?.status === 'Pending' ||
+        invitationWhatsAppJob.value?.status === 'Running'
+          ? `Convites — A enviar... ${invitationWhatsAppJob.value?.percent ?? 0}%`
+          : 'Enviar convites',
+    });
+  }
+
+  return options;
+});
+
+const exportBulkOptions = computed(() => {
+  const options: Array<{ id: string; label: string }> = [];
+
+  if (eventStore.eventQRCodeUrl && !eventStore.eventModeView) {
+    options.push({
+      id: 'export-qrs',
+      label:
+        qrJob.value?.status === 'Pending' || qrJob.value?.status === 'Running'
+          ? `QR Codes — A exportar... ${qrJob.value?.percent ?? 0}%`
+          : 'Exportar QR Codes',
+    });
+  }
+
+  if (
+    canManageInvitations.value &&
+    canExport.value &&
+    !eventStore.eventModeView
+  ) {
+    options.push({
+      id: 'export-invitations',
+      label:
+        invitationJob.value?.status === 'Pending' ||
+        invitationJob.value?.status === 'Running'
+          ? `Convites — A exportar... ${invitationJob.value?.percent ?? 0}%`
+          : 'Exportar Convites',
+    });
+  }
+
+  return options;
+});
+
+const sendBulkLabel = computed(() => {
+  if (waJob.value?.status === 'Pending' || waJob.value?.status === 'Running') {
+    return `Enviar em massa... ${waJob.value?.percent ?? 0}%`;
+  }
+
+  if (
+    invitationWhatsAppJob.value?.status === 'Pending' ||
+    invitationWhatsAppJob.value?.status === 'Running'
+  ) {
+    return `Enviar em massa... ${invitationWhatsAppJob.value?.percent ?? 0}%`;
+  }
+
+  return 'Enviar em massa';
+});
+
+const exportBulkLabel = computed(() => {
+  if (qrJob.value?.status === 'Pending' || qrJob.value?.status === 'Running') {
+    return `Exportar em massa... ${qrJob.value?.percent ?? 0}%`;
+  }
+
+  if (
+    invitationJob.value?.status === 'Pending' ||
+    invitationJob.value?.status === 'Running'
+  ) {
+    return `Exportar em massa... ${invitationJob.value?.percent ?? 0}%`;
+  }
+
+  return 'Exportar em massa';
+});
+
+const handleSendBulkSelect = (option: { id: string }) => {
+  if (option.id === 'send-qrs') {
+    showWhatsAppSendModal.value = true;
+    return;
+  }
+
+  if (option.id === 'send-invitations') {
+    showInvitationWhatsAppSendModal.value = true;
+  }
+};
+
+const handleExportBulkSelect = (option: { id: string }) => {
+  if (option.id === 'export-qrs') {
+    showExportFormatModal.value = true;
+    return;
+  }
+
+  if (option.id === 'export-invitations') {
+    exportInvitations();
+  }
+};
 
 const startExport = (exportOptions: ExportQROptions) => {
   textColorExport.value = exportOptions.color;
@@ -255,6 +452,21 @@ const activeExportModalJob = computed(() => {
 
   return null;
 });
+
+const activeExportModalJobTitle = computed(() => {
+  const job = activeTrackedJob.value;
+  if (!job) return null;
+
+  if (job.kind === 'qr-export') {
+    return 'Exportação de QR Codes';
+  }
+
+  if (job.kind === 'invitation-export') {
+    return 'Exportação de Convites';
+  }
+
+  return null;
+});
 </script>
 <template>
   <BaseCard
@@ -266,6 +478,7 @@ const activeExportModalJob = computed(() => {
         <BaseButton
           btn-type="outline-primary"
           btn-size="sm"
+          :icon-size="24"
           :icon="eventStore.eventModeView ? 'hide' : 'view'"
           @click="eventStore.toggleEventMode()"
         >
@@ -275,53 +488,31 @@ const activeExportModalJob = computed(() => {
               : 'Ver em modo evento'
           }}
         </BaseButton>
-        <BaseButton
-          v-if="eventStore.eventQRCodeUrl && !eventStore.eventModeView"
+
+        <BaseButtonDropdown
+          v-if="exportBulkOptions.length"
           btn-type="outline-primary"
           btn-size="sm"
           icon="download"
+          :icon-size="20"
           :disabled="anyExportRunning"
-          class="animate-fadeIn"
-          @click="showExportFormatModal = true"
-        >
-          {{
-            qrJob?.status === 'Pending' || qrJob?.status === 'Running'
-              ? `A exportar... ${qrJob?.percent ?? 0}%`
-              : 'Exportar QRCodes'
-          }}
-        </BaseButton>
+          :label="exportBulkLabel"
+          :options="exportBulkOptions"
+          align="right"
+          @select="handleExportBulkSelect"
+        />
 
-        <BaseButton
-          v-if="canManageInvitations && canExport && !eventStore.eventModeView"
-          btn-size="sm"
-          icon="download"
-          :disabled="anyExportRunning"
-          class="animate-fadeIn"
-          @click="exportInvitations()"
-        >
-          {{
-            invitationJob?.status === 'Pending' ||
-            invitationJob?.status === 'Running'
-              ? `A exportar... ${invitationJob?.percent ?? 0}%`
-              : 'Exportar convites'
-          }}
-        </BaseButton>
-
-        <BaseButton
-          v-if="eventStore.eventQRCodeUrl && !eventStore.eventModeView"
+        <BaseButtonDropdown
+          v-if="sendBulkOptions.length"
           btn-type="outline-primary"
           btn-size="sm"
           icon="whatsapp"
+          :icon-size="20"
           :disabled="anyExportRunning"
-          class="animate-fadeIn"
-          @click="showWhatsAppSendModal = true"
-        >
-          {{
-            waJob?.status === 'Pending' || waJob?.status === 'Running'
-              ? `A enviar... ${waJob?.percent ?? 0}%`
-              : 'Enviar QRs via WhatsApp'
-          }}
-        </BaseButton>
+          :label="sendBulkLabel"
+          :options="sendBulkOptions"
+          @select="handleSendBulkSelect"
+        />
       </div>
     </template>
 
@@ -386,6 +577,7 @@ const activeExportModalJob = computed(() => {
     <GuestsExportStatusModal
       v-if="activeExportModalJob"
       :show="true"
+      :title="activeExportModalJobTitle"
       :export-total="activeExportModalJob.total"
       :export-processed="activeExportModalJob.processed"
       :export-percent="activeExportModalJob.percent"
@@ -395,16 +587,23 @@ const activeExportModalJob = computed(() => {
     <LazyGuestsSendAllWhatsappQRCodesModal
       :show="showWhatsAppSendModal"
       @close-modal="showWhatsAppSendModal = false"
-      @send="startBulkWhatsAppSend"
+      @send="startBulkQRWhatsAppSend"
     />
 
     <GuestsWhatsAppSendStatusModal
       :show="showWhatsAppSendStatusModal"
-      :export-total="waJob?.total ?? 0"
-      :export-processed="waJob?.processed ?? 0"
-      :export-percent="waJob?.percent ?? 0"
-      :summary="waSummary"
+      :message-type="activeWhatsAppMessageType"
+      :export-total="activeWhatsAppJob?.total ?? 0"
+      :export-processed="activeWhatsAppJob?.processed ?? 0"
+      :export-percent="activeWhatsAppJob?.percent ?? 0"
+      :summary="activeWhatsAppSummary"
       @close-modal="closeWhatsAppSendStatusModal"
+    />
+
+    <LazyGuestsSendAllWhatsappInvitationsModal
+      :show="showInvitationWhatsAppSendModal"
+      @close-modal="showInvitationWhatsAppSendModal = false"
+      @send="startBulkInvitationWhatsAppSend"
     />
   </BaseCard>
 </template>

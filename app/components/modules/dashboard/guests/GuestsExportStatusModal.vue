@@ -4,6 +4,7 @@ interface Props {
   exportTotal?: number | undefined;
   exportProcessed?: number | undefined;
   exportPercent?: number | undefined;
+  title?: string | undefined | null;
 }
 
 withDefaults(defineProps<Props>(), {
@@ -11,6 +12,7 @@ withDefaults(defineProps<Props>(), {
   exportTotal: undefined,
   exportProcessed: undefined,
   exportPercent: undefined,
+  title: undefined,
 });
 
 const emit = defineEmits(['closeModal', 'success']);
@@ -18,7 +20,7 @@ const emit = defineEmits(['closeModal', 'success']);
 <template>
   <BaseModal
     :show="show"
-    title="A exportar QR Codes"
+    :title="title ?? 'A exportar...'"
     @close-modal="emit('closeModal')"
   >
     <div class="space-y-3">

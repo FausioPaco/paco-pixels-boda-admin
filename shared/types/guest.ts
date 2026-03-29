@@ -1,4 +1,4 @@
-export type GuestWhatsAppQrStatus =
+export type GuestWhatsAppDeliveryStatus =
   | 'not_sent'
   | 'pending'
   | 'accepted'
@@ -9,6 +9,37 @@ export type GuestWhatsAppQrStatus =
   | 'failed'
   | 'delivery_unknown'
   | 'needs_review';
+
+export enum GuestWhatsAppOutboundType {
+  Unknown = 0,
+  QrCode = 1,
+  Invitation = 2,
+  SaveTheDate = 3,
+  Reminder = 4,
+}
+
+export interface GuestWhatsAppOutbound {
+  type: GuestWhatsAppOutboundType;
+  status: GuestWhatsAppDeliveryStatus;
+  statusLabel: string;
+  hasSent: boolean;
+  hasDelivered: boolean;
+  hasSeen: boolean;
+  sentAt?: string | Date | null;
+  acceptedAt?: string | Date | null;
+  deliveredAt?: string | Date | null;
+  seenAt?: string | Date | null;
+  lastAttemptAt?: string | Date | null;
+  errorMessage?: string | null;
+  skipReason?: string | null;
+  canRetry: boolean;
+  wasForced: boolean;
+  needsReview: boolean;
+  providerStatusName?: string | null;
+  providerStatusDescription?: string | null;
+}
+
+export type GuestWhatsAppQrStatus = GuestWhatsAppDeliveryStatus;
 
 export interface Guest {
   id: number;
@@ -31,25 +62,24 @@ export interface Guest {
   absence_Declared?: boolean;
   absence_Declared_At?: string | Date | null;
   created_At: Date;
+
   hasWhatsAppQrSent?: boolean;
   hasWhatsAppQrDelivered?: boolean;
   hasWhatsAppQrSeen?: boolean;
   whatsAppQrStatus?: GuestWhatsAppQrStatus;
   whatsAppQrStatusLabel?: string;
-
   whatsAppQrSentAt?: string | Date | null;
-
   whatsAppQrAcceptedAt?: string | Date | null;
   whatsAppQrDeliveredAt?: string | Date | null;
   whatsAppQrSeenAt?: string | Date | null;
-
   whatsAppQrLastAttemptAt?: string | Date | null;
   whatsAppQrErrorMessage?: string | null;
   whatsAppQrSkipReason?: string | null;
-
   whatsAppQrCanRetry?: boolean;
   whatsAppQrWasForced?: boolean;
   whatsAppQrNeedsReview?: boolean;
+
+  whatsAppOutbounds?: GuestWhatsAppOutbound[];
 }
 
 export interface GuestParameters {
@@ -64,7 +94,13 @@ export interface GuestParameters {
   endDate: string;
   pageNumber: number;
   pageSize: number;
+
   whatsAppQrStatus?: GuestWhatsAppQrStatus | '';
+  whatsAppOutboundType?: GuestWhatsAppOutboundType | '';
+  whatsAppOutboundStatus?: GuestWhatsAppDeliveryStatus | '';
+
+  // filtro combinado apenas para UI
+  whatsAppFilter?: string;
 }
 
 export interface GuestInput {

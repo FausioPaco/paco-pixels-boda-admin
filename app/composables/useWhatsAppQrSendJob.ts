@@ -4,7 +4,7 @@ import type { useToast } from 'vue-toastification';
 import { useExportJob } from '~/composables/useExportJob';
 import { getEventService } from '~/services/eventService';
 import type { ExportTextColor } from '~~/shared/types/guest';
-import type { WhatsAppQrLogsSummary } from '~~/shared/types/whatsappQr';
+import type { WhatsAppQrLogsSummary } from '~~/shared/types/whatsapp';
 
 type Options = {
   toast: ReturnType<typeof useToast>;

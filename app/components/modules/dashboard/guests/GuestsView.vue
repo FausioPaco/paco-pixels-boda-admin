@@ -18,8 +18,6 @@ const toast = useToast();
 const showFormModal = ref<boolean>(false);
 const showRemoveModal = ref<boolean>(false);
 const showExportFormatModal = ref<boolean>(false);
-const showWhatsAppColorModal = ref(false);
-const showWhatsAppResendModal = ref(false);
 
 const eventStore = useEventStore();
 
@@ -41,28 +39,14 @@ const { apiImageUrl } = useRuntimeConfig().public;
 
 const eventService = getEventService(nuxtApp.$api);
 const { clientCode } = useRuntimeConfig().public;
-const isSendingWhatsApp = ref(false);
 
-const hasPreviousWhatsAppSend = computed(() => {
-  const status = guestDetails.value?.whatsAppQrStatus?.toLowerCase();
+const showWhatsAppColorModal = ref(false);
+const showWhatsAppResendQRCodeModal = ref(false);
 
-  return Boolean(
-    guestDetails.value?.whatsAppQrAcceptedAt ||
-      guestDetails.value?.whatsAppQrDeliveredAt ||
-      guestDetails.value?.whatsAppQrSeenAt ||
-      guestDetails.value?.whatsAppQrSentAt ||
-      (status &&
-        [
-          'accepted',
-          'delivered',
-          'seen',
-          'delivery_unknown',
-          'failed_temporary',
-          'failed',
-          'needs_review',
-        ].includes(status)),
-  );
-});
+const isSendingQRCodeWhatsApp = ref(false);
+const isSendingInvitationWhatsApp = ref(false);
+
+const showInvitationWhatsAppResendModal = ref(false);
 
 async function fetchDeskById(id: number) {
   if (!id) return;
@@ -94,7 +78,7 @@ watch(
   { immediate: true },
 );
 
-const exportInvitationAsImage = async () => {
+const exportQRImage = async () => {
   try {
     if (!import.meta.client) return;
 
@@ -129,7 +113,7 @@ const exportInvitationAsImage = async () => {
   }
 };
 
-const exportInvitationAsPdf = async () => {
+const exportQRPDF = async () => {
   try {
     isExporting.value = true;
     showForExport.value = true;
@@ -178,9 +162,9 @@ const startExport = (exportOptions: ExportQROptions) => {
   textColorExport.value = exportOptions.color;
 
   if (exportOptions.format === 'png') {
-    exportInvitationAsImage();
+    exportQRImage();
   } else if (exportOptions.format === 'pdf') {
-    exportInvitationAsPdf();
+    exportQRPDF();
   }
 
   showExportFormatModal.value = false;
@@ -190,16 +174,16 @@ const onConfirmWhatsAppColor = async (options: ExportQROptions) => {
   textColorExport.value = options.color;
   showWhatsAppColorModal.value = false;
 
-  if (hasPreviousWhatsAppSend.value) {
-    showWhatsAppResendModal.value = true;
+  if (hasPreviousQRCodeWhatsAppSend.value) {
+    showWhatsAppResendQRCodeModal.value = true;
     return;
   }
 
   await sendQrWhatsapp();
 };
 
-const confirmWhatsAppResend = async () => {
-  showWhatsAppResendModal.value = false;
+const confirmWhatsAppQrResend = async () => {
+  showWhatsAppResendQRCodeModal.value = false;
   await sendQrWhatsapp(true);
 };
 
@@ -248,9 +232,54 @@ const generateInvitationPng = async () => {
   }
 };
 
+const sortedOutbounds = computed(() =>
+  sortOutboundsByPriority(guestDetails.value?.whatsAppOutbounds),
+);
+
+const outboundTypeLabelMap: Record<GuestWhatsAppOutboundType, string> = {
+  [GuestWhatsAppOutboundType.Unknown]: 'Desconhecido',
+  [GuestWhatsAppOutboundType.QrCode]: 'QR Code',
+  [GuestWhatsAppOutboundType.Invitation]: 'Convite',
+  [GuestWhatsAppOutboundType.SaveTheDate]: 'Save the date',
+  [GuestWhatsAppOutboundType.Reminder]: 'Lembrete',
+};
+
+const getOutboundTypeLabel = (type: GuestWhatsAppOutboundType) =>
+  outboundTypeLabelMap[type] ?? 'Desconhecido';
+
+const visibleOutbounds = computed(() =>
+  (sortedOutbounds.value ?? []).filter((item) => {
+    return (
+      item.type !== GuestWhatsAppOutboundType.QrCode &&
+      item.type !== GuestWhatsAppOutboundType.SaveTheDate &&
+      item.type !== GuestWhatsAppOutboundType.Reminder
+    );
+  }),
+);
+
+const invitationOutbound = computed(() => {
+  return (guestDetails.value?.whatsAppOutbounds ?? []).find(
+    (item) => item.type === GuestWhatsAppOutboundType.Invitation,
+  );
+});
+
+const onSendInvitationWhatsapp = async () => {
+  if (hasPreviousInvitationWhatsAppSend.value) {
+    showInvitationWhatsAppResendModal.value = true;
+    return;
+  }
+
+  await sendInvitationWhatsapp();
+};
+
+const confirmInvitationWhatsAppResend = async () => {
+  showInvitationWhatsAppResendModal.value = false;
+  await sendInvitationWhatsapp();
+};
+
 const sendQrWhatsapp = async (force = false) => {
   try {
-    isSendingWhatsApp.value = true;
+    isSendingQRCodeWhatsApp.value = true;
 
     const eventId = eventStore.ensureSelected();
 
@@ -291,9 +320,99 @@ const sendQrWhatsapp = async (force = false) => {
     console.error(err);
     toast.error('Erro ao enviar o QR via WhatsApp.');
   } finally {
-    isSendingWhatsApp.value = false;
+    isSendingQRCodeWhatsApp.value = false;
   }
 };
+
+const sendInvitationWhatsapp = async () => {
+  try {
+    isSendingInvitationWhatsApp.value = true;
+
+    const eventId = eventStore.ensureSelected();
+
+    const res: SendWhatsAppOutboundToGuestResponse =
+      await invitationService.sendInvitationWhatsappToGuest(
+        eventId,
+        guestDetails.value.id,
+      );
+
+    await refreshGuest({ force: true });
+
+    const normalizedStatus = res.status?.toLowerCase();
+
+    if (normalizedStatus === 'invalid_phone') {
+      toast.info(res.reason || 'O convidado não possui um número válido.');
+      return;
+    }
+
+    if (normalizedStatus === 'accepted') {
+      toast.success(
+        'Convite enviado via WhatsApp com sucesso. A mensagem foi aceite pela plataforma e aguarda confirmação final.',
+      );
+      return;
+    }
+
+    if (normalizedStatus === 'failed') {
+      toast.error(res.reason || 'Erro ao enviar o convite via WhatsApp.');
+      return;
+    }
+
+    if (res.note) {
+      toast.info(res.note);
+      return;
+    }
+
+    toast.success('Envio do convite via WhatsApp iniciado com sucesso.');
+  } catch (err) {
+    console.error(err);
+    toast.error('Erro ao enviar o convite via WhatsApp.');
+  } finally {
+    isSendingInvitationWhatsApp.value = false;
+  }
+};
+
+const hasPreviousQRCodeWhatsAppSend = computed(() => {
+  const status = guestDetails.value?.whatsAppQrStatus?.toLowerCase();
+
+  return Boolean(
+    guestDetails.value?.whatsAppQrAcceptedAt ||
+      guestDetails.value?.whatsAppQrDeliveredAt ||
+      guestDetails.value?.whatsAppQrSeenAt ||
+      guestDetails.value?.whatsAppQrSentAt ||
+      (status &&
+        [
+          'accepted',
+          'delivered',
+          'seen',
+          'delivery_unknown',
+          'failed_temporary',
+          'failed',
+          'needs_review',
+        ].includes(status)),
+  );
+});
+
+const hasPreviousInvitationWhatsAppSend = computed(() => {
+  const outbound = invitationOutbound.value;
+
+  if (!outbound) return false;
+
+  return Boolean(
+    outbound.acceptedAt ||
+      outbound.deliveredAt ||
+      outbound.seenAt ||
+      outbound.sentAt ||
+      [
+        'accepted',
+        'delivered',
+        'seen',
+        'delivery_unknown',
+        'failed_temporary',
+        'failed',
+        'needs_review',
+      ].includes(outbound.status),
+  );
+});
 
 onMounted(() => {
   const componentName = siteConfig.qrCodeComponent;
@@ -324,43 +443,66 @@ onMounted(() => {
         <div
           class="mb-3 flex flex-col justify-between md:items-center lg:flex-row"
         >
-          <div class="my-3 flex gap-2">
-            <BaseButton
-              v-if="eventStore.eventQRCodeUrl"
-              btn-type="outline-primary"
-              btn-size="sm"
-              icon="download"
-              :disabled="isExporting"
-              class="animate-fadeIn"
-              @click="showExportFormatModal = true"
-            >
-              {{ isExporting ? 'A gerar QR Code...' : 'Gerar QR Code' }}
-            </BaseButton>
+          <div class="flex flex-col gap-2">
+            <div class="flex flex-wrap gap-2">
+              <BaseButton
+                v-if="eventStore.eventQRCodeUrl"
+                btn-type="outline-primary"
+                btn-size="sm"
+                icon="download"
+                :icon-size="16"
+                :disabled="isExporting"
+                class="animate-fadeIn"
+                @click="showExportFormatModal = true"
+              >
+                {{ isExporting ? 'A gerar QR Code...' : 'Gerar QR Code' }}
+              </BaseButton>
 
-            <BaseButton
-              v-if="canExportInvitation"
-              btn-type="outline-primary"
-              btn-size="sm"
-              icon="download"
-              :disabled="isGeneratingInvitation"
-              @click="generateInvitationPng"
-            >
-              {{
-                isGeneratingInvitation ? 'A gerar convite...' : 'Gerar Convite'
-              }}
-            </BaseButton>
-
-            <BaseButton
-              v-if="eventStore.eventQRCodeUrl"
-              btn-type="outline-primary"
-              btn-size="sm"
-              icon="whatsapp"
-              :disabled="isSendingWhatsApp"
-              class="animate-fadeIn"
-              @click="showWhatsAppColorModal = true"
-            >
-              {{ isSendingWhatsApp ? 'A enviar...' : 'Enviar QR Code' }}
-            </BaseButton>
+              <BaseButton
+                v-if="eventStore.eventQRCodeUrl"
+                btn-type="outline-primary"
+                btn-size="sm"
+                icon="whatsapp"
+                :icon-size="16"
+                :disabled="isSendingQRCodeWhatsApp"
+                class="animate-fadeIn"
+                @click="showWhatsAppColorModal = true"
+              >
+                {{ isSendingQRCodeWhatsApp ? 'A enviar...' : 'Enviar QR Code' }}
+              </BaseButton>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <BaseButton
+                v-if="canExportInvitation"
+                btn-type="outline-primary"
+                btn-size="sm"
+                icon="download"
+                :icon-size="16"
+                :disabled="isGeneratingInvitation"
+                @click="generateInvitationPng"
+              >
+                {{
+                  isGeneratingInvitation
+                    ? 'A gerar convite...'
+                    : 'Gerar Convite'
+                }}
+              </BaseButton>
+              <BaseButton
+                v-if="canExportInvitation"
+                btn-type="outline-primary"
+                btn-size="sm"
+                icon="whatsapp"
+                :icon-size="16"
+                :disabled="isSendingInvitationWhatsApp"
+                @click="onSendInvitationWhatsapp"
+              >
+                {{
+                  isSendingInvitationWhatsApp
+                    ? 'A enviar convite...'
+                    : 'Enviar convite'
+                }}
+              </BaseButton>
+            </div>
           </div>
         </div>
 
@@ -407,7 +549,7 @@ onMounted(() => {
             :description="guest.additional_Comments"
           />
 
-          <BaseDescriptionListItem title="WhatsApp">
+          <BaseDescriptionListItem title="WhatsApp - QR Code">
             <GuestsWhatsAppStatusChip
               :status="guestDetails.whatsAppQrStatus"
               :label="guestDetails.whatsAppQrStatusLabel"
@@ -416,13 +558,13 @@ onMounted(() => {
 
           <BaseDescriptionListItem
             v-if="guestDetails.whatsAppQrAcceptedAt"
-            title="Aceite pela plataforma em"
+            title="WhatsApp - QR Code aceite em"
             :description="formatDateWithTime(guestDetails.whatsAppQrAcceptedAt)"
           />
 
           <BaseDescriptionListItem
             v-if="guestDetails.whatsAppQrDeliveredAt"
-            title="Entregue em"
+            title="WhatsApp - QR Code entregue em"
             :description="
               formatDateWithTime(guestDetails.whatsAppQrDeliveredAt)
             "
@@ -430,21 +572,62 @@ onMounted(() => {
 
           <BaseDescriptionListItem
             v-if="guestDetails.whatsAppQrSeenAt"
-            title="Visualizado em"
+            title="WhatsApp - QR Code visualizado em"
             :description="formatDateWithTime(guestDetails.whatsAppQrSeenAt)"
           />
 
           <BaseDescriptionListItem
             v-if="guestDetails.whatsAppQrErrorMessage"
-            title="Detalhe do envio (WhatsApp)"
+            title="WhatsApp - Detalhe do QR Code"
             :description="guestDetails.whatsAppQrErrorMessage"
           />
 
           <BaseDescriptionListItem
             v-else-if="guestDetails.whatsAppQrSkipReason"
-            title="Detalhe do envio (WhatsApp)"
+            title="WhatsApp - Detalhe do QR Code"
             :description="guestDetails.whatsAppQrSkipReason"
           />
+
+          <template v-for="item in visibleOutbounds" :key="item.type">
+            <BaseDescriptionListItem
+              :title="`WhatsApp - ${getOutboundTypeLabel(item.type)}`"
+            >
+              <GuestsWhatsAppStatusChip
+                :status="item.status"
+                :label="item.statusLabel"
+              />
+            </BaseDescriptionListItem>
+
+            <BaseDescriptionListItem
+              v-if="item.acceptedAt"
+              :title="`WhatsApp - ${getOutboundTypeLabel(item.type)} aceite em`"
+              :description="formatDateWithTime(item.acceptedAt)"
+            />
+
+            <BaseDescriptionListItem
+              v-if="item.deliveredAt"
+              :title="`WhatsApp - ${getOutboundTypeLabel(item.type)} entregue em`"
+              :description="formatDateWithTime(item.deliveredAt)"
+            />
+
+            <BaseDescriptionListItem
+              v-if="item.seenAt"
+              :title="`WhatsApp - ${getOutboundTypeLabel(item.type)} visualizado em`"
+              :description="formatDateWithTime(item.seenAt)"
+            />
+
+            <BaseDescriptionListItem
+              v-if="item.errorMessage"
+              :title="`WhatsApp - Detalhe do ${getOutboundTypeLabel(item.type)}`"
+              :description="item.errorMessage"
+            />
+
+            <BaseDescriptionListItem
+              v-else-if="item.skipReason"
+              :title="`WhatsApp - Detalhe do ${getOutboundTypeLabel(item.type)}`"
+              :description="item.skipReason"
+            />
+          </template>
         </BaseDescriptionList>
 
         <div class="my-4 flex flex-wrap items-center space-x-2">
@@ -518,12 +701,20 @@ onMounted(() => {
       @export="onConfirmWhatsAppColor"
     />
 
-    <LazyGuestsWhatsAppResendModal
-      :show="showWhatsAppResendModal"
-      :loading="isSendingWhatsApp"
+    <LazyGuestsWhatsAppResendQRCodeModal
+      :show="showWhatsAppResendQRCodeModal"
+      :loading="isSendingQRCodeWhatsApp"
       :status-label="guestDetails?.whatsAppQrStatusLabel"
-      @close-modal="showWhatsAppResendModal = false"
-      @confirm="confirmWhatsAppResend"
+      @close-modal="showWhatsAppResendQRCodeModal = false"
+      @confirm="confirmWhatsAppQrResend"
+    />
+
+    <LazyGuestsWhatsAppResendInvitationModal
+      :show="showInvitationWhatsAppResendModal"
+      :loading="isSendingInvitationWhatsApp"
+      :status-label="invitationOutbound?.statusLabel"
+      @close-modal="showInvitationWhatsAppResendModal = false"
+      @confirm="confirmInvitationWhatsAppResend"
     />
   </BaseCard>
 </template>

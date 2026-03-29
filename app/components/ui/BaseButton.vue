@@ -12,7 +12,7 @@ const props = withDefaults(defineProps<IButtonProps>(), {
   icon: '',
   iconSize: 28,
   loading: false,
-  onlyIcon: false, 
+  onlyIcon: false,
 });
 
 const getButtonStyleClass = () => {
@@ -33,6 +33,12 @@ const getButtonSizeClass = () => {
   return 'px-5 py-3 text-sm';
 };
 
+const buttonRef = ref<HTMLButtonElement | null>(null);
+
+defineExpose({
+  focus: () => buttonRef.value?.focus(),
+  el: buttonRef,
+});
 const getButtonClass = computed(() => {
   const btnClasses = [];
 
@@ -43,13 +49,14 @@ const getButtonClass = computed(() => {
   btnClasses.push(getButtonStyleClass());
   btnClasses.push(getButtonSizeClass());
 
-  if (props.icon && !props.onlyIcon) btnClasses.push('flex items-center justify-center gap-2');
+  if (props.icon && !props.onlyIcon)
+    btnClasses.push('flex items-center justify-center gap-2');
 
   return btnClasses.join(' ');
 });
 </script>
 <template>
-  <button v-bind="$attrs" :class="getButtonClass">
+  <button ref="buttonRef" v-bind="$attrs" :class="getButtonClass">
     <template v-if="icon">
       <component
         :is="`icon-${icon}`"

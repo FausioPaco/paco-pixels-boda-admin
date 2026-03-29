@@ -1,14 +1,17 @@
 import { getGuestService } from '~/services/guestService';
 
-export const useGuest = async (guestId: number) => {
+export const useGuest = async (
+  guestId: number,
+  whatsAppOutboundType?: GuestWhatsAppOutboundType,
+) => {
   const guest = useState<Guest | null>('get-guest', () => null);
   const nuxtApp = useNuxtApp();
 
-  const key = 'get-guest-' + guestId;
+  const key = `get-guest-${guestId}-${whatsAppOutboundType ?? 'all'}`;
 
   const { data, refresh, status } = await useAsyncData(
     key,
-    () => getGuestService(nuxtApp.$api).getGuest(guestId),
+    () => getGuestService(nuxtApp.$api).getGuest(guestId, whatsAppOutboundType),
     {
       default: () => null,
       transform(input) {
