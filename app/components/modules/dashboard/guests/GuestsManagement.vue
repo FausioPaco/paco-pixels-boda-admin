@@ -311,6 +311,120 @@ const anyExportRunning = computed(
     invitationWhatsAppJob.value?.status === 'Running',
 );
 
+const sendBulkOptions = computed(() => {
+  const options: Array<{ id: string; label: string }> = [];
+
+  if (eventStore.eventQRCodeUrl && !eventStore.eventModeView) {
+    options.push({
+      id: 'send-qrs',
+      label:
+        waJob.value?.status === 'Pending' || waJob.value?.status === 'Running'
+          ? `QR Codes — A enviar... ${waJob.value?.percent ?? 0}%`
+          : 'Enviar QRs',
+    });
+  }
+
+  if (
+    canManageInvitations.value &&
+    canExport.value &&
+    !eventStore.eventModeView
+  ) {
+    options.push({
+      id: 'send-invitations',
+      label:
+        invitationWhatsAppJob.value?.status === 'Pending' ||
+        invitationWhatsAppJob.value?.status === 'Running'
+          ? `Convites — A enviar... ${invitationWhatsAppJob.value?.percent ?? 0}%`
+          : 'Enviar convites',
+    });
+  }
+
+  return options;
+});
+
+const exportBulkOptions = computed(() => {
+  const options: Array<{ id: string; label: string }> = [];
+
+  if (eventStore.eventQRCodeUrl && !eventStore.eventModeView) {
+    options.push({
+      id: 'export-qrs',
+      label:
+        qrJob.value?.status === 'Pending' || qrJob.value?.status === 'Running'
+          ? `QR Codes — A exportar... ${qrJob.value?.percent ?? 0}%`
+          : 'Exportar QR Codes',
+    });
+  }
+
+  if (
+    canManageInvitations.value &&
+    canExport.value &&
+    !eventStore.eventModeView
+  ) {
+    options.push({
+      id: 'export-invitations',
+      label:
+        invitationJob.value?.status === 'Pending' ||
+        invitationJob.value?.status === 'Running'
+          ? `Convites — A exportar... ${invitationJob.value?.percent ?? 0}%`
+          : 'Exportar Convites',
+    });
+  }
+
+  return options;
+});
+
+const sendBulkLabel = computed(() => {
+  if (waJob.value?.status === 'Pending' || waJob.value?.status === 'Running') {
+    return `Enviar em massa... ${waJob.value?.percent ?? 0}%`;
+  }
+
+  if (
+    invitationWhatsAppJob.value?.status === 'Pending' ||
+    invitationWhatsAppJob.value?.status === 'Running'
+  ) {
+    return `Enviar em massa... ${invitationWhatsAppJob.value?.percent ?? 0}%`;
+  }
+
+  return 'Enviar em massa';
+});
+
+const exportBulkLabel = computed(() => {
+  if (qrJob.value?.status === 'Pending' || qrJob.value?.status === 'Running') {
+    return `Exportar em massa... ${qrJob.value?.percent ?? 0}%`;
+  }
+
+  if (
+    invitationJob.value?.status === 'Pending' ||
+    invitationJob.value?.status === 'Running'
+  ) {
+    return `Exportar em massa... ${invitationJob.value?.percent ?? 0}%`;
+  }
+
+  return 'Exportar em massa';
+});
+
+const handleSendBulkSelect = (option: { id: string }) => {
+  if (option.id === 'send-qrs') {
+    showWhatsAppSendModal.value = true;
+    return;
+  }
+
+  if (option.id === 'send-invitations') {
+    showInvitationWhatsAppSendModal.value = true;
+  }
+};
+
+const handleExportBulkSelect = (option: { id: string }) => {
+  if (option.id === 'export-qrs') {
+    showExportFormatModal.value = true;
+    return;
+  }
+
+  if (option.id === 'export-invitations') {
+    exportInvitations();
+  }
+};
+
 const startExport = (exportOptions: ExportQROptions) => {
   textColorExport.value = exportOptions.color;
 
@@ -338,6 +452,21 @@ const activeExportModalJob = computed(() => {
 
   return null;
 });
+
+const activeExportModalJobTitle = computed(() => {
+  const job = activeTrackedJob.value;
+  if (!job) return null;
+
+  if (job.kind === 'qr-export') {
+    return 'Exportação de QR Codes';
+  }
+
+  if (job.kind === 'invitation-export') {
+    return 'Exportação de Convites';
+  }
+
+  return null;
+});
 </script>
 <template>
   <BaseCard
@@ -345,97 +474,47 @@ const activeExportModalJob = computed(() => {
     description="Faça a gestão dos convidados deste evento aqui"
   >
     <template #right-content>
-      <BaseButton
-        btn-type="outline-primary"
-        btn-size="sm"
-        :icon-size="24"
-        :icon="eventStore.eventModeView ? 'hide' : 'view'"
-        @click="eventStore.toggleEventMode()"
-      >
-        {{
-          eventStore.eventModeView
-            ? 'Desactivar modo evento'
-            : 'Ver em modo evento'
-        }}
-      </BaseButton>
+      <div class="flex flex-wrap gap-2">
+        <BaseButton
+          btn-type="outline-primary"
+          btn-size="sm"
+          :icon-size="24"
+          :icon="eventStore.eventModeView ? 'hide' : 'view'"
+          @click="eventStore.toggleEventMode()"
+        >
+          {{
+            eventStore.eventModeView
+              ? 'Desactivar modo evento'
+              : 'Ver em modo evento'
+          }}
+        </BaseButton>
+
+        <BaseButtonDropdown
+          v-if="exportBulkOptions.length"
+          btn-type="outline-primary"
+          btn-size="sm"
+          icon="download"
+          :icon-size="20"
+          :disabled="anyExportRunning"
+          :label="exportBulkLabel"
+          :options="exportBulkOptions"
+          align="right"
+          @select="handleExportBulkSelect"
+        />
+
+        <BaseButtonDropdown
+          v-if="sendBulkOptions.length"
+          btn-type="outline-primary"
+          btn-size="sm"
+          icon="whatsapp"
+          :icon-size="20"
+          :disabled="anyExportRunning"
+          :label="sendBulkLabel"
+          :options="sendBulkOptions"
+          @select="handleSendBulkSelect"
+        />
+      </div>
     </template>
-
-    <div
-      class="mb-8 mt-3 flex flex-wrap justify-start gap-2 md:justify-between"
-    >
-      <div class="flex flex-wrap gap-2">
-        <BaseButton
-          v-if="eventStore.eventQRCodeUrl && !eventStore.eventModeView"
-          btn-type="outline-primary"
-          btn-size="sm"
-          icon="whatsapp"
-          :icon-size="20"
-          :disabled="anyExportRunning"
-          class="animate-fadeIn"
-          @click="showWhatsAppSendModal = true"
-        >
-          {{
-            waJob?.status === 'Pending' || waJob?.status === 'Running'
-              ? `A enviar... ${waJob?.percent ?? 0}%`
-              : 'Enviar QRs'
-          }}
-        </BaseButton>
-
-        <BaseButton
-          v-if="canManageInvitations && canExport && !eventStore.eventModeView"
-          btn-type="outline-primary"
-          btn-size="sm"
-          icon="whatsapp"
-          :icon-size="20"
-          :disabled="anyExportRunning"
-          class="animate-fadeIn"
-          @click="showInvitationWhatsAppSendModal = true"
-        >
-          {{
-            invitationWhatsAppJob?.status === 'Pending' ||
-            invitationWhatsAppJob?.status === 'Running'
-              ? `A enviar... ${invitationWhatsAppJob?.percent ?? 0}%`
-              : 'Enviar convites'
-          }}
-        </BaseButton>
-      </div>
-
-      <div class="flex flex-wrap gap-2">
-        <BaseButton
-          v-if="eventStore.eventQRCodeUrl && !eventStore.eventModeView"
-          btn-type="outline-primary"
-          btn-size="sm"
-          :icon-size="20"
-          icon="download"
-          :disabled="anyExportRunning"
-          class="animate-fadeIn"
-          @click="showExportFormatModal = true"
-        >
-          {{
-            qrJob?.status === 'Pending' || qrJob?.status === 'Running'
-              ? `A exportar... ${qrJob?.percent ?? 0}%`
-              : 'Exportar QR Codes'
-          }}
-        </BaseButton>
-        <BaseButton
-          v-if="canManageInvitations && canExport && !eventStore.eventModeView"
-          btn-size="sm"
-          :icon-size="20"
-          icon="download"
-          :disabled="anyExportRunning"
-          class="animate-fadeIn"
-          btn-type="outline-primary"
-          @click="exportInvitations()"
-        >
-          {{
-            invitationJob?.status === 'Pending' ||
-            invitationJob?.status === 'Running'
-              ? `A exportar... ${invitationJob?.percent ?? 0}%`
-              : 'Exportar Convites'
-          }}
-        </BaseButton>
-      </div>
-    </div>
 
     <!-- Tabs -->
     <BaseTab>
@@ -498,6 +577,7 @@ const activeExportModalJob = computed(() => {
     <GuestsExportStatusModal
       v-if="activeExportModalJob"
       :show="true"
+      :title="activeExportModalJobTitle"
       :export-total="activeExportModalJob.total"
       :export-processed="activeExportModalJob.processed"
       :export-percent="activeExportModalJob.percent"
