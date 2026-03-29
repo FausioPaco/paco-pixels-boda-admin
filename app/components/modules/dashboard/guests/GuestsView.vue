@@ -663,6 +663,7 @@ onMounted(() => {
     </div>
 
     <div
+      v-if="eventStore.eventQRCodeUrl"
       class="pointer-events-none fixed left-[-9999px] top-[-9999px] opacity-0"
     >
       <component
