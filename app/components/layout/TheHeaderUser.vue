@@ -125,6 +125,25 @@ const openLink = (url: string) => {
               >
             </NuxtLink>
           </li>
+          <li
+            v-if="path.includes('/admin')"
+            class="hover:bg-primary-100 group cursor-pointer p-2 transition-colors duration-300"
+            @click.prevent="openLink('https://convitesmariee.boda.co.mz/')"
+          >
+            <NuxtLink
+              to="https://convitesmarieeingles.boda.co.mz/"
+              class="group-hover:text-primary-500 relative flex items-center space-x-2 text-sm no-underline transition-colors duration-300"
+              external
+            >
+              <icon-digital-invitation
+                :font-controlled="false"
+                class="text-grey-600 group-hover:text-primary-500 h-4 w-4"
+              ></icon-digital-invitation
+              ><span class="text-grey-600 group-hover:text-primary-500"
+                >Convites Digitais (inglês)</span
+              >
+            </NuxtLink>
+          </li>
 
           <li
             class="hover:bg-primary-100 group cursor-pointer p-2 transition-colors duration-300"
