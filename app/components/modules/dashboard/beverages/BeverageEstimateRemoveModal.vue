@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useToast } from 'vue-toastification';
 import { getBeverageService } from '~/services/beverageService';
+import { isFetchErrorLike } from '~/utils/serverUtils';
 
 type Props = {
   show?: boolean;

@@ -4,6 +4,7 @@ import { useForm } from 'vee-validate';
 import { useToast } from 'vue-toastification';
 import { number, object, string } from 'yup';
 import { getBeverageService } from '~/services/beverageService';
+import { isFetchErrorLike } from '~/utils/serverUtils';
 
 const props = withDefaults(
   defineProps<{

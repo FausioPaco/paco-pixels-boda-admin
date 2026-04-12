@@ -1,14 +1,20 @@
+export type ServerValidationErrors =
+  | Record<string, string | string[]>
+  | Array<string>
+  | null
+  | undefined;
+
 export type ServerError = {
   hasErrors: boolean;
   message: string;
+  code?: string | null;
+  status?: number | null;
+  traceId?: string | null;
+  errors?: ServerValidationErrors;
 };
 
-type FetchErrorLike = {
+export type FetchErrorLike = {
   data?: unknown;
   statusCode?: number;
   message?: string;
 };
-
-export function isFetchErrorLike(e: unknown): e is FetchErrorLike {
-  return typeof e === 'object' && e !== null && 'data' in e;
-}

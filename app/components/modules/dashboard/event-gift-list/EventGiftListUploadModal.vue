@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useToast } from 'vue-toastification';
 import { getEventGiftListService } from '~/services/eventGiftListService';
+import { isFetchErrorLike } from '~/utils/serverUtils';
 
 interface Props {
   show?: boolean;

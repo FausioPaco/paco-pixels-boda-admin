@@ -4,6 +4,7 @@ import { useForm } from 'vee-validate';
 import { useToast } from 'vue-toastification';
 import { array, mixed, number, object } from 'yup';
 import { getBeverageService } from '~/services/beverageService';
+import { isFetchErrorLike } from '~/utils/serverUtils';
 
 type RestockMode = 'UNITS' | 'BOXES';
 

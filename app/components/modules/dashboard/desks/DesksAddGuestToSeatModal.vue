@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getGuestService } from '~/services/guestService'; // ajusta o caminho se for diferente
+import { isFetchErrorLike } from '~/utils/serverUtils';
 
 type DeskGuestLite = {
   id: number;
