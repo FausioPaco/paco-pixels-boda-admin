@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useToast } from 'vue-toastification';
 import { getEventProgramService } from '~/services/eventProgramService';
+import { isFetchErrorLike } from '~/utils/serverUtils';
 
 const props = withDefaults(
   defineProps<{

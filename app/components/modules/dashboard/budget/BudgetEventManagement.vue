@@ -3,6 +3,7 @@ import draggable from 'vuedraggable';
 import { useToast } from 'vue-toastification';
 import { getBudgetService } from '~/services/budgetService';
 import { downloadBlob } from '~/utils/fileUtils';
+import { isFetchErrorLike } from '~/utils/serverUtils';
 
 type SortableEvent = {
   item: HTMLElement;

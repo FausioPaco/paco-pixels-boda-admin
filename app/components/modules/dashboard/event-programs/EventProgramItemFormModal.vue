@@ -4,6 +4,7 @@ import { useForm } from 'vee-validate';
 import { useToast } from 'vue-toastification';
 import { object, string } from 'yup';
 import { getEventProgramService } from '~/services/eventProgramService';
+import { isFetchErrorLike } from '~/utils/serverUtils';
 
 interface Props {
   show?: boolean;

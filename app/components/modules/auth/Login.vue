@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import { getAuthService } from '~/services/authService';
 import { getEventService } from '~/services/eventService';
 import { isMultiEventStaffUser } from '~~/shared/constants/roles';
+import { isFetchErrorLike } from '~/utils/serverUtils';
 
 const isSubmiting = ref<boolean>(false);
 const serverErrors = ref<ServerError>({
@@ -101,12 +102,14 @@ const onSubmit = handleSubmit(async (values) => {
     setTimeout(async () => {
       await handlePostLoginRedirect();
     }, 100);
-  } catch (err: ApiServerError) {
-    console.error(err?.data);
+  } catch (err) {
+    console.error(err);
 
     serverErrors.value = {
       hasErrors: true,
-      message: getServerErrors(err?.data ?? err),
+      message: isFetchErrorLike(err)
+        ? getServerErrors(err.data)
+        : 'Ocorreu um erro ao autenticar',
     };
 
     isSubmiting.value = false;

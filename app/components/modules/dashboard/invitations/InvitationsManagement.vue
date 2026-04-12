@@ -4,6 +4,7 @@ import { object, string } from 'yup';
 import { toTypedSchema } from '@vee-validate/yup';
 import { useForm } from 'vee-validate';
 import { getInvitationService } from '~/services/invitationService';
+import { isFetchErrorLike } from '~/utils/serverUtils';
 
 const toast = useToast();
 

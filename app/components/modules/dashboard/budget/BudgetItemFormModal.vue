@@ -4,6 +4,7 @@ import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import { number, object, string, mixed } from 'yup';
 import { getBudgetService } from '~/services/budgetService';
+import { isFetchErrorLike } from '~/utils/serverUtils';
 
 type Mode = 'EVENT' | 'TEMPLATE';
 type TabKey = 'DETAILS' | 'INSTALLMENTS';
