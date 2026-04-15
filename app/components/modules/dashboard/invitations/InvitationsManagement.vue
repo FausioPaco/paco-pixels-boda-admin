@@ -524,7 +524,7 @@ const hasCover = computed(() => {
             <img
               v-if="t.thumbnail_Url"
               :src="`${apiImageUrl}${t.thumbnail_Url}`"
-              class="block w-full"
+              class="block h-[340px] w-[380px] max-w-full object-cover object-left"
               alt="Template"
             />
             <div v-else class="text-grey-500 p-6 text-sm">Sem imagem</div>
