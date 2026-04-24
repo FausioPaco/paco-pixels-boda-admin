@@ -265,7 +265,10 @@ onMounted(() => {
             type="button"
             btn-type="outline-primary"
             class="w-fit"
-            @click="showTaskModal = true"
+            @click="
+              editingTask = undefined;
+              showTaskModal = true;
+            "
           >
             + Nova tarefa
           </BaseButton>
