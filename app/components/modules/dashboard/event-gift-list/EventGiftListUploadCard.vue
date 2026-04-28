@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{ giftList: EventGiftList }>();
+const { t } = useI18n();
 const { apiImageUrl } = useRuntimeConfig().public;
 
 defineEmits(['upload']);
@@ -9,7 +10,9 @@ const fileName = computed(() => props.giftList?.file?.originalFileName ?? null);
 
 const mimeType = computed(() => {
   if (!props.giftList?.file) return null;
-  return props.giftList.file.mimeType === 'application/pdf' ? 'PDF' : 'Imagem';
+  return props.giftList.file.mimeType === 'application/pdf'
+    ? 'PDF'
+    : t('event_gift_list.image');
 });
 
 const downloadFile = () => {
@@ -17,7 +20,7 @@ const downloadFile = () => {
 
   const a = document.createElement('a');
   a.href = fileUrl.value;
-  a.download = fileName.value ?? 'lista-presentes';
+  a.download = fileName.value ?? t('event_gift_list.download_filename');
   a.target = '_blank';
   a.rel = 'noopener noreferrer';
   document.body.appendChild(a);
@@ -56,11 +59,10 @@ const isPdf = computed(
     >
       <div class="space-y-1">
         <h3 class="text-primary-700 text-xl font-bold">
-          Carregar lista de presentes
+          {{ t('event_gift_list.upload_card_title') }}
         </h3>
         <p class="text-grey-400 max-w-[760px] text-sm">
-          Se já tem a lista de presentes em PDF ou imagem, carregue-a aqui para
-          ser partilhada com os convidados.
+          {{ t('event_gift_list.upload_card_description') }}
         </p>
       </div>
 
@@ -71,7 +73,11 @@ const isPdf = computed(
         class="sm:mt-1"
         @click="$emit('upload')"
       >
-        {{ fileUrl ? 'Substituir ficheiro' : 'Carregar agora' }}
+        {{
+          fileUrl
+            ? t('event_gift_list.replace_file')
+            : t('event_gift_list.upload_now')
+        }}
       </BaseButton>
     </div>
 
@@ -99,10 +105,10 @@ const isPdf = computed(
 
             <div class="min-w-0">
               <p class="text-grey-900 truncate text-sm font-semibold">
-                {{ fileName ?? 'Ficheiro da lista de presentes' }}
+                {{ fileName ?? t('event_gift_list.default_file_name') }}
               </p>
               <p class="text-grey-400 mt-0.5 text-xs">
-                {{ mimeType ?? 'Formato desconhecido' }}
+                {{ mimeType ?? t('event_gift_list.unknown_format') }}
               </p>
             </div>
           </div>
@@ -116,7 +122,7 @@ const isPdf = computed(
               :disabled="!fileUrl"
               @click="downloadFile"
             >
-              Baixar
+              {{ t('event_gift_list.download') }}
             </BaseButton>
 
             <BaseButton
@@ -127,7 +133,7 @@ const isPdf = computed(
               :disabled="!fileUrl"
               @click="openFileInNewTab"
             >
-              Abrir
+              {{ t('event_gift_list.open') }}
             </BaseButton>
           </div>
         </div>
@@ -136,8 +142,8 @@ const isPdf = computed(
       <BaseAlert
         v-else
         :show="showFileUploadAlert"
-        title="Sem ficheiro carregado"
-        message="Ainda não foi carregado nenhum ficheiro."
+        :title="t('event_gift_list.no_file_title')"
+        :message="t('event_gift_list.no_file_message')"
         type="informative"
         @close="showFileUploadAlert = !showFileUploadAlert"
       />

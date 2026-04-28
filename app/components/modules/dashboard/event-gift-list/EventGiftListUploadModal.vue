@@ -11,6 +11,7 @@ withDefaults(defineProps<Props>(), { show: false });
 const emit = defineEmits(['closeModal', 'success']);
 
 const toast = useToast();
+const { t } = useI18n();
 const { eventId } = useEventStore();
 
 const nuxtApp = useNuxtApp();
@@ -63,7 +64,7 @@ const onFileSelected = (event: Event) => {
 
   const maxBytes = 25 * 1024 * 1024;
   if (file.size > maxBytes) {
-    errorMessage.value = 'O ficheiro excede o tamanho máximo de 25MB.';
+    errorMessage.value = t('event_gift_list.file_too_large');
     target.value = '';
     return;
   }
@@ -71,7 +72,7 @@ const onFileSelected = (event: Event) => {
   const pdf = file.type === 'application/pdf';
   const image = file.type?.startsWith('image/');
   if (!pdf && !image) {
-    errorMessage.value = 'Apenas PDF ou imagens são permitidos.';
+    errorMessage.value = t('event_gift_list.file_type_error');
     target.value = '';
     return;
   }
@@ -86,13 +87,16 @@ const onSubmit = async () => {
   if (!eventId) {
     serverErrors.value = {
       hasErrors: true,
-      message: 'O evento não foi encontrado.',
+      message: t('event_gift_list.event_not_found'),
     };
     return;
   }
 
   if (!localFile.value) {
-    serverErrors.value = { hasErrors: true, message: 'Selecione um ficheiro.' };
+    serverErrors.value = {
+      hasErrors: true,
+      message: t('event_gift_list.file_required'),
+    };
     return;
   }
 
@@ -102,14 +106,14 @@ const onSubmit = async () => {
 
     await service.uploadGiftListFile(eventId, localFile.value);
 
-    toast.success('Ficheiro carregado com sucesso.');
+    toast.success(t('event_gift_list.upload_success'));
     emit('success');
     resetState();
   } catch (err: unknown) {
     if (isFetchErrorLike(err)) {
       serverErrors.value.message = getServerErrors(err.data);
     } else {
-      serverErrors.value.message = 'Ocorreu um erro ao carregar o ficheiro.';
+      serverErrors.value.message = t('event_gift_list.upload_error');
     }
     serverErrors.value.hasErrors = true;
   } finally {
@@ -120,7 +124,7 @@ const onSubmit = async () => {
 
 <template>
   <BaseModal
-    title="Carregar lista de presentes"
+    :title="t('event_gift_list.upload_modal_title')"
     :show="show"
     @close-modal="closeModal"
   >
@@ -138,21 +142,24 @@ const onSubmit = async () => {
               <p
                 class="text-primary-500 text-sm font-medium uppercase tracking-[0.16em]"
               >
-                Lista de Presentes
+                {{ t('event_gift_list.document_title') }}
               </p>
               <h2 class="text-grey-900 mt-1 text-xl font-semibold">
                 {{
                   hasFile
-                    ? 'Ficheiro seleccionado'
-                    : 'Carregar ficheiro da lista'
+                    ? t('event_gift_list.file_selected')
+                    : t('event_gift_list.upload_file_title')
                 }}
               </h2>
             </div>
           </div>
 
           <p class="text-grey-600 text-sm leading-relaxed">
-            Carregue um <b>PDF</b> ou uma <b>imagem</b> com a sua lista de
-            presentes.
+            {{ t('event_gift_list.upload_help_before') }}
+            <b>PDF</b>
+            {{ t('event_gift_list.upload_help_or') }}
+            <b>{{ t('event_gift_list.image') }}</b>
+            {{ t('event_gift_list.upload_help_after') }}
           </p>
 
           <button
@@ -169,7 +176,7 @@ const onSubmit = async () => {
             <img
               v-if="previewUrl && isImage"
               :src="previewUrl"
-              alt="Pré-visualização da lista de presentes"
+              :alt="t('event_gift_list.preview_alt')"
               class="h-full w-full rounded-2xl object-cover md:h-[360px] md:w-[420px]"
             />
 
@@ -182,7 +189,7 @@ const onSubmit = async () => {
                 class="text-primary-700 block size-[48px]"
               />
               <p class="text-primary-800 text-base font-semibold">
-                Ficheiro PDF seleccionado
+                {{ t('event_gift_list.pdf_selected') }}
               </p>
               <p
                 class="text-grey-500 max-w-[320px] break-words text-center text-xs"
@@ -202,12 +209,12 @@ const onSubmit = async () => {
               <p
                 class="text-grey-400 group-hover:text-primary-700 text-lg font-semibold"
               >
-                Clique aqui para seleccionar o ficheiro
+                {{ t('event_gift_list.click_to_select') }}
               </p>
               <p
                 class="text-grey-400 group-hover:text-primary-700 text-xs font-medium"
               >
-                PDF ou imagem · Até 25MB
+                {{ t('event_gift_list.file_requirements') }}
               </p>
             </div>
           </button>
@@ -218,16 +225,19 @@ const onSubmit = async () => {
               :disabled="isSubmiting"
               @click="openFileDialog"
             >
-              Alterar ficheiro
+              {{ t('event_gift_list.change_file') }}
             </BaseButton>
           </div>
 
           <p class="text-grey-500 text-xs">
-            Formatos permitidos:
-            <b class="text-primary-800">PDF, JPG, PNG ou WEBP</b>
+            {{ t('event_gift_list.allowed_formats') }}
+            <b class="text-primary-800">{{
+              t('event_gift_list.allowed_formats_value')
+            }}</b>
           </p>
           <p class="text-xs">
-            Tamanho máximo: <b class="text-primary-800">25MB</b>
+            {{ t('event_gift_list.max_size') }}
+            <b class="text-primary-800">25MB</b>
           </p>
 
           <BaseError v-if="serverErrors.hasErrors" class="mt-3">
@@ -253,7 +263,7 @@ const onSubmit = async () => {
             :disabled="isSubmiting"
             @click="closeModal"
           >
-            Cancelar
+            {{ t('common.cancel') }}
           </BaseButton>
 
           <BaseButton
@@ -261,7 +271,11 @@ const onSubmit = async () => {
             :disabled="!hasFile || isSubmiting"
             @click="onSubmit"
           >
-            {{ isSubmiting ? 'A carregar...' : 'Carregar agora' }}
+            {{
+              isSubmiting
+                ? t('event_gift_list.uploading')
+                : t('event_gift_list.upload_now')
+            }}
           </BaseButton>
         </div>
       </div>

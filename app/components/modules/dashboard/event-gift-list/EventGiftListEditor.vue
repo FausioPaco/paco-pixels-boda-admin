@@ -4,13 +4,14 @@ import { useToast } from 'vue-toastification';
 import { sanitizeRichHtml } from '~/utils/sanitizeHtml';
 
 const toast = useToast();
+const { t } = useI18n();
 const { eventId, eventName, eventSlug } = useEventStore();
 const { apiImageUrl } = useRuntimeConfig().public;
 
 const pdfRef = ref<HTMLElement | null>(null);
 const nuxtApp = useNuxtApp();
 
-const getCoupleName = () => eventName ?? 'Noivos';
+const getCoupleName = () => eventName ?? t('event_gift_list.couple_fallback');
 
 const {
   giftList,
@@ -55,7 +56,7 @@ const onSave = async () => {
   const clean = sanitizeRichHtml(localHtml.value ?? '', apiImageUrl);
 
   await updateEditor(clean);
-  toast.success('Lista de presentes guardada com sucesso.');
+  toast.success(t('event_gift_list.saved_success'));
 };
 
 // Upload
@@ -66,7 +67,7 @@ const generatePdf = async () => {
   if (!pdfRef.value) return;
 
   if (!localHtml.value?.trim()) {
-    toast.info('Ainda não existe conteúdo na lista de presentes.');
+    toast.info(t('event_gift_list.empty_pdf_info'));
     return;
   }
 
@@ -108,10 +109,10 @@ const generatePdf = async () => {
       heightLeft -= pageHeight;
     }
 
-    doc.save(`lista-presentes-${eventSlug}.pdf`);
+    doc.save(`${t('event_gift_list.pdf_filename_prefix')}-${eventSlug}.pdf`);
   } catch (e) {
     console.error(e);
-    toast.error('Não foi possível gerar o PDF.');
+    toast.error(t('event_gift_list.pdf_error'));
   }
 };
 
@@ -132,8 +133,16 @@ watch(errorMessage, (val) => {
           <BaseMiniSwitch
             :model-value="giftList?.mode ?? 'manual'"
             :items="[
-              { value: 'manual', label: 'Escrever lista', icon: 'document' },
-              { value: 'upload', label: 'Carregar ficheiro', icon: 'upload' },
+              {
+                value: 'manual',
+                label: t('event_gift_list.mode_manual'),
+                icon: 'document',
+              },
+              {
+                value: 'upload',
+                label: t('event_gift_list.mode_upload'),
+                icon: 'upload',
+              },
             ]"
             :disabled="isPersisting"
             size="sm"
@@ -150,7 +159,7 @@ watch(errorMessage, (val) => {
             :icon-size="16"
             @click="refreshEventGiftList"
           >
-            Actualizar
+            {{ t('event_gift_list.refresh') }}
           </BaseButton>
 
           <BaseButton
@@ -162,7 +171,7 @@ watch(errorMessage, (val) => {
             :disabled="isPersisting"
             @click="generatePdf"
           >
-            Gerar PDF
+            {{ t('event_gift_list.generate_pdf') }}
           </BaseButton>
 
           <BaseButton
@@ -174,7 +183,7 @@ watch(errorMessage, (val) => {
             :disabled="isPersisting"
             @click="onSave"
           >
-            Salvar
+            {{ t('common.save') }}
           </BaseButton>
         </div>
       </div>
@@ -200,11 +209,10 @@ watch(errorMessage, (val) => {
         <div v-else class="rounded-2xl border bg-white p-5">
           <div class="space-y-2">
             <h3 class="text-primary-700 text-xl font-bold">
-              Escrever lista de presentes
+              {{ t('event_gift_list.editor_title') }}
             </h3>
             <p class="text-grey-400 text-sm">
-              Escreva aqui a sua lista de presentes. O conteúdo será partilhado
-              com os convidados.
+              {{ t('event_gift_list.editor_description') }}
             </p>
           </div>
 
@@ -213,8 +221,8 @@ watch(errorMessage, (val) => {
               <TipTapEditor
                 id="giftsHTML"
                 v-model="localHtml"
-                label="Descrição"
-                placeholder="Coloque a descrição aqui"
+                :label="t('event_gift_list.description_label')"
+                :placeholder="t('event_gift_list.description_placeholder')"
               />
             </ClientOnly>
 
@@ -227,7 +235,7 @@ watch(errorMessage, (val) => {
               :disabled="isPersisting"
               @click="onSave"
             >
-              Salvar
+              {{ t('common.save') }}
             </BaseButton>
           </div>
         </div>
@@ -247,7 +255,7 @@ watch(errorMessage, (val) => {
       <div ref="pdfRef">
         <EventGiftListPdfDocument
           :couple-name="getCoupleName()"
-          document-title="Lista de Presentes"
+          :document-title="t('event_gift_list.document_title')"
           :html="sanitizedForPreview"
         />
       </div>

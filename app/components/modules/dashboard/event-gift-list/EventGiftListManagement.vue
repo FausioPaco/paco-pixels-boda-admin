@@ -1,9 +1,11 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+const { t } = useI18n();
+</script>
 
 <template>
   <BaseCard
-    title="Lista de Presentes"
-    description="Crie a lista no editor ou carregue um ficheiro para partilhar com os convidados"
+    :title="t('event_gift_list.card_title')"
+    :description="t('event_gift_list.card_description')"
   >
     <EventGiftListEditor />
   </BaseCard>
