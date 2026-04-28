@@ -26,7 +26,7 @@ const emit = defineEmits<{ (e: 'close' | 'saved'): void }>();
 const toast = useToast();
 const nuxtApp = useNuxtApp();
 const budgetService = getBudgetService(nuxtApp.$api);
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 // ------------------------
 // Tabs
@@ -42,26 +42,56 @@ const schema = toTypedSchema(
   object({
     title: string()
       .trim()
-      .min(2, 'O título deve ter pelo menos 2 caracteres.')
-      .max(200)
-      .required(),
-    estimatedAmount: number().typeError('Valor inválido.').min(0).required(),
-    actualCost: number().typeError('Valor inválido.').min(0).required(),
-    paidAmount: number().typeError('Valor inválido.').min(0).required(),
-    notes: string().trim().max(2000).optional(),
+      .min(2, () => t('budget.validation_title_min'))
+      .max(200, () => t('budget.validation_title_max'))
+      .required(() => t('budget.validation_title_required')),
+    estimatedAmount: number()
+      .typeError(() => t('budget.value_invalid'))
+      .min(0, () => t('budget.validation_amount_non_negative'))
+      .required(() => t('budget.validation_estimated_required')),
+    actualCost: number()
+      .typeError(() => t('budget.value_invalid'))
+      .min(0, () => t('budget.validation_amount_non_negative'))
+      .required(() => t('budget.validation_actual_required')),
+    paidAmount: number()
+      .typeError(() => t('budget.value_invalid'))
+      .min(0, () => t('budget.validation_amount_non_negative'))
+      .required(() => t('budget.validation_paid_required')),
+    notes: string()
+      .trim()
+      .max(2000, () => t('budget.validation_notes_max'))
+      .optional(),
   }),
 );
 
-const { handleSubmit, resetForm, defineField, errors, isSubmitting } = useForm({
-  validationSchema: schema,
-  initialValues: {
-    title: '',
-    estimatedAmount: 0,
-    actualCost: 0,
-    paidAmount: 0,
-    notes: '',
+const { handleSubmit, resetForm, defineField, errors, isSubmitting, validate } =
+  useForm({
+    validationSchema: schema,
+    initialValues: {
+      title: '',
+      estimatedAmount: 0,
+      actualCost: 0,
+      paidAmount: 0,
+      notes: '',
+    },
+  });
+
+const paymentMethodOptions = computed<SelectOption[]>(() => [
+  {
+    id: BudgetPaymentMethod.Deposit,
+    value: BudgetPaymentMethod.Deposit,
+    name: t('budget.payment_deposit'),
   },
-});
+  {
+    id: BudgetPaymentMethod.Cash,
+    value: BudgetPaymentMethod.Cash,
+    name: t('budget.payment_cash'),
+  },
+]);
+
+const datePickerLocale = computed(() =>
+  String(locale.value).startsWith('pt') ? 'pt-PT' : 'en-US',
+);
 
 const [title, titleAttrs] = defineField('title');
 const [estimatedAmount, estimatedAmountAttrs] = defineField('estimatedAmount');
@@ -101,11 +131,18 @@ const loadInstallments = async () => {
 const editingInstallmentId = ref<number | null>(null);
 const instSchema = toTypedSchema(
   object({
-    amount: number().typeError('Valor inválido.').min(0).required(),
-    descriptive: string().required('A descrição da prestação é obrigatória.'),
+    amount: number()
+      .typeError(() => t('budget.value_invalid'))
+      .min(0, () => t('budget.validation_amount_non_negative'))
+      .required(() => t('budget.validation_installment_amount_required')),
+    descriptive: string().required(() =>
+      t('budget.validation_installment_description_required'),
+    ),
     receiptDate: string().nullable().optional(),
     paidInDate: string().nullable().optional(),
-    paymentMethod: mixed<BudgetPaymentMethod>().required(),
+    paymentMethod: mixed<BudgetPaymentMethod>().required(() =>
+      t('budget.validation_payment_method_required'),
+    ),
   }),
 );
 
@@ -115,6 +152,7 @@ const {
   defineField: defineFieldInst,
   errors: instErrors,
   isSubmitting: isSavingInstallment,
+  validate: validateInstallment,
 } = useForm({
   validationSchema: instSchema,
   initialValues: {
@@ -251,6 +289,12 @@ watch(
   { immediate: true },
 );
 
+watch(locale, () => {
+  if (!props.show) return;
+  validate();
+  validateInstallment();
+});
+
 const close = () => emit('close');
 
 const onSubmitItem = handleSubmit(async (values) => {
@@ -337,7 +381,7 @@ const onSubmitItem = handleSubmit(async (values) => {
             :error-message="errors.title"
             :readonly="isSubmitting"
             :label="t('budget.field_title')"
-            placeholder="Ex: Organizador de casamento"
+            :placeholder="t('budget.field_title_placeholder')"
           />
 
           <BaseInput
@@ -381,7 +425,7 @@ const onSubmitItem = handleSubmit(async (values) => {
             :error-message="errors.notes"
             :readonly="isSubmitting"
             :label="t('budget.field_notes')"
-            placeholder="Notas internas..."
+            :placeholder="t('budget.field_notes_placeholder')"
           />
 
           <BaseError v-if="serverErrors.hasErrors">{{
@@ -480,12 +524,14 @@ const onSubmitItem = handleSubmit(async (values) => {
                       {{
                         p.receiptDate
                           ? formatDate(new Date(p.receiptDate))
-                          : '—'
+                      : t('budget.not_available')
                       }}
                     </td>
                     <td class="py-2 text-sm">
                       {{
-                        p.paidInDate ? formatDate(new Date(p.paidInDate)) : '—'
+                        p.paidInDate
+                          ? formatDate(new Date(p.paidInDate))
+                          : t('budget.not_available')
                       }}
                     </td>
                     <td class="py-2 text-sm">
@@ -553,7 +599,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                     <DatePicker
                       v-model="instReceiptDate"
                       v-bind="instReceiptDateAttrs"
-                      locale="pt-PT"
+                      :locale="datePickerLocale"
                       :enable-time-picker="false"
                       :clearable="true"
                       :teleport="true"
@@ -582,7 +628,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                     <DatePicker
                       v-model="instPaidInDate"
                       v-bind="instPaidInDateAttrs"
-                      locale="pt-PT"
+                      :locale="datePickerLocale"
                       :enable-time-picker="false"
                       :clearable="true"
                       :teleport="true"
@@ -611,7 +657,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                     :error-message="instErrors.paymentMethod"
                     :disabled="isSavingInstallment"
                     :label="t('budget.installment_field_method')"
-                    :options="BUDGET_PAYMENT_METHODS"
+                    :options="paymentMethodOptions"
                   />
 
                   <BaseInput

@@ -20,23 +20,27 @@ const emit = defineEmits<{ (e: 'close' | 'saved'): void }>();
 const toast = useToast();
 const nuxtApp = useNuxtApp();
 const budgetService = getBudgetService(nuxtApp.$api);
+const { t, locale } = useI18n();
 
-const schema = toTypedSchema(
-  object({
-    title: string()
-      .trim()
-      .min(2, 'O título deve ter pelo menos 2 caracteres.')
-      .max(120, 'O título não pode ter mais de 120 caracteres.')
-      .required('O título é obrigatório.'),
-  }),
+const schema = computed(() =>
+  toTypedSchema(
+    object({
+      title: string()
+        .trim()
+        .min(2, () => t('budget.validation_title_min'))
+        .max(120, () => t('budget.validation_title_max'))
+        .required(() => t('budget.validation_title_required')),
+    }),
+  ),
 );
 
-const { handleSubmit, resetForm, defineField, errors, isSubmitting } = useForm({
-  validationSchema: schema,
-  initialValues: {
-    title: '',
-  },
-});
+const { handleSubmit, resetForm, defineField, errors, isSubmitting, validate } =
+  useForm({
+    validationSchema: schema,
+    initialValues: {
+      title: '',
+    },
+  });
 
 const [title, titleAttrs] = defineField('title');
 
@@ -54,6 +58,10 @@ watch(
   { immediate: true },
 );
 
+watch(locale, () => {
+  if (props.show) validate();
+});
+
 const close = () => emit('close');
 
 const serverErrors = ref<ServerError>({
@@ -68,24 +76,24 @@ const onSubmit = handleSubmit(async (values) => {
         await budgetService.addCategory(props.parentId, {
           title: values.title,
         });
-        toast.success('Categoria criada.');
+        toast.success(t('budget.category_created'));
       } else {
         await budgetService.updateCategory(props.category.id, {
           title: values.title,
         });
-        toast.success('Categoria actualizada.');
+        toast.success(t('budget.category_updated'));
       }
     } else {
       if (!props.category) {
         await budgetService.addTemplateCategory(props.parentId, {
           title: values.title,
         });
-        toast.success('Categoria do modelo criada.');
+        toast.success(t('budget.template_category_created'));
       } else {
         await budgetService.updateTemplateCategory(props.category.id, {
           title: values.title,
         });
-        toast.success('Categoria do modelo actualizada.');
+        toast.success(t('budget.template_category_updated'));
       }
     }
 
@@ -101,7 +109,11 @@ const onSubmit = handleSubmit(async (values) => {
 <template>
   <BaseModal
     :show="show"
-    :title="category ? 'Editar categoria' : 'Adicionar categoria'"
+    :title="
+      category
+        ? t('budget.category_modal_edit_title')
+        : t('budget.category_modal_create_title')
+    "
     @close-modal="close"
   >
     <form @submit.prevent="onSubmit">
@@ -111,8 +123,8 @@ const onSubmit = handleSubmit(async (values) => {
         v-bind="titleAttrs"
         :error-message="errors.title"
         :readonly="isSubmitting"
-        label="Título"
-        placeholder="Ex: Planeamento"
+        :label="t('budget.field_title')"
+        :placeholder="t('budget.category_field_title_placeholder')"
       />
 
       <BaseError v-if="serverErrors.hasErrors">{{
@@ -125,14 +137,14 @@ const onSubmit = handleSubmit(async (values) => {
           btn-type="outline-primary"
           :disabled="isSubmitting"
           @click="close"
-          >Cancelar</BaseButton
+          >{{ t('common.cancel') }}</BaseButton
         >
         <BaseButton
           type="submit"
           :disabled="isSubmitting"
           :loading="isSubmitting"
         >
-          Guardar</BaseButton
+          {{ isSubmitting ? t('common.saving') : t('common.save') }}</BaseButton
         >
       </div>
     </form>

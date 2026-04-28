@@ -12,6 +12,7 @@ type SortableEvent = {
 
 const { siteConfig } = await useClientConfig();
 const toast = useToast();
+const { t } = useI18n();
 const nuxtApp = useNuxtApp();
 const budgetService = getBudgetService(nuxtApp.$api);
 
@@ -68,7 +69,7 @@ const onDragEnd = async () => {
     await budgetService.reorderTemplateCategories(template.value.id, items);
     refreshTemplate({ force: true });
   } catch (e) {
-    toast.error('Não foi possível reordenar as categorias do modelo.');
+    toast.error(t('budget.template_reorder_categories_error'));
     toast.error(getServerErrors(e as ServerError));
     refreshTemplate({ force: true });
   } finally {
@@ -89,8 +90,8 @@ const toggleTemplateControlMode = async () => {
 
     toast.success(
       isControlled.value
-        ? 'Modo de controlo actualizado.'
-        : 'Modo não controlado actualizado',
+        ? t('budget.control_mode_enabled')
+        : t('budget.control_mode_disabled'),
     );
 
     refreshTemplate({ force: true });
@@ -101,7 +102,7 @@ const toggleTemplateControlMode = async () => {
         timeout: false,
       });
     } else {
-      toast.error('Não foi possível alterar o modo de controlo.', {
+      toast.error(t('budget.control_mode_error'), {
         timeout: false,
       });
     }
@@ -187,7 +188,9 @@ const getSelectedCategory = computed(() => {
 <template>
   <div class="my-8 flex animate-fadeIn flex-col gap-4">
     <div class="flex flex-col gap-2">
-      <span class="text-primary-700/40 font-semibold">Modelo de orçamento</span>
+      <span class="text-primary-700/40 font-semibold">
+        {{ t('budget.template_title') }}
+      </span>
 
       <div
         class="bg-primary-50 flex w-fit items-end gap-2 rounded-full px-4 py-2"
@@ -202,13 +205,12 @@ const getSelectedCategory = computed(() => {
 
       <div class="my-4">
         <p class="text-grey-500 mb-3 text-sm">
-          Aqui podes actualizar o modelo de orçamento para eventos do tipo
+          {{ t('budget.template_description_prefix') }}
           <span class="text-primary-700 font-bold">{{ eventTypeName }}</span
           >.
         </p>
         <p class="text-grey-500 text-sm">
-          As alterações feitas neste modelo serão usadas como base nos próximos
-          eventos deste tipo.
+          {{ t('budget.template_description') }}
         </p>
       </div>
     </div>
@@ -216,7 +218,7 @@ const getSelectedCategory = computed(() => {
     <BaseLoading v-if="isRefreshing && !template" />
 
     <BaseSearchNotFound v-else-if="!template">
-      Não foi possível carregar o modelo para este tipo de evento.
+      {{ t('budget.template_load_error') }}
     </BaseSearchNotFound>
 
     <div v-else class="flex flex-col gap-4">
@@ -224,7 +226,9 @@ const getSelectedCategory = computed(() => {
       <div class="my-3 flex flex-col gap-1 md:my-5">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div class="flex flex-col gap-1">
-            <p class="text-grey-300 mb-0 text-sm">Orçamento do modelo</p>
+            <p class="text-grey-300 mb-0 text-sm">
+              {{ t('budget.template_budget_label') }}
+            </p>
             <div class="flex flex-wrap gap-3">
               <p class="text-primary-700 text-2xl font-bold md:text-3xl">
                 {{ formatMoney(template.baseTotalBudget, template.currency) }}
@@ -233,7 +237,7 @@ const getSelectedCategory = computed(() => {
               <button
                 class="text-grey-400 hover:text-primary-700 transition-colors"
                 type="button"
-                title="Editar orçamento"
+                :title="t('budget.header_edit_title')"
                 @click="isHeaderModalOpen = true"
               >
                 <IconPencil :font-controlled="false" class="size-[20px]" />
@@ -244,7 +248,11 @@ const getSelectedCategory = computed(() => {
           <div class="flex items-center gap-3">
             <BaseToggle
               :model-value="isControlled"
-              :label="isControlled ? 'Desactivar controlo' : 'Activar controlo'"
+              :label="
+                isControlled
+                  ? t('budget.control_disable')
+                  : t('budget.control_enable')
+              "
               @update:model-value="toggleTemplateControlMode"
             />
           </div>
@@ -257,9 +265,9 @@ const getSelectedCategory = computed(() => {
           <BaseInput
             id="searchCategory"
             v-model="search"
-            label="Pesquisa:"
+            :label="t('budget.search_label')"
             type="search"
-            placeholder="Filtrar categorias ou itens..."
+            :placeholder="t('budget.search_placeholder')"
             disable-margins
           />
         </div>
@@ -268,7 +276,7 @@ const getSelectedCategory = computed(() => {
           btn-size="sm"
           btn-type="outline-primary"
           @click="openCreateCategory"
-          >Adicionar categoria</BaseButton
+          >{{ t('budget.add_category') }}</BaseButton
         >
       </div>
 

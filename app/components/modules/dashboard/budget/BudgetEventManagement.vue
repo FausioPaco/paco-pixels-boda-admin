@@ -12,6 +12,7 @@ type SortableEvent = {
 };
 
 const toast = useToast();
+const { t } = useI18n();
 const nuxtApp = useNuxtApp();
 const budgetService = getBudgetService(nuxtApp.$api);
 
@@ -62,7 +63,7 @@ const onDragEnd = async () => {
     await budgetService.reorderCategories(budget.value.id, items);
     refreshBudget({ force: true });
   } catch (e) {
-    toast.error('Não foi possível reordenar as categorias.');
+    toast.error(t('budget.reorder_categories_error'));
     console.log(e);
     refreshBudget({ force: true });
   } finally {
@@ -80,8 +81,8 @@ const toggleControlMode = async () => {
 
     toast.success(
       isControlled.value
-        ? 'Modo de controlo actualizado.'
-        : 'Modo não controlado actualizado',
+        ? t('budget.control_mode_enabled')
+        : t('budget.control_mode_disabled'),
     );
 
     refreshBudget({ force: true });
@@ -91,7 +92,7 @@ const toggleControlMode = async () => {
         timeout: false,
       });
     } else {
-      toast.error('Não foi possível alterar o modo de controlo.', {
+      toast.error(t('budget.control_mode_error'), {
         timeout: false,
       });
     }
@@ -143,7 +144,7 @@ const exportExcel = async () => {
     if (isFetchErrorLike(e)) {
       toast.error(getServerErrors(e.data), { timeout: false });
     } else {
-      toast.error('Não foi possível exportar o orçamento para Excel.', {
+      toast.error(t('budget.export_excel_error'), {
         timeout: false,
       });
     }
@@ -207,9 +208,11 @@ const openInstallments = (item: BudgetItem) => {
     <BaseLoading v-if="isRefreshing && !budget" />
     <div v-else-if="!budget" class="flex flex-col items-center">
       <BaseSearchNotFound>
-        Ainda não existe orçamento para este evento.
+        {{ t('budget.event_empty_title') }}
       </BaseSearchNotFound>
-      <BaseButton @click="openHeaderEdit">Criar orçamento</BaseButton>
+      <BaseButton @click="openHeaderEdit">
+        {{ t('budget.event_empty_button') }}
+      </BaseButton>
     </div>
 
     <div v-else class="flex flex-col gap-4">
@@ -217,7 +220,9 @@ const openInstallments = (item: BudgetItem) => {
       <div class="flex flex-col gap-1">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div class="flex flex-col gap-1">
-            <p class="text-grey-300 mb-0 text-sm">Orçamento</p>
+            <p class="text-grey-300 mb-0 text-sm">
+              {{ t('budget.header_budget_label') }}
+            </p>
             <div class="flex flex-wrap gap-3">
               <p class="text-primary-700 text-2xl font-bold md:text-3xl">
                 {{ formatMoney(budget.totalBudget, budget.currency) }}
@@ -226,7 +231,7 @@ const openInstallments = (item: BudgetItem) => {
               <button
                 class="text-grey-400 hover:text-primary-700 transition-colors"
                 type="button"
-                title="Editar orçamento"
+                :title="t('budget.header_edit_title')"
                 @click="openHeaderEdit"
               >
                 <IconPencil :font-controlled="false" class="size-[20px]" />
@@ -237,7 +242,11 @@ const openInstallments = (item: BudgetItem) => {
           <div class="flex items-center gap-3">
             <BaseToggle
               :model-value="isControlled"
-              :label="isControlled ? 'Desactivar controlo' : 'Activar controlo'"
+              :label="
+                isControlled
+                  ? t('budget.control_disable')
+                  : t('budget.control_enable')
+              "
               @update:model-value="toggleControlMode"
             />
           </div>
@@ -252,7 +261,7 @@ const openInstallments = (item: BudgetItem) => {
             :font-controlled="false"
             class="text-warning-700 block size-[16px]"
           />
-          O custo actual ultrapassou o orçamento em
+          {{ t('budget.over_budget_prefix') }}
           <b>{{ formatMoney(budget.totals.overBudgetBy, budget.currency) }}</b
           >.
         </div>
@@ -264,9 +273,9 @@ const openInstallments = (item: BudgetItem) => {
           <BaseInput
             id="searchCategory"
             v-model="search"
-            label="Pesquisa:"
+            :label="t('budget.search_label')"
             type="search"
-            placeholder="Filtrar categorias ou itens..."
+            :placeholder="t('budget.search_placeholder')"
             disable-margins
           />
         </div>
@@ -276,7 +285,7 @@ const openInstallments = (item: BudgetItem) => {
             btn-size="sm"
             btn-type="outline-primary"
             @click="openCreateCategory"
-            >Adicionar categoria</BaseButton
+            >{{ t('budget.add_category') }}</BaseButton
           >
           <BaseButton
             btn-size="sm"
@@ -286,7 +295,7 @@ const openInstallments = (item: BudgetItem) => {
             :disabled="isExporting"
             @click="exportExcel"
           >
-            Exportar para Excel
+            {{ t('budget.export_excel') }}
           </BaseButton>
         </div>
       </div>
@@ -366,38 +375,48 @@ const openInstallments = (item: BudgetItem) => {
         v-if="isFiltering && displayedCategories.length === 0"
         :show-fallback="false"
       >
-        Infelizmente, não encontramos categorias para o filtro aplicado
+        {{ t('budget.categories_not_found') }}
       </BaseSearchNotFound>
 
       <!-- Totals footer -->
       <div class="border-grey-100/50 mt-8 border-t pt-5 md:mx-4">
         <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
           <div>
-            <div class="text-grey-500 text-xs">Total estimado</div>
+            <div class="text-grey-500 text-xs">
+              {{ t('budget.total_estimated') }}
+            </div>
             <div class="text-primary-800 font-semibold">
               {{ formatMoney(budget.totals!.estimatedTotal, budget.currency) }}
             </div>
           </div>
           <div>
-            <div class="text-grey-500 text-xs">Custo actual</div>
+            <div class="text-grey-500 text-xs">
+              {{ t('budget.total_actual') }}
+            </div>
             <div class="text-primary-800 font-semibold">
               {{ formatMoney(budget.totals!.actualTotal, budget.currency) }}
             </div>
           </div>
           <div>
-            <div class="text-grey-500 text-xs">Pago</div>
+            <div class="text-grey-500 text-xs">
+              {{ t('budget.total_paid') }}
+            </div>
             <div class="font-semibold text-green-700">
               {{ formatMoney(budget.totals!.paidTotal, budget.currency) }}
             </div>
           </div>
           <div>
-            <div class="text-grey-500 text-xs">Devido</div>
+            <div class="text-grey-500 text-xs">
+              {{ t('budget.total_due') }}
+            </div>
             <div class="font-semibold text-red-700">
               {{ formatMoney(budget.totals!.dueTotal, budget.currency) }}
             </div>
           </div>
           <div>
-            <div class="text-grey-500 text-xs">Orçamento</div>
+            <div class="text-grey-500 text-xs">
+              {{ t('budget.total_budget') }}
+            </div>
             <div class="text-primary-800 font-semibold">
               {{ formatMoney(budget.totalBudget, budget.currency) }}
             </div>

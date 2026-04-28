@@ -38,6 +38,7 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 const nuxtApp = useNuxtApp();
 const budgetService = getBudgetService(nuxtApp.$api);
 
@@ -65,7 +66,7 @@ async function onItemsDragEnd() {
     await budgetService.reorderItems(props.category.id, items);
     emit('changed');
   } catch (e) {
-    toast.error('Não foi possível reordenar os itens desta categoria.');
+    toast.error(t('budget.reorder_items_error'));
     console.log(e);
     emit('changed');
   } finally {
@@ -218,7 +219,7 @@ const saveNow = async (id: number) => {
   const actualCost = draft.actualCost ?? item.actualCost ?? 0;
 
   if (!title) {
-    toast.error('O título do item não pode ficar vazio.');
+    toast.error(t('budget.item_title_empty_error'));
     ensureDraft(item);
 
     draftsById.value[id] = {
@@ -262,7 +263,7 @@ const saveNow = async (id: number) => {
 
     const msg = isFetchErrorLike(e)
       ? getServerErrors(e.data)
-      : 'Não foi possível guardar o item.';
+      : t('budget.item_save_error');
 
     toast.error(msg);
 
@@ -416,8 +417,8 @@ watch(
           <div class="text-primary-900 text-xs">
             {{
               category.items?.length === 1
-                ? '1 item'
-                : `${category.items?.length} itens`
+                ? t('budget.item_count_one')
+                : t('budget.item_count_other', { n: category.items?.length })
             }}
           </div>
         </div>
@@ -429,7 +430,7 @@ watch(
           <button
             type="button"
             class="bg-primary-100 text-grey-500 hover:bg-primary-600 rounded-full p-2 transition hover:text-white"
-            title="Editar"
+            :title="t('common.edit')"
             @click.stop="$emit('edit-category', category)"
           >
             <IconPencil :font-controlled="false" class="size-3" />
@@ -438,7 +439,7 @@ watch(
           <button
             type="button"
             class="bg-primary-100 text-grey-500 hover:bg-primary-600 rounded-full p-2 transition hover:text-white"
-            title="Editar"
+            :title="t('common.remove')"
             @click.stop="emit('remove-category', category)"
           >
             <IconTrash :font-controlled="false" class="size-3" />
@@ -468,7 +469,7 @@ watch(
             focusable="false"
           ></icon-warning>
           <p class="text-grey-400 animate-fadeIn text-sm font-medium">
-            Até agora, não existem itens para esta categoria
+            {{ t('budget.category_empty_items') }}
           </p>
         </div>
 
@@ -477,11 +478,11 @@ watch(
           v-if="localItems.length > 0"
           class="text-grey-500 mt-5 hidden animate-fadeIn grid-cols-5 gap-3 pb-4 text-xs md:grid"
         >
-          <div class="pl-6">Título</div>
-          <div class="md:pl-3">Estimado</div>
-          <div class="md:pl-2">Custo actual</div>
-          <div class="md:pl-2">Montante pago</div>
-          <div class="-ml-2">Montante devido</div>
+          <div class="pl-6">{{ t('budget.table_title') }}</div>
+          <div class="md:pl-3">{{ t('budget.table_estimated') }}</div>
+          <div class="md:pl-2">{{ t('budget.table_actual') }}</div>
+          <div class="md:pl-2">{{ t('budget.table_paid') }}</div>
+          <div class="-ml-2">{{ t('budget.table_due') }}</div>
         </div>
 
         <!-- Items (draggable) -->
@@ -551,7 +552,7 @@ watch(
                         {{
                           (item.title ?? '').trim()
                             ? item.title
-                            : 'Clique para escrever…'
+                            : t('budget.inline_empty_title')
                         }}
                       </span>
 
@@ -667,7 +668,7 @@ watch(
                 <span
                   class="bg-grey-900 pointer-events-none absolute -top-8 right-0 whitespace-nowrap rounded-md px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100"
                 >
-                  Verificar prestações
+                  {{ t('budget.installments_tooltip') }}
                 </span>
               </button>
 
@@ -680,7 +681,7 @@ watch(
                   <button
                     type="button"
                     class="text-grey-500 hover:text-primary-700 transition"
-                    title="Editar"
+                    :title="t('common.edit')"
                     @click.stop="emit('edit-item', item)"
                   >
                     <IconPencil :font-controlled="false" class="size-4" />
@@ -689,7 +690,7 @@ watch(
                   <button
                     type="button"
                     class="text-grey-500 transition hover:text-red-600"
-                    title="Remover"
+                    :title="t('common.remove')"
                     @click.stop="emit('remove-item', item)"
                   >
                     <IconTrash :font-controlled="false" class="size-4" />
@@ -710,14 +711,14 @@ watch(
             :font-controlled="false"
             class="text-primary-700 block size-[18px]"
           />
-          <span>Adicionar novo item</span>
+          <span>{{ t('budget.add_item') }}</span>
         </button>
 
         <!-- Subtotal -->
         <div class="border-grey-100/60 my-4 border-t pt-3">
           <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
             <div class="text-grey-500 text-sm font-semibold md:pl-6">
-              Subtotal
+              {{ t('budget.subtotal') }}
             </div>
             <div class="text-grey-900 text-sm font-semibold">
               {{ formatMoney(subtotalEstimated, budget.currency) }}
