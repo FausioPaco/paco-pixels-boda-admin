@@ -58,6 +58,7 @@ type SvgToPngResult = { blob: Blob; width: number; height: number };
 const props = defineProps<Props>();
 const { eventSlug } = useEventStore();
 const toast = useToast();
+const { t } = useI18n();
 
 const nuxtApp = useNuxtApp();
 const seatingPlanService = getSeatingPlanService(nuxtApp.$api);
@@ -340,7 +341,7 @@ async function addDeskToMap(deskMap: {
     next.add(deskId);
     visibleDeskIds.value = next;
   } catch (err: unknown) {
-    toast.error('Erro ao adicionar mesa ao mapa. Por favor, tenta novamente.');
+    toast.error(t('desks.map_add_error'));
     console.log(err);
   } finally {
     isAddingDesk.value = false;
@@ -567,10 +568,10 @@ async function quickAdd(type: SeatingPlanItemType) {
   await addItem(seatingPlan.value.id, payload);
 }
 
-const quickActions: ActionBtn[] = [
+const quickActions = computed<ActionBtn[]>(() => [
   {
     key: 'stage',
-    label: '+ Palco',
+    label: t('desks.quick_stage'),
     name: 'Palco',
     icon: 'stage',
     onClick: () => quickAdd('Palco'),
@@ -578,7 +579,7 @@ const quickActions: ActionBtn[] = [
   },
   {
     key: 'dj',
-    label: '+ DJ',
+    label: t('desks.quick_dj'),
     name: 'DJ',
     icon: 'dj',
     onClick: () => quickAdd('DJ'),
@@ -586,7 +587,7 @@ const quickActions: ActionBtn[] = [
   },
   {
     key: 'dance',
-    label: '+ Pista',
+    label: t('desks.quick_dance_floor'),
     name: 'Pista',
     icon: 'dance-floor',
     onClick: () => quickAdd('Pista'),
@@ -594,7 +595,7 @@ const quickActions: ActionBtn[] = [
   },
   {
     key: 'buffet',
-    label: '+ Buffet',
+    label: t('desks.quick_buffet'),
     name: 'Buffet',
     icon: 'buffet',
     onClick: () => quickAdd('Buffet'),
@@ -602,7 +603,7 @@ const quickActions: ActionBtn[] = [
   },
   {
     key: 'entry',
-    label: '+ Entrada',
+    label: t('desks.quick_entry'),
     name: 'Entrada',
     icon: 'entrance',
     onClick: () => quickAdd('Entrada'),
@@ -611,7 +612,7 @@ const quickActions: ActionBtn[] = [
 
   {
     key: 'honour-table',
-    label: '+ Mesa de Honra',
+    label: t('desks.quick_honour_table'),
     name: 'Mesa de Honra',
     icon: 'head-table',
     onClick: () => quickAdd('Mesa de Honra'),
@@ -619,7 +620,7 @@ const quickActions: ActionBtn[] = [
   },
   {
     key: 'cake',
-    label: '+ Bolo',
+    label: t('desks.quick_cake'),
     name: 'Bolo',
     icon: 'cake-table',
     onClick: () => quickAdd('Bolo'),
@@ -627,7 +628,7 @@ const quickActions: ActionBtn[] = [
   },
   {
     key: 'bar',
-    label: '+ Bar',
+    label: t('desks.quick_bar'),
     name: 'Bar',
     icon: 'bar-table',
     onClick: () => quickAdd('Bar'),
@@ -635,20 +636,27 @@ const quickActions: ActionBtn[] = [
   },
   {
     key: 'presents',
-    label: '+ Presentes',
+    label: t('desks.quick_presents'),
     name: 'Presentes',
     icon: 'gifts-table',
     onClick: () => quickAdd('Presentes'),
     disabled: isDesktopOnlyDisabled,
   },
-];
+]);
 
 const getQuickActionByLabel = (name: string) =>
-  quickActions.find((a) => a.name === name);
+  quickActions.value.find((a) => a.name === name);
+
+function itemDisplayLabel(item: SeatingPlanItem) {
+  const action = getQuickActionByLabel(item.type);
+  if (!action) return item.label || item.type;
+  if (!item.label || item.label === item.type) return action.label.replace(/^\+\s*/, '');
+  return item.label;
+}
 
 function deskLabel(deskId: number) {
   const d = props.desks.find((x) => x.id === deskId);
-  return d?.name ?? `Mesa ${deskId}`;
+  return d?.name ?? t('desks.desk_fallback_name', { id: deskId });
 }
 
 const ITEM_ICON_SIZE = 24;
@@ -687,49 +695,49 @@ async function setCanvasPreset(preset: 'small' | 'medium' | 'large') {
   syncVisibleDeskIdsWithLayouts();
 }
 
-const canvasPresets: ActionBtn[] = [
+const canvasPresets = computed<ActionBtn[]>(() => [
   {
     key: 'small',
-    label: 'Sala pequena',
-    name: 'Sala pequena',
+    label: t('desks.canvas_preset_small'),
+    name: 'small',
     icon: 'small-room',
     onClick: () => setCanvasPreset('small'),
     disabled: isDesktopOnlyDisabled,
   },
   {
     key: 'medium',
-    label: 'Sala média',
-    name: 'Sala média',
+    label: t('desks.canvas_preset_medium'),
+    name: 'medium',
     icon: 'medium-room',
     onClick: () => setCanvasPreset('medium'),
     disabled: isDesktopOnlyDisabled,
   },
   {
     key: 'large',
-    label: 'Sala grande',
-    name: 'Sala grande',
+    label: t('desks.canvas_preset_large'),
+    name: 'large',
     icon: 'large-room',
     onClick: () => setCanvasPreset('large'),
     disabled: isDesktopOnlyDisabled,
   },
-];
+]);
 
-const exportActions: ActionBtn[] = [
+const exportActions = computed<ActionBtn[]>(() => [
   {
     key: 'png',
-    label: 'Exportar PNG',
-    name: 'Exportar PNG',
+    label: t('desks.export_png'),
+    name: 'png',
     icon: 'download',
     onClick: () => exportPng(),
   },
   {
     key: 'pdf',
-    label: 'Exportar PDF',
-    name: 'Exportar PDF',
+    label: t('desks.export_pdf'),
+    name: 'pdf',
     icon: 'download',
     onClick: () => exportPdf(),
   },
-];
+]);
 
 /* -------------------------------------------------------------------------- */
 /* Export helpers (SVG -> PNG/PDF)                                             */
@@ -883,7 +891,7 @@ async function svgToPngBlob(scale = 2): Promise<SvgToPngResult | null> {
 
     await new Promise<void>((resolve, reject) => {
       img.onload = () => resolve();
-      img.onerror = () => reject(new Error('Falha ao carregar SVG no <img>'));
+      img.onerror = () => reject(new Error('Failed to load SVG in image'));
       img.src = url;
     });
 
@@ -906,7 +914,7 @@ async function svgToPngBlob(scale = 2): Promise<SvgToPngResult | null> {
     if (!blob) return null;
     return { blob, width, height };
   } catch (err: unknown) {
-    toast.error('Erro ao exportar o mapa. Por favor, tenta novamente.');
+    toast.error(t('desks.map_export_error'));
     console.log(err);
     return null;
   } finally {
@@ -1161,10 +1169,10 @@ async function applyCustomCanvas(payload: {
     await refreshSeatingPlan({ force: true });
     syncVisibleDeskIdsWithLayouts();
 
-    toast.success('Sala customizada actualizada com sucesso.');
+    toast.success(t('desks.canvas_custom_updated'));
   } catch (e) {
     console.log(e);
-    toast.error('Não foi possível actualizar a sala customizada.');
+    toast.error(t('desks.canvas_custom_update_error'));
   } finally {
     isUpdatingCustomCanvas.value = false;
     showCustomCanvas.value = false;
@@ -1179,11 +1187,11 @@ async function applyCustomCanvas(payload: {
       size="lg"
       orientation="vertical"
       class="block md:hidden"
-      message="A carregar mapa..."
+      :message="t('desks.map_loading')"
     />
 
     <BaseSearchNotFound v-if="isError" @fallback="refreshSeatingPlan">
-      Não foi possível carregar o plano.
+      {{ t('desks.map_load_error') }}
     </BaseSearchNotFound>
 
     <div v-else>
@@ -1191,7 +1199,7 @@ async function applyCustomCanvas(payload: {
         v-if="isClient && isMobile"
         type="informative"
         class="my-6"
-        message="Este editor está optimizado para desktop. Por favor, acede a partir de um computador para editar o mapa de mesas."
+        :message="t('desks.map_desktop_only')"
         show
       />
 
@@ -1218,11 +1226,11 @@ async function applyCustomCanvas(payload: {
 
             <button
               class="hover:border-primary-600 hover:bg-primary-600 inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition-all duration-300 hover:-translate-y-0.5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-              title="Adicionar mesa"
+              :title="t('desks.map_add_button_title')"
               @click="showAddDesk = true"
             >
               <IconDashboardDesks :font-controlled="false" class="h-4 w-4" />
-              <span class="whitespace-nowrap">+ Mesa</span>
+              <span class="whitespace-nowrap">{{ t('desks.map_add_button') }}</span>
             </button>
           </div>
 
@@ -1252,11 +1260,13 @@ async function applyCustomCanvas(payload: {
               <button
                 class="hover:border-primary-600 hover:bg-primary-600 inline-flex items-center gap-2 rounded-lg border px-3 py-1 text-sm transition-all duration-300 hover:-translate-y-0.5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 :disabled="isDesktopOnlyDisabled || isUpdatingCustomCanvas"
-                title="Definir dimensões em centímetros"
+                :title="t('desks.canvas_custom_tooltip')"
                 @click="showCustomCanvas = true"
               >
                 <IconPencil :font-controlled="false" class="h-4 w-4" />
-                <span class="whitespace-nowrap">Sala customizada</span>
+                <span class="whitespace-nowrap">
+                  {{ t('desks.canvas_custom_button') }}
+                </span>
               </button>
 
               <!-- opcional: label da dimensão actual -->
@@ -1436,7 +1446,7 @@ async function applyCustomCanvas(payload: {
                       pointerEvents: 'none',
                     }"
                   >
-                    {{ item.label || item.type }}
+                    {{ itemDisplayLabel(item) }}
                   </text>
 
                   <text
@@ -1453,7 +1463,7 @@ async function applyCustomCanvas(payload: {
                       pointerEvents: 'none',
                     }"
                   >
-                    duplo clique para remover
+                    {{ t('desks.map_item_remove_hint') }}
                   </text>
                 </g>
               </g>
@@ -1626,20 +1636,25 @@ async function applyCustomCanvas(payload: {
                       <title>
                         {{ seatOcc(layout.deskId, pt.seat)!.guestName }} —
                         {{ seatOcc(layout.deskId, pt.seat)!.peopleCount }}
-                        pessoas (lugares
-                        {{ seatOcc(layout.deskId, pt.seat)!.startSeat }}–{{
-                          seatOcc(layout.deskId, pt.seat)!.endSeat
-                        }})
+                        {{
+                          t('desks.seat_title_range', {
+                            count: seatOcc(layout.deskId, pt.seat)!.peopleCount,
+                            start: seatOcc(layout.deskId, pt.seat)!.startSeat,
+                            end: seatOcc(layout.deskId, pt.seat)!.endSeat,
+                          })
+                        }}
                       </title>
                     </template>
 
                     <template v-else-if="seatOccupied(layout.deskId, pt.seat)">
                       <title>
                         {{ seatOcc(layout.deskId, pt.seat)!.guestName }} —
-                        continuação (lugares
-                        {{ seatOcc(layout.deskId, pt.seat)!.startSeat }}–{{
-                          seatOcc(layout.deskId, pt.seat)!.endSeat
-                        }})
+                        {{
+                          t('desks.seat_title_continuation', {
+                            start: seatOcc(layout.deskId, pt.seat)!.startSeat,
+                            end: seatOcc(layout.deskId, pt.seat)!.endSeat,
+                          })
+                        }}
                       </title>
                     </template>
                   </g>
@@ -1669,9 +1684,7 @@ async function applyCustomCanvas(payload: {
             class="text-grey-400 h-4 w-4 flex-shrink-0"
           />
           <span
-            >Dica: arrasta mesas/itens para posicionar. Duplo clique num item
-            (palco/DJ/etc.) remove. Duplo clique numa mesa remove do mapa (não
-            apaga a mesa).</span
+            >{{ t('desks.map_hint') }}</span
           >
         </div>
       </div>

@@ -23,6 +23,7 @@ const serverErrors = ref<ServerError>({
 
 const nuxtApp = useNuxtApp();
 const deskService = getDeskService(nuxtApp.$api);
+const { t } = useI18n();
 
 const onSubmit = () => {
   isSubmiting.value = true;
@@ -31,7 +32,7 @@ const onSubmit = () => {
     .then(() => {
       emit('closeModal');
       emit('success');
-      toast.success('A mesa foi removida com sucesso');
+      toast.success(t('desks.removed_success'));
     })
     .catch((err) => {
       console.log(err.data);
@@ -46,13 +47,13 @@ const onSubmit = () => {
 </script>
 <template>
   <BaseModal
-    title="Remover Mesa"
+    :title="t('desks.remove_title')"
     :show="show"
     @close-modal="$emit('closeModal')"
   >
     <div v-if="desk" class="my-2">
       <p class="text-grey-600 mb-4 text-center text-base md:text-lg">
-        Tem certeza que pretende remover a mesa
+        {{ t('desks.remove_confirm_prefix') }}
         <span class="font-bold">{{ desk.name }}</span
         >?
       </p>
@@ -76,7 +77,7 @@ const onSubmit = () => {
         :disabled="isSubmiting"
         :loading="isSubmiting"
         @click="onSubmit"
-        >Remover agora</BaseButton
+        >{{ t('common.remove_now') }}</BaseButton
       >
 
       <BaseButton
@@ -86,7 +87,7 @@ const onSubmit = () => {
         size="md"
         :disabled="isSubmiting"
         @click="$emit('closeModal')"
-        >Cancelar</BaseButton
+        >{{ t('common.cancel') }}</BaseButton
       >
     </div>
   </BaseModal>

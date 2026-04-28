@@ -22,22 +22,24 @@ const emit = defineEmits<{
   (e: 'submit', payload: { widthCm: number; heightCm: number }): void;
 }>();
 
+const { t, locale } = useI18n();
+
 const schema = toTypedSchema(
   object({
     widthCm: number()
-      .typeError('A largura deve ser um número.')
-      .required('A largura é obrigatória.')
-      .min(200, 'A largura mínima é 200 cm.')
-      .max(20000, 'A largura máxima é 20000 cm.'),
+      .typeError(() => t('desks.canvas_width_number'))
+      .required(() => t('desks.canvas_width_required'))
+      .min(200, () => t('desks.canvas_width_min'))
+      .max(20000, () => t('desks.canvas_width_max')),
     heightCm: number()
-      .typeError('O comprimento deve ser um número.')
-      .required('O comprimento é obrigatório.')
-      .min(200, 'O comprimento mínimo é 200 cm.')
-      .max(20000, 'O comprimento máximo é 20000 cm.'),
+      .typeError(() => t('desks.canvas_height_number'))
+      .required(() => t('desks.canvas_height_required'))
+      .min(200, () => t('desks.canvas_height_min'))
+      .max(20000, () => t('desks.canvas_height_max')),
   }),
 );
 
-const { handleSubmit, resetForm, defineField, errors } = useForm({
+const { handleSubmit, resetForm, defineField, errors, validate } = useForm({
   validationSchema: schema,
   initialValues: {
     widthCm: props.initialWidthCm,
@@ -62,6 +64,10 @@ watch(
   },
 );
 
+watch(locale, () => {
+  if (props.show) validate();
+});
+
 const onSubmit = handleSubmit((values) => {
   emit('submit', {
     widthCm: Number(values.widthCm),
@@ -72,20 +78,20 @@ const onSubmit = handleSubmit((values) => {
 
 <template>
   <BaseModal
-    title="Sala customizada (cm)"
+    :title="t('desks.canvas_custom_title')"
     :show="show"
     @close-modal="emit('closeModal')"
   >
     <div class="bg-grey-50 text-grey-600 rounded-lg border p-3 text-sm">
       <div class="flex items-center gap-1 font-semibold">
         <IconLightbulb class="h-5 w-5" />
-        <p>Nota</p>
+        <p>{{ t('desks.canvas_note_title') }}</p>
       </div>
 
       <p>
-        Neste mapa, assumimos a escala
-        <span class="font-semibold">1 unidade = 1 cm</span>. Ex.: 1600 x 900 =
-        16m x 9m.
+        {{ t('desks.canvas_note_prefix') }}
+        <span class="font-semibold">{{ t('desks.canvas_note_scale') }}</span>.
+        {{ t('desks.canvas_note_example') }}
       </p>
     </div>
 
@@ -96,8 +102,8 @@ const onSubmit = handleSubmit((values) => {
           v-model="widthCm"
           v-bind="widthCmAttrs"
           type="number"
-          placeholder="Largura (cm)"
-          label="Largura (cm)"
+          :placeholder="t('desks.canvas_width_label')"
+          :label="t('desks.canvas_width_label')"
           :error-message="errors.widthCm"
         />
 
@@ -106,8 +112,8 @@ const onSubmit = handleSubmit((values) => {
           v-model="heightCm"
           v-bind="heightCmAttrs"
           type="number"
-          placeholder="Comprimento (cm)"
-          label="Comprimento (cm)"
+          :placeholder="t('desks.canvas_height_label')"
+          :label="t('desks.canvas_height_label')"
           :error-message="errors.heightCm"
         />
       </div>
@@ -119,10 +125,12 @@ const onSubmit = handleSubmit((values) => {
           :disabled="isSubmitting"
           @click="emit('closeModal')"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
 
-        <BaseButton type="submit" :loading="isSubmitting">Aplicar </BaseButton>
+        <BaseButton type="submit" :loading="isSubmitting">
+          {{ t('desks.canvas_apply') }}
+        </BaseButton>
       </div>
     </form>
   </BaseModal>

@@ -19,6 +19,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const shape = ref<'round' | 'rect'>('round');
+const { t } = useI18n();
 
 const emit = defineEmits<{
   (e: 'closeModal'): void;
@@ -44,7 +45,7 @@ watch(
 
 <template>
   <BaseModal
-    title="Adicionar mesa ao mapa"
+    :title="t('desks.map_add_title')"
     :show="show"
     @close-modal="emit('closeModal')"
   >
@@ -52,7 +53,7 @@ watch(
       <BaseInput
         id="deskSearchMap"
         v-model="deskSearch"
-        placeholder="Pesquisar mesa..."
+        :placeholder="t('desks.map_search_placeholder')"
       />
 
       <div class="rounded-lg border p-2">
@@ -68,7 +69,7 @@ watch(
             "
             @click="shape = 'round'"
           >
-            Redonda
+            {{ t('desks.shape_round') }}
           </button>
 
           <button
@@ -81,16 +82,16 @@ watch(
             "
             @click="shape = 'rect'"
           >
-            Rectangular
+            {{ t('desks.shape_rect') }}
           </button>
         </div>
 
         <BaseSearchNotFound v-if="filteredDesks.length === 0">
-          Não há mesas disponíveis para adicionar.
+          {{ t('desks.map_no_available_desks') }}
         </BaseSearchNotFound>
 
         <div v-else class="max-h-[340px] overflow-auto">
-          <BaseLoading v-if="isAddingDesk" message="Adicionando mesa..." />
+          <BaseLoading v-if="isAddingDesk" :message="t('desks.map_adding')" />
           <div v-else class="my-2 animate-fadeIn">
             <button
               v-for="d in filteredDesks"

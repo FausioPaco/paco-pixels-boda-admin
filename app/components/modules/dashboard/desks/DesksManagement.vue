@@ -5,11 +5,12 @@ type DeskTab = 'LIST' | 'MAP';
 
 const activeTab = ref<DeskTab>('LIST');
 const eventStore = useEventStore();
+const { t } = useI18n();
 </script>
 <template>
   <BaseCard
-    title="Gestão de Mesas"
-    description="Faça a gestão das mesas deste evento aqui"
+    :title="t('desks.card_title')"
+    :description="t('desks.card_description')"
   >
     <template #right-content>
       <BaseButton
@@ -20,8 +21,8 @@ const eventStore = useEventStore();
       >
         {{
           eventStore.eventModeView
-            ? 'Desactivar modo evento'
-            : 'Ver em modo evento'
+            ? t('desks.event_mode_disable')
+            : t('desks.event_mode_enable')
         }}
       </BaseButton>
     </template>
@@ -36,7 +37,7 @@ const eventStore = useEventStore();
         :is-active="activeTab === 'LIST'"
         class="w-full md:w-1/2"
         @click="activeTab = 'LIST'"
-        >Lista de Mesas</BaseTabItem
+        >{{ t('desks.tab_list') }}</BaseTabItem
       >
 
       <BaseTabItem
@@ -47,7 +48,7 @@ const eventStore = useEventStore();
         :is-active="activeTab === 'MAP'"
         class="w-full md:w-1/2"
         @click="activeTab = 'MAP'"
-        >Mapa de Mesas</BaseTabItem
+        >{{ t('desks.tab_map') }}</BaseTabItem
       >
     </BaseTab>
 

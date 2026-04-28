@@ -6,10 +6,12 @@ interface IDeskTableProps {
 }
 
 withDefaults(defineProps<IDeskTableProps>(), {
-  deskName: 'Convidados da Mesa',
+  deskName: undefined,
   guests: () => [],
   peopleCount: 0,
 });
+
+const { t } = useI18n();
 </script>
 
 <template>
@@ -17,11 +19,17 @@ withDefaults(defineProps<IDeskTableProps>(), {
     <div class="border-grey-200 animate-fadeIn rounded-md border p-3">
       <!-- Header -->
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h4 class="text-primary-800 text-lg font-bold">{{ deskName }}</h4>
+        <h4 class="text-primary-800 text-lg font-bold">
+          {{ deskName ?? t('desks.table_view_title') }}
+        </h4>
         <div class="text-primary-700 flex items-end space-x-1">
           <icon-account :font-controlled="false" class="block h-5 w-5" />
           <small class="block font-bold">
-            {{ peopleCount === 1 ? '1 Pessoa' : `${peopleCount} Pessoas` }}
+            {{
+              peopleCount === 1
+                ? t('desks.person_one')
+                : t('desks.person_other', { n: peopleCount })
+            }}
           </small>
         </div>
       </div>
@@ -35,7 +43,7 @@ withDefaults(defineProps<IDeskTableProps>(), {
           :font-controlled="false"
           class="mr-1 h-[32px] w-[32px]"
         ></icon-warning>
-        <p>Até agora não existem convidados para esta mesa</p>
+        <p>{{ t('desks.table_view_empty') }}</p>
       </div>
 
       <!-- Guest List -->
@@ -45,8 +53,8 @@ withDefaults(defineProps<IDeskTableProps>(), {
           <p class="text-grey-600 text-sm font-light">
             {{
               guest.people_Count === 1
-                ? '1 Pessoa'
-                : `${guest.people_Count} Pessoas`
+                ? t('desks.person_one')
+                : t('desks.person_other', { n: guest.people_Count })
             }}
           </p>
         </div>

@@ -11,6 +11,7 @@ const showFormModal = ref<boolean>(false);
 const showRemoveModal = ref<boolean>(false);
 const { isAdministrator, isSuperAdministrator } = useAuthStore();
 const { refreshDesk } = await useDesk(props.desk.id);
+const { t } = useI18n();
 
 const getAvaliablePlaces = computed(() => {
   return props.desk.seats_Limit - props.desk.seats_Filled;
@@ -27,7 +28,7 @@ const guestsPeopleCount = computed(() => {
 <template>
   <BaseCard
     :title="desk.name"
-    description="Verifique todos os detalhes desta mesa aqui"
+    :description="t('desks.view_description')"
     back-link="/admin/mesas"
   >
     <div
@@ -37,30 +38,32 @@ const guestsPeopleCount = computed(() => {
       <div class="md:w-1/2">
         <BaseDescriptionList>
           <BaseDescriptionListItem
-            title="Nome da Mesa"
+            :title="t('desks.detail_name')"
             :description="desk.name"
           />
           <BaseDescriptionListItem
-            title="Número de Pessoas"
+            :title="t('desks.detail_people_count')"
             :description="
-              desk.seats_Limit == 1 ? '1 Pessoa' : `${desk.seats_Limit} Pessoas`
+              desk.seats_Limit == 1
+                ? t('desks.person_one')
+                : t('desks.person_other', { n: desk.seats_Limit })
             "
           />
 
           <BaseDescriptionListItem
-            title="Lugares Ocupados"
+            :title="t('desks.detail_seats_filled')"
             :description="
               desk.seats_Limit == 1
-                ? '1 Pessoa'
-                : `${props.desk?.seats_Filled} Lugares`
+                ? t('desks.person_one')
+                : t('desks.seat_other', { n: props.desk?.seats_Filled })
             "
           />
           <BaseDescriptionListItem
-            title="Lugares Disponíveis"
+            :title="t('desks.detail_seats_available')"
             :description="
               getAvaliablePlaces == 1
-                ? '1 Pessoa'
-                : `${getAvaliablePlaces} Lugares`
+                ? t('desks.person_one')
+                : t('desks.seat_other', { n: getAvaliablePlaces })
             "
           />
         </BaseDescriptionList>
@@ -76,7 +79,7 @@ const guestsPeopleCount = computed(() => {
             icon="pencil"
             @click="showFormModal = true"
           >
-            Modificar
+            {{ t('common.edit') }}
           </BaseButton>
 
           <BaseButton
@@ -87,7 +90,7 @@ const guestsPeopleCount = computed(() => {
             icon="cancel"
             @click="showRemoveModal = true"
           >
-            Remover
+            {{ t('common.remove') }}
           </BaseButton>
         </div>
       </div>

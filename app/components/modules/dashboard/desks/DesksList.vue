@@ -4,6 +4,7 @@ import { getDeskService } from '~/services/deskService';
 
 const isExporting = ref<boolean>(false);
 const toast = useToast();
+const { t } = useI18n();
 const queryParameters = reactive<DeskParameters>({
   availability_Type: '',
   searchQuery: '',
@@ -13,11 +14,11 @@ const queryParameters = reactive<DeskParameters>({
   pageSize: 8,
 });
 
-const avaliabiltyList = ref<SelectOption[]>([
-  { id: '', name: 'Mostrar todas mesas' },
-  { id: 'PLACES_AVALIABLE', name: 'Mostrar mesas com lugares disponíveis' },
-  { id: 'PLACES_FILLED', name: 'Mostrar mesas com lugares preenchidos' },
-  { id: 'PLACES_EMPTY', name: 'Mostrar mesas sem lugares ocupados' },
+const avaliabiltyList = computed<SelectOption[]>(() => [
+  { id: '', name: t('desks.availability_all') },
+  { id: 'PLACES_AVALIABLE', name: t('desks.availability_available') },
+  { id: 'PLACES_FILLED', name: t('desks.availability_filled') },
+  { id: 'PLACES_EMPTY', name: t('desks.availability_empty') },
 ]);
 
 const { desks, pagination, isRefreshing, isError, refreshDesks } =
@@ -78,8 +79,8 @@ const exportDesks = async () => {
     window.URL.revokeObjectURL(url);
     isExporting.value = false;
   } catch (err) {
-    console.error('Erro ao exportar as mesas:', err);
-    toast.error('Ocorreu um erro ao exportar as mesas');
+    console.error('Error exporting desks:', err);
+    toast.error(t('desks.export_error'));
     isExporting.value = false;
   }
 };
@@ -103,14 +104,14 @@ const exportDesks = async () => {
             autocomplete="name"
             type="search"
             name="deskName"
-            label="Pesquisa:"
-            placeholder="Pesquise o nome da mesa"
+            :label="t('desks.search_label')"
+            :placeholder="t('desks.search_placeholder')"
             :readonly="isRefreshing"
           />
           <BaseSelect
             id="Lugares"
             v-model="queryParameters.availability_Type"
-            label="Lugares: "
+            :label="t('desks.availability_label')"
             :options="avaliabiltyList"
             :disabled="isRefreshing"
             disable-empty
@@ -126,8 +127,10 @@ const exportDesks = async () => {
               <h3 class="text-primary-700 text-2xl font-bold">
                 {{
                   pagination?.totalCount === 1
-                    ? '1 Mesa'
-                    : `${pagination ? pagination.totalCount : 0} Mesas`
+                    ? t('desks.count_one')
+                    : t('desks.count_other', {
+                        n: pagination ? pagination.totalCount : 0,
+                      })
                 }}
               </h3>
             </div>
@@ -143,7 +146,7 @@ const exportDesks = async () => {
             btn-type="primary"
             @click.prevent="showFormModal = true"
           >
-            Adicionar Mesa
+            {{ t('desks.add') }}
           </BaseButton>
           <BaseButton
             v-if="desks.length > 0"
@@ -152,7 +155,7 @@ const exportDesks = async () => {
             icon="download"
             :disabled="isExporting"
             @click="exportDesks"
-            >{{ isExporting ? 'A exportar...' : 'Exportar' }}</BaseButton
+            >{{ isExporting ? t('desks.exporting') : t('desks.export') }}</BaseButton
           >
         </div>
       </div>
@@ -172,17 +175,17 @@ const exportDesks = async () => {
         v-if="!isFirstTime && desks.length === 0"
         @fallback="refreshDesks"
       >
-        Infelizmente, não encontramos mesas para o filtro aplicado
+        {{ t('desks.not_found') }}
       </BaseSearchNotFound>
 
       <!-- No desk: first Time -->
       <LazyBaseFirstEmptyState
         v-if="isFirstTime"
         icon="icon-menu-table"
-        title="Ainda não criou nenhuma mesa"
-        description="Crie a sua primeira mesa para começar a organizar os lugares dos seus convidados de forma mais eficiente."
+        :title="t('desks.empty_title')"
+        :description="t('desks.empty_description')"
         :show-button="isAdministrator || isSuperAdministrator"
-        button-label="Criar primeira mesa"
+        :button-label="t('desks.empty_button')"
         button-icon="add"
         @action="showFormModal = true"
       />
@@ -190,17 +193,19 @@ const exportDesks = async () => {
       <!-- Data -->
       <BaseTable
         v-if="!isRefreshing && !isError && desks.length > 0"
-        summary="Tabela sobre a lista de mesas"
+        :summary="t('desks.table_summary')"
       >
         <template #thead>
           <tr>
-            <th scope="col">Nome</th>
-            <th scope="col">Nº de pessoas</th>
-            <th scope="col" class="hidden md:table-cell">Lugares ocupados</th>
+            <th scope="col">{{ t('desks.table_name') }}</th>
+            <th scope="col">{{ t('desks.table_people') }}</th>
             <th scope="col" class="hidden md:table-cell">
-              Lugares disponíveis
+              {{ t('desks.table_seats_filled') }}
             </th>
-            <th scope="col">Acções</th>
+            <th scope="col" class="hidden md:table-cell">
+              {{ t('desks.table_seats_available') }}
+            </th>
+            <th scope="col">{{ t('desks.table_actions') }}</th>
           </tr>
         </template>
         <template #tbody>
@@ -217,7 +222,7 @@ const exportDesks = async () => {
                 btn-type="outline-primary"
                 btn-size="sm"
               >
-                Ver detalhes
+                {{ t('desks.view_details') }}
               </BaseButtonLink>
             </td>
           </tr>

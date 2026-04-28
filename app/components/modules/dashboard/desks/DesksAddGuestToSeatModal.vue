@@ -35,6 +35,7 @@ const emit = defineEmits<{
 
 const nuxtApp = useNuxtApp();
 const guestService = getGuestService(nuxtApp.$api);
+const { t } = useI18n();
 
 const query = ref('');
 const selectedGuestId = ref<number | null>(null);
@@ -94,7 +95,7 @@ async function assign() {
   if (!props.deskId || !props.seatNumber) return;
 
   if (!selectedGuestId.value) {
-    errorMsg.value = 'Selecciona um convidado.';
+    errorMsg.value = t('desks.seat_select_guest_error');
     return;
   }
 
@@ -114,7 +115,7 @@ async function assign() {
     if (isFetchErrorLike(err)) {
       errorMsg.value = getServerErrors(err.data);
     } else {
-      errorMsg.value = 'Ocorreu um erro ao registar o movimento';
+      errorMsg.value = t('desks.seat_assign_error');
     }
   } finally {
     isSaving.value = false;
@@ -123,33 +124,33 @@ async function assign() {
 </script>
 
 <template>
-  <BaseModal title="Atribuir lugar" :show="show" @close-modal="close">
+  <BaseModal :title="t('desks.seat_assign_title')" :show="show" @close-modal="close">
     <div class="my-2 mb-40 animate-fadeIn space-y-4">
       <!-- Contexto -->
       <div class="rounded-xl border bg-white p-3">
         <div class="text-grey-300 text-sm">
-          Mesa:
+          {{ t('desks.seat_context_desk') }}
           <span class="text-primary-800 font-semibold">
             {{ deskName ?? '-' }}
           </span>
           <span class="text-grey-300 mx-3">•</span>
-          Lugar nº:
+          {{ t('desks.seat_context_seat') }}
           <span class="text-primary-800 font-semibold">
             {{ seatNumber ?? '-' }}
           </span>
         </div>
 
         <div class="text-grey-400 my-2 text-xs">
-          Estamos a mostrar apenas convidados desta mesa para evitar enganos.
+          {{ t('desks.seat_context_helper') }}
         </div>
 
         <div
           v-if="currentGuestName"
           class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
         >
-          Este lugar está ocupado por
+          {{ t('desks.seat_occupied_prefix') }}
           <span class="font-semibold">{{ currentGuestName }}</span
-          >. Se atribuíres outro convidado, vais substituir.
+          >. {{ t('desks.seat_occupied_suffix') }}
         </div>
       </div>
 
@@ -161,7 +162,7 @@ async function assign() {
           :items="filteredGuests"
           item-label="name"
           item-key="id"
-          placeholder="Pesquisar convidado desta mesa..."
+          :placeholder="t('desks.seat_guest_search_placeholder')"
           :disabled="!deskId"
           :min-chars="0"
           @search="onSearchGuests"
@@ -169,9 +170,14 @@ async function assign() {
         />
 
         <div v-if="selectedGuest" class="text-grey-400 text-xs">
-          Grupo: {{ selectedGuest.people_Count ?? 1 }} pessoa(s)
+          {{ t('desks.seat_group_label') }}
+          {{
+            (selectedGuest.people_Count ?? 1) === 1
+              ? t('desks.person_one')
+              : t('desks.person_other', { n: selectedGuest.people_Count ?? 1 })
+          }}
           <span v-if="selectedGuest.seatNumber">
-            • já tinha lugar: {{ selectedGuest.seatNumber }}
+            {{ t('desks.seat_previous_seat', { n: selectedGuest.seatNumber }) }}
           </span>
         </div>
       </div>
@@ -181,7 +187,7 @@ async function assign() {
       <!-- Actions -->
       <div class="flex items-center justify-end gap-2">
         <BaseButton btn-type="outline-primary" @click="close">
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
 
         <BaseButton
@@ -189,7 +195,7 @@ async function assign() {
           :disabled="!selectedGuestId || !deskId || !seatNumber"
           @click="assign"
         >
-          Atribuir
+          {{ t('desks.seat_assign_button') }}
         </BaseButton>
       </div>
     </div>

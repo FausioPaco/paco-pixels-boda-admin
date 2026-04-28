@@ -21,28 +21,33 @@ const nuxtApp = useNuxtApp();
 const deskService = getDeskService(nuxtApp.$api);
 
 const toast = useToast();
+const { t, locale } = useI18n();
 const isSubmiting = ref<boolean>(false);
 const serverErrors = ref<ServerError>({
   hasErrors: false,
   message: '',
 });
 
-const { errors, handleSubmit, defineField, resetForm } = useForm({
-  validationSchema: toTypedSchema(
+const schema = toTypedSchema(
     object({
       name: string()
-        .matches(/[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+/, 'Deve ser um nome válido')
-        .required('O seu nome é obrigatório'),
+        .matches(/[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+/, () =>
+          t('desks.validation_name_invalid'),
+        )
+        .required(() => t('desks.validation_name_required')),
       seats_Limit: number()
         .transform((value, originalValue) =>
           String(originalValue).trim() === '' ? undefined : value,
         )
-        .typeError('Deve colocar um número')
-        .positive('Deve colocar um número positivo')
-        .integer('O número de lugares não pode conter vírgulas')
-        .required('O número de lugares é obrigatório'),
+        .typeError(() => t('desks.validation_seats_number'))
+        .positive(() => t('desks.validation_seats_positive'))
+        .integer(() => t('desks.validation_seats_integer'))
+        .required(() => t('desks.validation_seats_required')),
     }),
-  ),
+);
+
+const { errors, handleSubmit, defineField, resetForm, validate } = useForm({
+  validationSchema: schema,
 });
 
 const [name, nameAttrs] = defineField('name');
@@ -67,7 +72,7 @@ const onSubmit = handleSubmit((values, _) => {
         resetForm();
         emit('closeModal');
         emit('success');
-        showSuccess('A mesa foi criada com sucesso');
+        showSuccess(t('desks.created_success'));
       })
       .catch((err) => {
         console.log(err.data);
@@ -84,7 +89,7 @@ const onSubmit = handleSubmit((values, _) => {
         resetForm();
         emit('closeModal');
         emit('success');
-        showSuccess('A mesa foi actualizada com sucesso');
+        showSuccess(t('desks.updated_success'));
       })
       .catch((err) => {
         console.log(err);
@@ -120,10 +125,14 @@ watch(
   },
   { immediate: true },
 );
+
+watch(locale, () => {
+  if (props.show) validate();
+});
 </script>
 <template>
   <BaseModal
-    :title="desk ? 'Actualizar Mesa' : 'Criar Mesa'"
+    :title="desk ? t('desks.form_update_title') : t('desks.form_create_title')"
     :show="show"
     @close-modal="closeModal"
   >
@@ -141,8 +150,8 @@ watch(
         autocomplete="name"
         type="text"
         name="name"
-        label="Nome:"
-        placeholder="Coloque o nome da mesa"
+        :label="t('desks.form_name_label')"
+        :placeholder="t('desks.form_name_placeholder')"
       />
 
       <BaseInput
@@ -153,8 +162,8 @@ watch(
         :readonly="isSubmiting"
         type="number"
         name="name"
-        label="Nº de lugares:"
-        placeholder="Coloque o número de lugares da mesa"
+        :label="t('desks.form_seats_label')"
+        :placeholder="t('desks.form_seats_placeholder')"
       />
 
       <BaseError v-if="serverErrors.hasErrors">{{
@@ -170,7 +179,7 @@ watch(
           :disabled="isSubmiting"
           :loading="isSubmiting"
           @click="onSubmit"
-          >{{ desk ? 'Actualizar agora' : 'Adicionar agora' }}</BaseButton
+          >{{ desk ? t('common.update_now') : t('common.add_now') }}</BaseButton
         >
 
         <BaseButton
@@ -180,7 +189,7 @@ watch(
           size="md"
           :disabled="isSubmiting"
           @click="closeModal"
-          >Cancelar</BaseButton
+          >{{ t('common.cancel') }}</BaseButton
         >
       </div>
     </form>
