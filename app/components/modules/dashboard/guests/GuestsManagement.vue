@@ -320,7 +320,7 @@ const sendBulkOptions = computed(() => {
       id: 'send-qrs',
       label:
         waJob.value?.status === 'Pending' || waJob.value?.status === 'Running'
-          ? `QR Codes — ${t('guests.sending_progress', { percent: waJob.value?.percent ?? 0 })}`
+          ? `QR Codes — ${t('guests.send_qrs_sending', { percent: waJob.value?.percent ?? 0 })}`
           : t('guests.send_qrs'),
     });
   }
@@ -335,7 +335,7 @@ const sendBulkOptions = computed(() => {
       label:
         invitationWhatsAppJob.value?.status === 'Pending' ||
         invitationWhatsAppJob.value?.status === 'Running'
-          ? `${t('guests.invitations_label')} — ${t('guests.sending_progress', { percent: invitationWhatsAppJob.value?.percent ?? 0 })}`
+          ? `${t('guests.send_invitations_sending', { percent: invitationWhatsAppJob.value?.percent ?? 0 })}`
           : t('guests.send_invitations'),
     });
   }
@@ -351,7 +351,7 @@ const exportBulkOptions = computed(() => {
       id: 'export-qrs',
       label:
         qrJob.value?.status === 'Pending' || qrJob.value?.status === 'Running'
-          ? `QR Codes — ${t('guests.exporting_progress', { percent: qrJob.value?.percent ?? 0 })}`
+          ? `QR Codes — ${t('guests.export_qrs_exporting', { percent: qrJob.value?.percent ?? 0 })}`
           : t('guests.export_qrs'),
     });
   }
@@ -366,7 +366,7 @@ const exportBulkOptions = computed(() => {
       label:
         invitationJob.value?.status === 'Pending' ||
         invitationJob.value?.status === 'Running'
-          ? `${t('guests.invitations_label')} — ${t('guests.exporting_progress', { percent: invitationJob.value?.percent ?? 0 })}`
+          ? `${t('guests.export_invitations_exporting', { percent: invitationJob.value?.percent ?? 0 })}`
           : t('guests.export_invitations'),
     });
   }
@@ -376,32 +376,32 @@ const exportBulkOptions = computed(() => {
 
 const sendBulkLabel = computed(() => {
   if (waJob.value?.status === 'Pending' || waJob.value?.status === 'Running') {
-    return `${t('guests.send_bulk_progress', { percent: waJob.value?.percent ?? 0 })}`;
+    return `${t('guests.send_bulk_sending', { percent: waJob.value?.percent ?? 0 })}`;
   }
 
   if (
     invitationWhatsAppJob.value?.status === 'Pending' ||
     invitationWhatsAppJob.value?.status === 'Running'
   ) {
-    return `${t('guests.send_bulk_progress', { percent: invitationWhatsAppJob.value?.percent ?? 0 })}`;
+    return `${t('guests.send_bulk_sending', { percent: invitationWhatsAppJob.value?.percent ?? 0 })}`;
   }
 
-  return t('guests.send_bulk');
+  return t('guests.send_bulk_label');
 });
 
 const exportBulkLabel = computed(() => {
   if (qrJob.value?.status === 'Pending' || qrJob.value?.status === 'Running') {
-    return `${t('guests.export_bulk_progress', { percent: qrJob.value?.percent ?? 0 })}`;
+    return `${t('guests.export_bulk_exporting', { percent: qrJob.value?.percent ?? 0 })}`;
   }
 
   if (
     invitationJob.value?.status === 'Pending' ||
     invitationJob.value?.status === 'Running'
   ) {
-    return `${t('guests.export_bulk_progress', { percent: invitationJob.value?.percent ?? 0 })}`;
+    return `${t('guests.export_bulk_exporting', { percent: invitationJob.value?.percent ?? 0 })}`;
   }
 
-  return t('guests.export_bulk');
+  return t('guests.export_bulk_label');
 });
 
 const handleSendBulkSelect = (option: { id: string }) => {
@@ -459,11 +459,11 @@ const activeExportModalJobTitle = computed(() => {
   if (!job) return null;
 
   if (job.kind === 'qr-export') {
-    return t('guests.export_modal_qr_title');
+    return t('guests.job_title_qr_export');
   }
 
   if (job.kind === 'invitation-export') {
-    return t('guests.export_modal_invitation_title');
+    return t('guests.job_title_invitation_export');
   }
 
   return null;
@@ -485,8 +485,8 @@ const activeExportModalJobTitle = computed(() => {
         >
           {{
             eventStore.eventModeView
-              ? t('guests.mode_deactivate')
-              : t('guests.mode_activate')
+              ? t('guests.event_mode_disable')
+              : t('guests.event_mode_enable')
           }}
         </BaseButton>
 

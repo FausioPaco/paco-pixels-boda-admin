@@ -311,7 +311,7 @@ const onSubmitItem = handleSubmit(async (values) => {
         class="w-full md:w-1/2"
         @click="activeTab = 'DETAILS'"
       >
-        {{ t('budget.tab_item_details') }}
+        {{ t('budget.tab_details') }}
       </BaseTabItem>
 
       <BaseTabItem
@@ -336,7 +336,7 @@ const onSubmitItem = handleSubmit(async (values) => {
             v-bind="titleAttrs"
             :error-message="errors.title"
             :readonly="isSubmitting"
-            :label="t('budget.form_title_label')"
+            :label="t('budget.field_title')"
             placeholder="Ex: Organizador de casamento"
           />
 
@@ -346,7 +346,7 @@ const onSubmitItem = handleSubmit(async (values) => {
             v-bind="estimatedAmountAttrs"
             :error-message="errors.estimatedAmount"
             :readonly="isSubmitting"
-            :label="t('budget.form_estimated_label')"
+            :label="t('budget.field_estimated')"
             type="number"
             step="0.01"
           />
@@ -357,7 +357,7 @@ const onSubmitItem = handleSubmit(async (values) => {
             v-bind="actualCostAttrs"
             :error-message="errors.actualCost"
             :readonly="isSubmitting"
-            :label="t('budget.form_actual_label')"
+            :label="t('budget.field_actual')"
             type="number"
             step="0.01"
           />
@@ -367,8 +367,8 @@ const onSubmitItem = handleSubmit(async (values) => {
             v-model="paidAmount"
             v-bind="paidAmountAttrs"
             :error-message="errors.paidAmount"
-            :helper-text="t('budget.form_paid_helper')"
-            :label="t('budget.form_paid_label')"
+            :helper-text="t('budget.field_paid_helper')"
+            :label="t('budget.field_paid')"
             type="number"
             step="0.01"
             :disabled="mode === 'EVENT'"
@@ -380,7 +380,7 @@ const onSubmitItem = handleSubmit(async (values) => {
             v-bind="notesAttrs"
             :error-message="errors.notes"
             :readonly="isSubmitting"
-            :label="t('budget.form_notes_label')"
+            :label="t('budget.field_notes')"
             placeholder="Notas internas..."
           />
 
@@ -403,7 +403,7 @@ const onSubmitItem = handleSubmit(async (values) => {
               :disabled="isSubmitting"
               :loading="isSubmitting"
             >
-              {{ t('common.save') }}
+              {{ t('budget.save') }}
             </BaseButton>
           </div>
         </form>
@@ -411,7 +411,7 @@ const onSubmitItem = handleSubmit(async (values) => {
         <div v-else>
           <div class="flex items-center justify-between">
             <p class="text-grey-400 text-lg font-semibold">
-              {{ t('budget.installment_list_title') }}
+              {{ t('budget.installments_title') }}
             </p>
 
             <BaseButton
@@ -422,7 +422,7 @@ const onSubmitItem = handleSubmit(async (values) => {
               :disabled="isSavingInstallment || isLoadingInstallments"
               @click="startCreateInstallment()"
             >
-              {{ t('budget.installment_add') }}
+              {{ t('budget.installments_add') }}
             </BaseButton>
           </div>
 
@@ -500,7 +500,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                         <button
                           type="button"
                           class="text-grey-500 hover:text-primary-700 transition"
-                          :title="t('budget.inst_edit_title')"
+                          :title="t('budget.installment_edit_title')"
                           @click="startEditInstallment(p)"
                         >
                           <IconPencil :font-controlled="false" class="size-4" />
@@ -509,7 +509,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                         <button
                           type="button"
                           class="text-grey-500 transition hover:text-red-600"
-                          :title="t('budget.inst_remove_title')"
+                          :title="t('budget.installment_remove_title')"
                           @click="removeInstallment(p.id)"
                         >
                           <IconTrash :font-controlled="false" class="size-4" />
@@ -529,8 +529,8 @@ const onSubmitItem = handleSubmit(async (values) => {
                 <p class="text-grey-900 text-sm font-semibold">
                   {{
                     editingInstallmentId
-                      ? t('budget.inst_form_edit_header')
-                      : t('budget.inst_form_create_header')
+                      ? t('budget.installment_edit_title')
+                      : t('budget.installment_create_title')
                   }}
                 </p>
 
@@ -541,7 +541,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                     v-bind="instAmountAttrs"
                     :error-message="instErrors.amount"
                     :readonly="isSavingInstallment"
-                    :label="t('budget.inst_amount_label')"
+                    :label="t('budget.installment_field_amount')"
                     type="number"
                     step="0.01"
                   />
@@ -565,7 +565,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                       :placeholder="t('budget.date_placeholder')"
                     />
                     <small class="text-grey-400 my-2 text-xs font-medium">
-                      {{ t('budget.inst_receipt_date_hint') }}
+                      {{ t('budget.installment_field_receipt_date_helper') }}
                     </small>
                     <p
                       v-if="instErrors.receiptDate"
@@ -594,7 +594,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                       :placeholder="t('budget.date_placeholder')"
                     />
                     <small class="text-grey-400 my-2 text-xs font-medium">
-                      {{ t('budget.inst_paid_date_hint') }}
+                      {{ t('budget.installment_field_paid_date_helper') }}
                     </small>
                     <p
                       v-if="instErrors.paidInDate"
@@ -610,7 +610,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                     v-bind="instPaymentMethodAttrs"
                     :error-message="instErrors.paymentMethod"
                     :disabled="isSavingInstallment"
-                    :label="t('budget.inst_payment_method_label')"
+                    :label="t('budget.installment_field_method')"
                     :options="BUDGET_PAYMENT_METHODS"
                   />
 
@@ -620,7 +620,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                     v-bind="instDescriptiveAttrs"
                     :error-message="instErrors.descriptive"
                     :readonly="isSavingInstallment"
-                    :label="t('budget.inst_descriptive_label')"
+                    :label="t('budget.installment_field_description')"
                     type="text"
                   />
 
@@ -649,7 +649,7 @@ const onSubmitItem = handleSubmit(async (values) => {
 
           <div class="mt-5 flex w-full justify-center">
             <BaseButton type="button" btn-type="outline-primary" @click="close">
-              {{ t('common.close') }}
+              {{ t('budget.installment_close') }}
             </BaseButton>
           </div>
         </div>

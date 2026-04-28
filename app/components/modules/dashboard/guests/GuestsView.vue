@@ -15,6 +15,7 @@ const InvitationComponent = shallowRef();
 
 const props = defineProps<GuestViewProps>();
 const toast = useToast();
+const { t } = useI18n();
 const showFormModal = ref<boolean>(false);
 const showRemoveModal = ref<boolean>(false);
 const showExportFormatModal = ref<boolean>(false);
@@ -106,7 +107,7 @@ const exportQRImage = async () => {
     link.click();
   } catch (err) {
     console.error(err);
-    toast.error('Erro ao exportar o QRCode');
+    toast.error(t('guests.error_export_qr'));
   } finally {
     isExporting.value = false;
     showForExport.value = false;
@@ -151,7 +152,7 @@ const exportQRPDF = async () => {
     pdf.save(fileName);
   } catch (err) {
     console.error(err);
-    toast.error('Ocorreu um erro ao exportar o QRCode em PDF.');
+    toast.error(t('guests.error_export_qr_pdf'));
   } finally {
     isExporting.value = false;
     showForExport.value = false;
@@ -226,7 +227,7 @@ const generateInvitationPng = async () => {
     window.URL.revokeObjectURL(blobUrl);
   } catch (err) {
     console.error(err);
-    toast.error('Ocorreu um erro ao gerar o convite.');
+    toast.error(t('guests.error_generate_invitation'));
   } finally {
     isGeneratingInvitation.value = false;
   }
@@ -318,7 +319,7 @@ const sendQrWhatsapp = async (force = false) => {
     );
   } catch (err) {
     console.error(err);
-    toast.error('Erro ao enviar o QR via WhatsApp.');
+    toast.error(t('guests.error_send_qr_whatsapp'));
   } finally {
     isSendingQRCodeWhatsApp.value = false;
   }
@@ -365,7 +366,7 @@ const sendInvitationWhatsapp = async () => {
     toast.success('Envio do convite via WhatsApp iniciado com sucesso.');
   } catch (err) {
     console.error(err);
-    toast.error('Erro ao enviar o convite via WhatsApp.');
+    toast.error(t('guests.error_send_invitation_whatsapp'));
   } finally {
     isSendingInvitationWhatsApp.value = false;
   }
@@ -433,7 +434,7 @@ onMounted(() => {
 <template>
   <BaseCard
     :title="guestDetails.name"
-    description="Verifique todos os detalhes deste convidado aqui"
+    :description="t('guests.view_description')"
     back-link="/admin/convidados"
   >
     <div
@@ -455,7 +456,11 @@ onMounted(() => {
                 class="animate-fadeIn"
                 @click="showExportFormatModal = true"
               >
-                {{ isExporting ? 'A gerar QR Code...' : 'Gerar QR Code' }}
+                {{
+                  isExporting
+                    ? t('guests.generating_qr')
+                    : t('guests.generate_qr')
+                }}
               </BaseButton>
 
               <BaseButton
@@ -468,7 +473,11 @@ onMounted(() => {
                 class="animate-fadeIn"
                 @click="showWhatsAppColorModal = true"
               >
-                {{ isSendingQRCodeWhatsApp ? 'A enviar...' : 'Enviar QR Code' }}
+                {{
+                  isSendingQRCodeWhatsApp
+                    ? t('guests.sending_qr_whatsapp')
+                    : t('guests.send_qr_whatsapp')
+                }}
               </BaseButton>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -483,8 +492,8 @@ onMounted(() => {
               >
                 {{
                   isGeneratingInvitation
-                    ? 'A gerar convite...'
-                    : 'Gerar Convite'
+                    ? t('guests.generating_invitation')
+                    : t('guests.generate_invitation')
                 }}
               </BaseButton>
               <BaseButton
@@ -498,8 +507,8 @@ onMounted(() => {
               >
                 {{
                   isSendingInvitationWhatsApp
-                    ? 'A enviar convite...'
-                    : 'Enviar convite'
+                    ? t('guests.sending_invitation_whatsapp')
+                    : t('guests.send_invitation_whatsapp')
                 }}
               </BaseButton>
             </div>
@@ -507,49 +516,55 @@ onMounted(() => {
         </div>
 
         <BaseDescriptionList>
-          <BaseDescriptionListItem title="Nome" :description="guest.name" />
+          <BaseDescriptionListItem
+            :title="t('guests.detail_name')"
+            :description="guest.name"
+          />
 
           <BaseDescriptionListItem
-            title="Número de Pessoas"
+            :title="t('guests.detail_people_count')"
             :description="
               guest.people_Count === 1
-                ? '1 Pessoa'
-                : `${guest.people_Count} Pessoas`
+                ? t('guests.detail_people_one')
+                : t('guests.detail_people_other', { n: guest.people_Count })
             "
           />
 
           <BaseDescriptionListItem
-            title="Telefone"
+            :title="t('guests.detail_phone')"
             :description="guest.phone"
           />
 
           <BaseDescriptionListItem
-            title="Tipo de Convidado"
+            :title="t('guests.detail_category')"
             :description="guest.categoryName"
           />
 
-          <BaseDescriptionListItem title="Presença Confirmada" hide-descriptipn>
+          <BaseDescriptionListItem
+            :title="t('guests.detail_presence_confirmed')"
+            hide-descriptipn
+          >
             <p
               class="text-sm font-bold"
               :class="props.guest?.presence_Confirmed ? 'text-green-700' : ''"
             >
-              {{ guest?.presence_Confirmed ? 'Sim' : 'Não' }}
+              {{ guest?.presence_Confirmed ? t('common.yes') : t('common.no') }}
             </p>
           </BaseDescriptionListItem>
 
           <BaseDescriptionListItem
             v-if="guest.presence_Confirmed && guest.people_Confirmed"
-            title="Pessoas Confirmadas"
-            :description="`${guest.people_Confirmed} ${guest.people_Confirmed === 1 ? 'Pessoa' : 'Pessoas'}`"
+            :title="t('guests.detail_people_confirmed')"
+            :description="`${guest.people_Confirmed} ${guest.people_Confirmed === 1 ? t('guests.detail_people_one') : t('guests.detail_people_other', { n: guest.people_Confirmed })}`"
           />
 
           <BaseDescriptionListItem
             v-if="guest.additional_Comments"
-            title="Comentários adicionais"
+            :title="t('guests.detail_comments')"
             :description="guest.additional_Comments"
           />
 
-          <BaseDescriptionListItem title="WhatsApp - QR Code">
+          <BaseDescriptionListItem :title="t('guests.detail_whatsapp_qr')">
             <GuestsWhatsAppStatusChip
               :status="guestDetails.whatsAppQrStatus"
               :label="guestDetails.whatsAppQrStatusLabel"
@@ -638,7 +653,7 @@ onMounted(() => {
             icon="pencil"
             @click="showFormModal = true"
           >
-            Modificar
+            {{ t('guests.view_edit') }}
           </BaseButton>
 
           <BaseButton
@@ -649,7 +664,7 @@ onMounted(() => {
             icon="cancel"
             @click="showRemoveModal = true"
           >
-            Remover
+            {{ t('guests.view_remove') }}
           </BaseButton>
         </div>
       </div>

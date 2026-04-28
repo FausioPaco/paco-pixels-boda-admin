@@ -150,7 +150,9 @@ watch(
 </script>
 <template>
   <BaseModal
-    :title="guest ? t('guests.form_edit_title') : t('guests.form_create_title')"
+    :title="
+      guest ? t('guests.form_update_title') : t('guests.form_create_title')
+    "
     :show="show"
     @close-modal="closeModal"
   >
@@ -219,9 +221,7 @@ watch(
         "
         :disabled="props.guest?.absence_Declared"
         :helper-text="
-          props.guest?.absence_Declared
-            ? t('guests.form_desk_disabled_hint')
-            : ''
+          props.guest?.absence_Declared ? t('guests.form_desk_no_assign') : ''
         "
       />
 
@@ -256,7 +256,7 @@ watch(
           :loading="isSubmiting"
           @click="onSubmit"
           >{{
-            props.guest ? t('guests.form_submit_edit') : t('guests.form_submit_create')
+            props.guest ? t('guests.submit_update') : t('guests.submit_add')
           }}</BaseButton
         >
 

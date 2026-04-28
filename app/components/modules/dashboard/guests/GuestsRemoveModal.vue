@@ -70,7 +70,7 @@ const onSubmit = () => {
           :disabled="isSubmiting"
           :loading="isSubmiting"
           @click="onSubmit"
-          >{{ t('guests.remove_button') }}</BaseButton
+          >{{ t('guests.remove_yes') }}</BaseButton
         >
 
         <BaseButton
