@@ -48,6 +48,7 @@ const [giftBrought, giftBroughtAttrs] = defineField('gift_Brought');
 
 const nuxtApp = useNuxtApp();
 const guestService = getGuestService(nuxtApp.$api);
+const { t } = useI18n();
 
 const isSubmiting = ref<boolean>(false);
 const serverErrors = ref<ServerError>({
@@ -102,15 +103,28 @@ watch(
         v-model="peopleConfirmed"
         v-bind="peopleConfirmedAttrs"
         :error-message="errors.peopleConfirmed"
-        label="Quantas pessoas irão ao evento?"
+        :label="t('guests.rsvp_people_question')"
         :options="
           Array.from({ length: props.guest?.people_Count ?? 1 }, (_, i) => ({
             id: i + 1,
-            name: `${i + 1} ${i + 1 === 1 ? 'pessoa' : 'pessoas'}`,
+            name:
+              i + 1 === 1
+                ? t('guests.rsvp_people_one')
+                : t('guests.rsvp_people_other', { n: i + 1 }),
             value: i + 1,
           }))
         "
-        :helper-text="`Este convite foi preparado para até ${props.guest?.people_Count ?? 1} ${props.guest?.people_Count === 1 ? 'pessoa' : 'pessoas'}.`"
+        :helper-text="
+          t('guests.rsvp_people_helper', {
+            count: props.guest?.people_Count ?? 1,
+            label:
+              (props.guest?.people_Count ?? 1) === 1
+                ? t('guests.rsvp_people_one')
+                : t('guests.rsvp_people_other', {
+                    n: props.guest?.people_Count ?? 1,
+                  }),
+          })
+        "
       />
 
       <BaseSelect
@@ -118,11 +132,11 @@ watch(
         v-model="giftBrought"
         v-bind="giftBroughtAttrs"
         :error-message="errors.gift_Brought"
-        label="Levou presente?"
+        :label="t('guests.rsvp_gift_question')"
         :options="[
-          { id: '', name: 'Não registado', value: null },
-          { id: 'true', name: 'Sim', value: true },
-          { id: 'false', name: 'Não', value: false },
+          { id: '', name: t('guests.rsvp_gift_not_registered'), value: null },
+          { id: 'true', name: t('guests.rsvp_gift_yes'), value: true },
+          { id: 'false', name: t('guests.rsvp_gift_no'), value: false },
         ]"
         disable-empty
       />
@@ -132,8 +146,8 @@ watch(
         v-model="note"
         v-bind="noteAttrs"
         :error-message="errors.additional_Comments"
-        label="Nota adicional (opcional):"
-        placeholder="O convidado possui alguma observação ou pedido especial?"
+        :label="t('guests.rsvp_note_label')"
+        :placeholder="t('guests.rsvp_note_placeholder')"
         rows="6"
       />
 
@@ -144,7 +158,7 @@ watch(
           size="md"
           @click="emit('previousStep')"
         >
-          Voltar
+          {{ t('guests.rsvp_back') }}
         </BaseButton>
 
         <BaseButton
@@ -155,8 +169,8 @@ watch(
         >
           {{
             props.guest?.presence_Confirmed
-              ? 'Actualizar confirmação'
-              : 'Confirmar Presença'
+              ? t('guests.rsvp_update')
+              : t('guests.rsvp_confirm_btn')
           }}
         </BaseButton>
       </div>

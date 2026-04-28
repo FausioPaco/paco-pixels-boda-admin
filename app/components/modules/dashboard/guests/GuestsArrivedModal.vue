@@ -16,6 +16,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const toast = useToast();
+const { t } = useI18n();
 const nuxtApp = useNuxtApp();
 const guestService = getGuestService(nuxtApp.$api);
 
@@ -37,11 +38,11 @@ const confirmArrival = async () => {
   try {
     isSubmitting.value = true;
     await guestService.confirmArrival(props.guest.id);
-    toast.success('Chegada confirmada.');
+    toast.success(t('guests.arrived_confirmed_success'));
     emit('success');
     close();
   } catch (err: unknown) {
-    onError(err, 'Ocorreu um erro ao confirmar chegada');
+    onError(err, t('guests.arrived_confirm_error'));
   } finally {
     isSubmitting.value = false;
   }
@@ -53,11 +54,11 @@ const cancelArrival = async () => {
   try {
     isSubmitting.value = true;
     await guestService.cancelArrival(props.guest.id);
-    toast.success('Chegada cancelada.');
+    toast.success(t('guests.arrived_cancelled_success'));
     emit('success');
     close();
   } catch (err: unknown) {
-    onError(err, 'Ocorreu um erro ao cancelar chegada');
+    onError(err, t('guests.arrived_cancel_error'));
   } finally {
     isSubmitting.value = false;
   }
@@ -65,7 +66,11 @@ const cancelArrival = async () => {
 </script>
 
 <template>
-  <BaseModal :show="show" title="Chegada" @close-modal="close">
+  <BaseModal
+    :show="show"
+    :title="t('guests.arrived_title')"
+    @close-modal="close"
+  >
     <div v-if="guest" class="space-y-4">
       <div class="bg-grey-50 rounded-xl p-3">
         <div class="text-grey-900 text-lg font-semibold">
@@ -74,8 +79,8 @@ const cancelArrival = async () => {
         <div class="text-grey-700 text-sm">
           {{
             guest.people_Count === 1
-              ? '1 pessoa'
-              : `${guest.people_Count} pessoas`
+              ? t('guests.manage_people_one')
+              : t('guests.manage_people_other', { n: guest.people_Count })
           }}
         </div>
       </div>
@@ -84,7 +89,7 @@ const cancelArrival = async () => {
         v-if="guest.absence_Declared"
         class="bg-warning-50 rounded-xl p-3 text-sm"
       >
-        Este convidado está marcado como ausente. A chegada está desactivada.
+        {{ t('guests.arrived_absence_warning') }}
       </div>
 
       <div class="flex justify-end gap-2">
@@ -93,7 +98,7 @@ const cancelArrival = async () => {
           :disabled="isSubmitting"
           @click="close"
         >
-          Fechar
+          {{ t('guests.arrived_close') }}
         </BaseButton>
 
         <BaseButton
@@ -103,7 +108,7 @@ const cancelArrival = async () => {
           :loading="isSubmitting"
           @click="confirmArrival"
         >
-          Confirmar chegada
+          {{ t('guests.arrived_confirm') }}
         </BaseButton>
 
         <BaseButton
@@ -113,7 +118,7 @@ const cancelArrival = async () => {
           :loading="isSubmitting"
           @click="cancelArrival"
         >
-          Cancelar chegada
+          {{ t('guests.arrived_cancel_btn') }}
         </BaseButton>
       </div>
     </div>

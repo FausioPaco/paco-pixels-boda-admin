@@ -16,6 +16,7 @@ const nuxtApp = useNuxtApp();
 const guestService = getGuestService(nuxtApp.$api);
 
 const toast = useToast();
+const { t } = useI18n();
 const isSubmiting = ref<boolean>(false);
 const serverErrors = ref<ServerError>({
   hasErrors: false,
@@ -30,7 +31,7 @@ const onSubmit = () => {
       .then(() => {
         emit('closeModal');
         emit('success');
-        toast.success('As alterações foram salvas com sucesso');
+        toast.success(t('guests.cancel_arrival_saved'));
       })
       .catch((err) => {
         console.log(err.data);
@@ -45,15 +46,15 @@ const onSubmit = () => {
 </script>
 <template>
   <BaseModal
-    title="Cancelar Chegada"
+    :title="t('guests.cancel_arrival_title')"
     :show="show"
     @close-modal="$emit('closeModal')"
   >
     <div v-if="props.guest" class="my-2 animate-fadeIn">
       <p class="text-grey-600 text-center text-base md:text-lg">
-        Pretende cancelar chegada de
-        <span class="font-bold">{{ props.guest.name }}</span
-        >?
+        {{
+          t('guests.cancel_arrival_confirm_text', { name: props.guest.name })
+        }}
       </p>
 
       <BaseError v-if="serverErrors.hasErrors">{{
@@ -71,7 +72,7 @@ const onSubmit = () => {
           :disabled="isSubmiting"
           :loading="isSubmiting"
           @click="onSubmit"
-          >Sim, cancelar</BaseButton
+          >{{ t('guests.cancel_arrival_yes') }}</BaseButton
         >
 
         <BaseButton
@@ -81,7 +82,7 @@ const onSubmit = () => {
           size="md"
           :disabled="isSubmiting"
           @click="$emit('closeModal')"
-          >Cancelar</BaseButton
+          >{{ t('common.cancel') }}</BaseButton
         >
       </div>
     </div>

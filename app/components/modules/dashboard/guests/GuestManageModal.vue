@@ -18,6 +18,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const toast = useToast();
+const { t } = useI18n();
 const nuxtApp = useNuxtApp();
 const guestService = getGuestService(nuxtApp.$api);
 
@@ -65,11 +66,11 @@ const declareAbsence = async () => {
       additional_Comments: absenceNote.value?.trim() || undefined,
     });
 
-    toast.success('Ausência registada.');
+    toast.success(t('guests.manage_absence_registered'));
     emit('updated');
     close();
   } catch (err: unknown) {
-    onError(err, 'Ocorreu um erro ao declarar ausência');
+    onError(err, t('guests.manage_absence_error'));
   } finally {
     isSubmitting.value = false;
   }
@@ -77,7 +78,11 @@ const declareAbsence = async () => {
 </script>
 
 <template>
-  <BaseModal :show="show" title="Confirmar convidado" @close-modal="close">
+  <BaseModal
+    :show="show"
+    :title="t('guests.manage_title')"
+    @close-modal="close"
+  >
     <div v-if="guest">
       <!-- Header -->
       <div class="bg-grey-50 mb-6 mt-2 rounded-xl p-3">
@@ -87,8 +92,8 @@ const declareAbsence = async () => {
         <div class="text-grey-700 text-sm">
           {{
             guest.people_Count === 1
-              ? '1 pessoa'
-              : `${guest.people_Count} pessoas`
+              ? t('guests.manage_people_one')
+              : t('guests.manage_people_other', { n: guest.people_Count })
           }}
         </div>
       </div>
@@ -136,7 +141,7 @@ const declareAbsence = async () => {
                       : 'text-grey-900'
                   "
                 >
-                  Presença
+                  {{ t('guests.manage_tab_presence') }}
                 </p>
 
                 <!-- mini “pill” active -->
@@ -148,12 +153,12 @@ const declareAbsence = async () => {
                       : 'bg-transparent text-transparent'
                   "
                 >
-                  Activo
+                  {{ t('guests.manage_tab_active') }}
                 </span>
               </div>
 
               <p class="text-grey-600 mt-1 text-xs">
-                Confirmar presença e nº de pessoas.
+                {{ t('guests.manage_tab_presence_desc') }}
               </p>
             </div>
           </div>
@@ -207,7 +212,7 @@ const declareAbsence = async () => {
                       : 'text-grey-900'
                   "
                 >
-                  Ausência
+                  {{ t('guests.manage_tab_absence') }}
                 </p>
 
                 <span
@@ -218,12 +223,12 @@ const declareAbsence = async () => {
                       : 'bg-transparent text-transparent'
                   "
                 >
-                  Activo
+                  {{ t('guests.manage_tab_active') }}
                 </span>
               </div>
 
               <p class="text-grey-600 mt-1 text-xs">
-                Marcar convidado como ausente.
+                {{ t('guests.manage_tab_absence_desc') }}
               </p>
             </div>
           </div>
@@ -244,8 +249,7 @@ const declareAbsence = async () => {
           v-if="guest.absence_Declared"
           class="bg-warning-50 rounded-xl p-3 text-sm"
         >
-          Este convidado está marcado como ausente. Ao confirmar presença, a
-          ausência será removida.
+          {{ t('guests.manage_absence_warning') }}
         </div>
 
         <!-- RSVP Advanced (embebido, sem “nested modal”) -->
@@ -260,8 +264,8 @@ const declareAbsence = async () => {
               close();
               toast.success(
                 props.guest?.presence_Confirmed
-                  ? 'Presença actualizada'
-                  : 'Presença confirmada',
+                  ? t('guests.manage_presence_updated')
+                  : t('guests.manage_presence_confirmed'),
               );
             }
           "
@@ -274,15 +278,14 @@ const declareAbsence = async () => {
           v-if="guest.presence_Confirmed"
           class="bg-grey-50 rounded-xl p-3 text-sm"
         >
-          Este convidado já confirmou presença. Marcar como ausente irá remover
-          a confirmação e libertar mesa/lugar.
+          {{ t('guests.manage_presence_warning') }}
         </div>
 
         <BaseTextArea
           id="absenceNote"
           v-model="absenceNote"
-          label="Nota (opcional):"
-          placeholder="Ex.: Não consegue comparecer por motivo de viagem."
+          :label="t('guests.manage_absence_note_label')"
+          :placeholder="t('guests.manage_absence_note_placeholder')"
           rows="4"
         />
 
@@ -292,15 +295,16 @@ const declareAbsence = async () => {
             :disabled="isSubmitting"
             @click="close"
           >
-            Cancelar
+            {{ t('common.cancel') }}
           </BaseButton>
 
           <BaseButton
             btn-type="outline-primary"
             :disabled="isSubmitting"
+            :loading="isSubmitting"
             @click="declareAbsence"
           >
-            Declarar ausência
+            {{ t('guests.manage_declare_absence') }}
           </BaseButton>
         </div>
       </div>

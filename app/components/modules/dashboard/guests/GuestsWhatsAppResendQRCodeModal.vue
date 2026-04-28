@@ -25,12 +25,14 @@ const { isPartner, canSend, blockingIssues, warnings } =
 onMounted(() => {
   refreshEvent({ force: true });
 });
+
+const { t } = useI18n();
 </script>
 
 <template>
   <BaseModal
     :show="show"
-    title="Reenviar convite por WhatsApp?"
+    :title="t('guests.wa_resend_qr_title')"
     @close-modal="emit('closeModal')"
   >
     <LazyGuestsWhatsAppQrPrerequisitesAlert
@@ -42,20 +44,18 @@ onMounted(() => {
 
     <div class="my-2 animate-fadeIn space-y-4">
       <p class="text-grey-700 text-left text-base md:text-lg">
-        Este convidado já possui histórico de envio por WhatsApp.
+        {{ t('guests.wa_resend_qr_desc') }}
       </p>
 
       <p
         v-if="statusLabel"
         class="text-grey-500 text-left text-sm md:text-base"
       >
-        Estado actual: <b>{{ statusLabel }}</b>
+        {{ t('guests.wa_resend_qr_status_label') }} <b>{{ statusLabel }}</b>
       </p>
 
       <p class="text-grey-500 text-left text-sm md:text-base">
-        Reenvios podem gerar custos adicionais com o serviço de WhatsApp.
-        Reenvie apenas quando houver um motivo claro, como pedido do convidado
-        ou falha anterior confirmada.
+        {{ t('guests.wa_resend_qr_warning') }}
       </p>
 
       <div class="my-4 flex animate-fadeIn items-center justify-center gap-3">
@@ -68,7 +68,7 @@ onMounted(() => {
           :disabled="loading || !canSend"
           @click="emit('confirm')"
         >
-          Reenviar convite
+          {{ t('guests.wa_resend_qr_confirm') }}
         </BaseButton>
 
         <BaseButton
@@ -79,7 +79,7 @@ onMounted(() => {
           :disabled="loading"
           @click="emit('closeModal')"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
       </div>
     </div>

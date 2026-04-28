@@ -3,18 +3,15 @@ interface Props {
   isPartner?: boolean;
   blockingIssues?: string[];
   warnings?: string[];
-  blockingTitle?: string;
-  warningTitle?: string;
 }
 
 withDefaults(defineProps<Props>(), {
   isPartner: false,
   blockingIssues: () => [],
   warnings: () => [],
-  blockingTitle:
-    'Antes de enviar QR Codes por WhatsApp, complete a ficha complementar do evento.',
-  warningTitle: 'Atenção',
 });
+
+const { t } = useI18n();
 </script>
 
 <template>
@@ -23,7 +20,7 @@ withDefaults(defineProps<Props>(), {
     class="border-warning-100 bg-warning-50 rounded-2xl border p-4"
   >
     <p class="text-warning-800 text-sm font-semibold">
-      {{ blockingTitle }}
+      {{ t('guests.wa_prereq_blocking_title') }}
     </p>
 
     <ul class="text-warning-800 mt-2 space-y-1 text-sm">
@@ -45,7 +42,7 @@ withDefaults(defineProps<Props>(), {
     class="border-primary-200 bg-primary-50 rounded-2xl border p-4"
   >
     <p class="text-primary-700 text-sm font-semibold">
-      {{ warningTitle }}
+      {{ t('guests.wa_prereq_warning_title') }}
     </p>
 
     <ul class="text-primary-700 mt-2 space-y-1 text-sm">

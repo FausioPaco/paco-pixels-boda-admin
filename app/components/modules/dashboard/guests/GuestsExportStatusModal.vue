@@ -16,16 +16,18 @@ withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits(['closeModal', 'success']);
+const { t } = useI18n();
 </script>
 <template>
   <BaseModal
     :show="show"
-    :title="title ?? 'A exportar...'"
+    :title="title ?? t('guests.export_status_title_fallback')"
     @close-modal="emit('closeModal')"
   >
     <div class="space-y-3">
       <p class="text-grey-700 text-sm">
-        A processar <b class="text-success-500">{{ exportProcessed }}</b> de
+        {{ t('guests.export_status_processing') }}
+        <b class="text-success-500">{{ exportProcessed }}</b> /
         {{ exportTotal }}
         <span class="text-grey-400 font-semibold">({{ exportPercent }}%)</span>
       </p>
@@ -38,7 +40,7 @@ const emit = defineEmits(['closeModal', 'success']);
       </div>
 
       <p class="text-grey-500 text-xs">
-        Pode demorar alguns minutos em eventos com muitos convidados.
+        {{ t('guests.export_status_slow') }}
       </p>
 
       <div class="flex justify-end">
@@ -47,7 +49,7 @@ const emit = defineEmits(['closeModal', 'success']);
           btn-size="sm"
           @click="emit('closeModal')"
         >
-          Continuar a usar o sistema
+          {{ t('guests.export_status_continue') }}
         </BaseButton>
       </div>
     </div>

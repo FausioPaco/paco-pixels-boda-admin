@@ -20,10 +20,11 @@ const forceInput = ref(false);
 const reasonInput = ref('');
 
 const isSubmitting = ref(false);
+const { t } = useI18n();
 
-const textColorList = ref<SelectOption[]>([
-  { id: 'black', name: 'Preto' },
-  { id: 'white', name: 'Branco' },
+const textColorList = computed<SelectOption[]>(() => [
+  { id: 'black', name: t('guests.qrcode_color_black') },
+  { id: 'white', name: t('guests.qrcode_color_white') },
 ]);
 
 const canSubmit = computed(() => {
@@ -73,7 +74,7 @@ onMounted(() => {
 
 <template>
   <BaseModal
-    title="Enviar QR Codes via WhatsApp"
+    :title="t('guests.send_all_qr_title')"
     :show="show"
     @close-modal="closeModal"
   >
@@ -87,13 +88,13 @@ onMounted(() => {
     <div class="my-2 animate-fadeIn">
       <form class="space-y-3" @submit.prevent="onSubmit">
         <p class="text-grey-400 text-left text-base md:text-lg">
-          Esta acção vai enviar 1 imagem (QR Code) por convidado elegível.
+          {{ t('guests.send_all_qr_desc') }}
         </p>
 
         <BaseSelect
           id="whatsAppQrTextColor"
           v-model="colorInput"
-          label="Cor do texto:"
+          :label="t('guests.send_all_qr_color_label')"
           :options="textColorList"
           disable-empty
         />
@@ -101,10 +102,11 @@ onMounted(() => {
         <div class="bg-grey-50 rounded-lg p-3">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <p class="text-grey-800 text-sm font-semibold">Reenvio forçado</p>
+              <p class="text-grey-800 text-sm font-semibold">
+                {{ t('guests.send_all_qr_force_title') }}
+              </p>
               <p class="text-grey-500 text-xs">
-                Use apenas em casos raros. Permite voltar a enviar mesmo quando
-                já existe entrega confirmada ou histórico anterior relevante.
+                {{ t('guests.send_all_qr_force_desc') }}
               </p>
             </div>
 
@@ -120,15 +122,14 @@ onMounted(() => {
             <BaseInput
               id="reasonInput"
               v-model="reasonInput"
-              label="Motivo do reenvio (obrigatório):"
-              placeholder="Ex: o convidado pediu novo envio / houve erro anterior"
+              :label="t('guests.send_all_qr_reason_label')"
+              :placeholder="t('guests.send_all_qr_reason_placeholder')"
             />
           </div>
         </div>
 
         <p class="text-grey-500 text-xs">
-          O envio inicial indica apenas que a plataforma aceitou a mensagem. A
-          confirmação de entrega e visualização acontece depois.
+          {{ t('guests.send_all_qr_note') }}
         </p>
 
         <div class="my-4 flex items-center justify-center space-x-3">
@@ -140,7 +141,7 @@ onMounted(() => {
             :loading="isSubmitting"
             :disabled="isSubmitting || !canSubmit || !canSend"
           >
-            Enviar agora
+            {{ t('guests.send_all_qr_submit') }}
           </BaseButton>
 
           <BaseButton
@@ -150,7 +151,7 @@ onMounted(() => {
             size="md"
             @click="closeModal"
           >
-            Cancelar
+            {{ t('common.cancel') }}
           </BaseButton>
         </div>
       </form>

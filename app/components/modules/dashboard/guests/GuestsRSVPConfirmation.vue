@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+const { t } = useI18n();
+
 interface IConfirmationForm {
   guest: Guest | undefined;
 }
@@ -9,8 +11,7 @@ defineEmits(['nextStep', 'previousStep']);
 <template>
   <div class="animate-fadeIn py-2">
     <p>
-      Confirma que é <b>{{ guest?.name }}</b
-      >?
+      {{ t('guests.rsvp_confirm_question', { name: guest?.name }) }}
     </p>
 
     <div
@@ -22,7 +23,7 @@ defineEmits(['nextStep', 'previousStep']);
         class="my-1"
         size="md"
         @click="$emit('nextStep')"
-        >Sim,</BaseButton
+        >{{ t('guests.rsvp_confirm_yes') }}</BaseButton
       >
 
       <BaseButton
@@ -31,7 +32,7 @@ defineEmits(['nextStep', 'previousStep']);
         class="my-1"
         size="md"
         @click="$emit('previousStep')"
-        >Não sou eu</BaseButton
+        >{{ t('guests.rsvp_confirm_no') }}</BaseButton
       >
     </div>
   </div>

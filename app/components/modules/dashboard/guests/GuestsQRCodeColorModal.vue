@@ -20,14 +20,15 @@ const formatInput = ref<ExportFormat>('png');
 const colorInput = ref<ExportTextColor>('black');
 
 const isSubmiting = ref<boolean>(false);
-const formatList = ref<SelectOption[]>([
+const { t } = useI18n();
+const formatList = computed<SelectOption[]>(() => [
   //{ id: 'pdf', name: 'Formato PDF' },
-  { id: 'png', name: 'Formato de Imagem (PNG)' },
+  { id: 'png', name: t('guests.qrcode_format_png') },
 ]);
 
-const textColorList = ref<SelectOption[]>([
-  { id: 'black', name: 'Preto' },
-  { id: 'white', name: 'Branco' },
+const textColorList = computed<SelectOption[]>(() => [
+  { id: 'black', name: t('guests.qrcode_color_black') },
+  { id: 'white', name: t('guests.qrcode_color_white') },
 ]);
 
 const onSubmit = () => {
@@ -56,7 +57,9 @@ onMounted(() => {
 <template>
   <BaseModal
     :title="
-      mode === 'export' ? 'Exportar QRCode' : 'Enviar QRCode via WhatsApp'
+      mode === 'export'
+        ? t('guests.qrcode_export_title')
+        : t('guests.qrcode_whatsapp_title')
     "
     :show="show"
     @close-modal="$emit('closeModal')"
@@ -73,15 +76,15 @@ onMounted(() => {
         <p class="text-grey-400 text-left text-base md:text-lg">
           {{
             mode === 'export'
-              ? 'Selecione o formato que pretende baixar o QRCode'
-              : 'Selecione o formato que pretende enviar o QRCode via WhatsApp'
+              ? t('guests.qrcode_export_desc')
+              : t('guests.qrcode_whatsapp_desc')
           }}
         </p>
 
         <BaseSelect
           id="formatQRCode"
           v-model="formatInput"
-          label="Formato: "
+          :label="t('guests.qrcode_format_label')"
           :options="formatList"
           disable-empty
         />
@@ -89,7 +92,7 @@ onMounted(() => {
         <BaseSelect
           id="colorQRCode"
           v-model="colorInput"
-          label="Cor do texto: "
+          :label="t('guests.qrcode_color_label')"
           :options="textColorList"
           disable-empty
         />
@@ -105,7 +108,9 @@ onMounted(() => {
             :loading="isSubmiting"
             :disabled="isSubmiting || (mode === 'whatsapp' && !canSend)"
             >{{
-              mode === 'export' ? 'Baixar agora' : 'Enviar agora'
+              mode === 'export'
+                ? t('guests.qrcode_download')
+                : t('guests.qrcode_send')
             }}</BaseButton
           >
 
@@ -115,7 +120,7 @@ onMounted(() => {
             class="my-1"
             size="md"
             @click="$emit('closeModal')"
-            >Cancelar</BaseButton
+            >{{ t('common.cancel') }}</BaseButton
           >
         </div>
       </form>

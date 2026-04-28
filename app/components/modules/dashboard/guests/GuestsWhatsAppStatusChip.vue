@@ -17,25 +17,29 @@ const props = withDefaults(defineProps<Props>(), {
   typeLabel: null,
 });
 
-const fallbackLabelMap: Record<GuestWhatsAppDeliveryStatus, string> = {
-  not_sent: 'Por enviar',
-  pending: 'Em processamento',
-  accepted: 'Aceite pela plataforma',
-  delivered: 'Entregue',
-  seen: 'Visualizado',
-  invalid_phone: 'Número inválido',
-  failed_temporary: 'Falha temporária',
-  failed: 'Falha no envio',
-  delivery_unknown: 'Entrega por confirmar',
-  needs_review: 'Precisa de verificação',
-};
+const { t } = useI18n();
+
+const fallbackLabelMap = computed<Record<GuestWhatsAppDeliveryStatus, string>>(
+  () => ({
+    not_sent: t('guests.status_not_sent'),
+    pending: t('guests.status_pending'),
+    accepted: t('guests.status_accepted'),
+    delivered: t('guests.status_delivered'),
+    seen: t('guests.status_seen'),
+    invalid_phone: t('guests.status_invalid_phone'),
+    failed_temporary: t('guests.status_failed_temporary'),
+    failed: t('guests.status_failed'),
+    delivery_unknown: t('guests.status_delivery_unknown'),
+    needs_review: t('guests.status_needs_review'),
+  }),
+);
 
 const normalizedStatus = computed<GuestWhatsAppDeliveryStatus>(() => {
   return props.status ?? 'not_sent';
 });
 
 const chipLabel = computed(() => {
-  return props.label?.trim() || fallbackLabelMap[normalizedStatus.value];
+  return props.label?.trim() || fallbackLabelMap.value[normalizedStatus.value];
 });
 
 const tooltipText = computed(() => {

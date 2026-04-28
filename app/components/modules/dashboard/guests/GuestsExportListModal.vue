@@ -16,6 +16,7 @@ const emit = defineEmits<{
 
 const formatInput = ref<ExportListFormat>('excel');
 const isSubmiting = ref<boolean>(false);
+const { t } = useI18n();
 
 const formatList = ref<SelectOption[]>([
   { id: 'excel', name: 'Excel' },
@@ -33,20 +34,20 @@ const onSubmit = () => {
 </script>
 <template>
   <BaseModal
-    title="Exportar lista de convidados"
+    :title="t('guests.export_list_title')"
     :show="show"
     @close-modal="$emit('closeModal')"
   >
     <div class="my-2 animate-fadeIn">
       <form @submit.prevent="onSubmit">
         <p class="text-grey-400 text-left text-base md:text-lg">
-          Selecione o formato que pretende baixar a lista de convidados
+          {{ t('guests.export_list_desc') }}
         </p>
 
         <BaseSelect
           id="formatExportGuest"
           v-model="formatInput"
-          label="Formato: "
+          :label="t('guests.export_list_format_label')"
           :options="formatList"
           disable-empty
         />
@@ -61,7 +62,7 @@ const onSubmit = () => {
             size="md"
             :loading="isSubmiting"
             :disabled="isSubmiting"
-            >Baixar agora</BaseButton
+            >{{ t('guests.export_list_download') }}</BaseButton
           >
 
           <BaseButton
@@ -70,7 +71,7 @@ const onSubmit = () => {
             class="my-1"
             size="md"
             @click="$emit('closeModal')"
-            >Cancelar</BaseButton
+            >{{ t('common.cancel') }}</BaseButton
           >
         </div>
       </form>

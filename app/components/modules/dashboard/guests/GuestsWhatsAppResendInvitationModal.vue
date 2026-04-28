@@ -14,29 +14,30 @@ withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   (e: 'closeModal' | 'confirm'): void;
 }>();
+
+const { t } = useI18n();
 </script>
 
 <template>
   <BaseModal
     :show="show"
-    title="Reenviar convite por WhatsApp?"
+    :title="t('guests.wa_resend_inv_title')"
     @close-modal="emit('closeModal')"
   >
     <div class="my-2 animate-fadeIn space-y-4">
       <p class="text-grey-700 text-left text-base md:text-lg">
-        Este convidado já possui histórico de envio do convite por WhatsApp.
+        {{ t('guests.wa_resend_inv_desc') }}
       </p>
 
       <p
         v-if="statusLabel"
         class="text-grey-500 text-left text-sm md:text-base"
       >
-        Estado actual: <b>{{ statusLabel }}</b>
+        {{ t('guests.wa_resend_inv_status_label') }} <b>{{ statusLabel }}</b>
       </p>
 
       <p class="text-grey-500 text-left text-sm md:text-base">
-        Reenvios podem gerar custos adicionais. Reenvie apenas quando houver um
-        motivo claro, como pedido do convidado ou falha anterior confirmada.
+        {{ t('guests.wa_resend_inv_warning') }}
       </p>
 
       <div class="my-4 flex items-center justify-center gap-3">
@@ -49,7 +50,7 @@ const emit = defineEmits<{
           :disabled="loading"
           @click="emit('confirm')"
         >
-          Reenviar convite
+          {{ t('guests.wa_resend_inv_confirm') }}
         </BaseButton>
 
         <BaseButton
@@ -59,7 +60,7 @@ const emit = defineEmits<{
           size="md"
           @click="emit('closeModal')"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
       </div>
     </div>

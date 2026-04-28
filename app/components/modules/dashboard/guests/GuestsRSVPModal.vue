@@ -15,6 +15,8 @@ const props = withDefaults(defineProps<IRSVPForm>(), {
 
 const emit = defineEmits(['closeModal', 'confirmed']);
 
+const { t } = useI18n();
+
 const currentStep = ref<'confirmation' | 'details'>(
   props.skipConfirmation ? 'details' : 'confirmation',
 );
@@ -79,7 +81,7 @@ const goBackToConfirmation = () => {
   <BaseModal
     v-else
     :show="show"
-    title="Confirmar Presença"
+    :title="t('guests.rsvp_title')"
     @close-modal="closeModal"
   >
     <Transition name="fade" mode="out-in">

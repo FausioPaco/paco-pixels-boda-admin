@@ -42,101 +42,134 @@ const showExportFormatModal = ref<boolean>(false);
 const isExporting = ref<boolean>(false);
 
 const toast = useToast();
+const { t } = useI18n();
 
-const availabilityOptions: SelectOption[] = [
+const availabilityOptions = computed<SelectOption[]>(() => [
   {
     id: 'ConfirmedButNotFull',
     value: 'ConfirmedButNotFull',
-    name: 'Confirmados mas não para todos',
+    name: t('guests.list_avail_confirmed_not_full'),
   },
-  { id: 'Confirmed', value: 'Confirmed', name: 'Confirmados' },
-  { id: 'NotConfirmed', value: 'NotConfirmed', name: 'Não confirmados' },
-  { id: 'Arrived', value: 'Arrived', name: 'Já chegaram' },
-  { id: 'Absent', value: 'Absent', name: 'Ausentes' },
-];
+  {
+    id: 'Confirmed',
+    value: 'Confirmed',
+    name: t('guests.list_avail_confirmed'),
+  },
+  {
+    id: 'NotConfirmed',
+    value: 'NotConfirmed',
+    name: t('guests.list_avail_not_confirmed'),
+  },
+  { id: 'Arrived', value: 'Arrived', name: t('guests.list_avail_arrived') },
+  { id: 'Absent', value: 'Absent', name: t('guests.list_avail_absent') },
+]);
 
-const giftOptions: SelectOption[] = [
-  { id: 'true', value: true, name: 'Levou presente' },
-  { id: 'false', value: false, name: 'Não levou presente' },
-];
+const giftOptions = computed<SelectOption[]>(() => [
+  { id: 'true', value: true, name: t('guests.list_gift_brought') },
+  { id: 'false', value: false, name: t('guests.list_gift_not_brought') },
+]);
 
-const whatsAppFilterOptions: SelectOption[] = [
-  { id: 'qr_not_sent', value: 'qr:not_sent', name: 'QR Code — Por enviar' },
-  { id: 'qr_pending', value: 'qr:pending', name: 'QR Code — Em processamento' },
+const whatsAppFilterOptions = computed<SelectOption[]>(() => [
+  {
+    id: 'qr_not_sent',
+    value: 'qr:not_sent',
+    name: `${t('guests.list_wa_qr_prefix')} — ${t('guests.status_not_sent')}`,
+  },
+  {
+    id: 'qr_pending',
+    value: 'qr:pending',
+    name: `${t('guests.list_wa_qr_prefix')} — ${t('guests.status_pending')}`,
+  },
   {
     id: 'qr_accepted',
     value: 'qr:accepted',
-    name: 'QR Code — Aceite pela plataforma',
+    name: `${t('guests.list_wa_qr_prefix')} — ${t('guests.status_accepted')}`,
   },
-  { id: 'qr_delivered', value: 'qr:delivered', name: 'QR Code — Entregue' },
-  { id: 'qr_seen', value: 'qr:seen', name: 'QR Code — Visualizado' },
+  {
+    id: 'qr_delivered',
+    value: 'qr:delivered',
+    name: `${t('guests.list_wa_qr_prefix')} — ${t('guests.status_delivered')}`,
+  },
+  {
+    id: 'qr_seen',
+    value: 'qr:seen',
+    name: `${t('guests.list_wa_qr_prefix')} — ${t('guests.status_seen')}`,
+  },
   {
     id: 'qr_invalid_phone',
     value: 'qr:invalid_phone',
-    name: 'QR Code — Número inválido',
+    name: `${t('guests.list_wa_qr_prefix')} — ${t('guests.status_invalid_phone')}`,
   },
   {
     id: 'qr_failed_temporary',
     value: 'qr:failed_temporary',
-    name: 'QR Code — Falha temporária',
+    name: `${t('guests.list_wa_qr_prefix')} — ${t('guests.status_failed_temporary')}`,
   },
-  { id: 'qr_failed', value: 'qr:failed', name: 'QR Code — Falha no envio' },
+  {
+    id: 'qr_failed',
+    value: 'qr:failed',
+    name: `${t('guests.list_wa_qr_prefix')} — ${t('guests.status_failed')}`,
+  },
   {
     id: 'qr_delivery_unknown',
     value: 'qr:delivery_unknown',
-    name: 'QR Code — Entrega por confirmar',
+    name: `${t('guests.list_wa_qr_prefix')} — ${t('guests.status_delivery_unknown')}`,
   },
   {
     id: 'qr_needs_review',
     value: 'qr:needs_review',
-    name: 'QR Code — Precisa de verificação',
+    name: `${t('guests.list_wa_qr_prefix')} — ${t('guests.status_needs_review')}`,
   },
 
   {
     id: 'invitation_not_sent',
     value: '2:not_sent',
-    name: 'Convite — Por enviar',
+    name: `${t('guests.list_wa_inv_prefix')} — ${t('guests.status_not_sent')}`,
   },
   {
     id: 'invitation_pending',
     value: '2:pending',
-    name: 'Convite — Em processamento',
+    name: `${t('guests.list_wa_inv_prefix')} — ${t('guests.status_pending')}`,
   },
   {
     id: 'invitation_accepted',
     value: '2:accepted',
-    name: 'Convite — Aceite pela plataforma',
+    name: `${t('guests.list_wa_inv_prefix')} — ${t('guests.status_accepted')}`,
   },
   {
     id: 'invitation_delivered',
     value: '2:delivered',
-    name: 'Convite — Entregue',
+    name: `${t('guests.list_wa_inv_prefix')} — ${t('guests.status_delivered')}`,
   },
-  { id: 'invitation_seen', value: '2:seen', name: 'Convite — Visualizado' },
+  {
+    id: 'invitation_seen',
+    value: '2:seen',
+    name: `${t('guests.list_wa_inv_prefix')} — ${t('guests.status_seen')}`,
+  },
   {
     id: 'invitation_invalid_phone',
     value: '2:invalid_phone',
-    name: 'Convite — Número inválido',
+    name: `${t('guests.list_wa_inv_prefix')} — ${t('guests.status_invalid_phone')}`,
   },
   {
     id: 'invitation_failed_temporary',
     value: '2:failed_temporary',
-    name: 'Convite — Falha temporária',
+    name: `${t('guests.list_wa_inv_prefix')} — ${t('guests.status_failed_temporary')}`,
   },
   {
     id: 'invitation_failed',
     value: '2:failed',
-    name: 'Convite — Falha no envio',
+    name: `${t('guests.list_wa_inv_prefix')} — ${t('guests.status_failed')}`,
   },
   {
     id: 'invitation_delivery_unknown',
     value: '2:delivery_unknown',
-    name: 'Convite — Entrega por confirmar',
+    name: `${t('guests.list_wa_inv_prefix')} — ${t('guests.status_delivery_unknown')}`,
   },
   {
     id: 'invitation_needs_review',
     value: '2:needs_review',
-    name: 'Convite — Precisa de verificação',
+    name: `${t('guests.list_wa_inv_prefix')} — ${t('guests.status_needs_review')}`,
   },
 
   // {
@@ -236,7 +269,7 @@ const whatsAppFilterOptions: SelectOption[] = [
   //   value: '4:needs_review',
   //   name: 'Lembrete — Precisa de verificação',
   // },
-];
+]);
 
 const debouncedSearch = useDebounceFn(() => {
   queryParameters.searchQuery = searchQuery.value;
@@ -296,7 +329,7 @@ const exportGuestsToExcel = async () => {
     isExporting.value = false;
   } catch (err) {
     console.error('Erro ao exportar os convidados:', err);
-    toast.error('Ocorreu um erro ao exportar os convidados');
+    toast.error(t('guests.list_export_error'));
     isExporting.value = false;
   }
 };
@@ -320,7 +353,7 @@ const exportGuestsToPdf = async () => {
     isExporting.value = false;
   } catch (err) {
     console.error('Erro ao exportar os convidados:', err);
-    toast.error('Ocorreu um erro ao exportar os convidados');
+    toast.error(t('guests.list_export_error'));
     isExporting.value = false;
   }
 };
@@ -445,8 +478,8 @@ onMounted(() => {
             :addon="`${eventInitials}-`"
             type="number"
             name="guestId"
-            label="Número do Convite:"
-            placeholder="Pesquise o número do convite"
+            :label="t('guests.list_invite_number_label')"
+            :placeholder="t('guests.list_invite_number_placeholder')"
           />
 
           <BaseInput
@@ -455,16 +488,16 @@ onMounted(() => {
             autocomplete="name"
             type="search"
             name="guestName"
-            label="Pesquisa:"
-            placeholder="Pesquise o nome do convidado"
+            :label="t('guests.list_name_label')"
+            :placeholder="t('guests.list_name_placeholder')"
           />
 
           <BaseSelect
             v-if="!isRefreshingCategories && categories"
             id="category"
             v-model="queryParameters.categoryId"
-            label="Tipo de Convidado: "
-            empty-message="Todos convidados"
+            :label="t('guests.list_category_label')"
+            :empty-message="t('guests.list_category_all')"
             :options="
               categories.map((category) => ({
                 id: category.id,
@@ -478,25 +511,25 @@ onMounted(() => {
           <BaseSelect
             id="avaliability"
             v-model="queryParameters.availability_Type"
-            label="Disponibilidade: "
+            :label="t('guests.list_availability_label')"
             :options="availabilityOptions"
-            empty-message="Todas disponibilidades"
+            :empty-message="t('guests.list_availability_all')"
           />
 
           <BaseSelect
             id="giftBrought"
             v-model="queryParameters.giftBrought"
-            label="Presentes: "
+            :label="t('guests.list_gift_label')"
             :options="giftOptions"
-            empty-message="Todos"
+            :empty-message="t('guests.list_gift_all')"
           />
 
           <BaseSelect
             id="whatsAppFilter"
             v-model="queryParameters.whatsAppFilter"
-            label="Envios por WhatsApp: "
+            :label="t('guests.list_whatsapp_label')"
             :options="whatsAppFilterOptions"
-            empty-message="Todos estados"
+            :empty-message="t('guests.list_whatsapp_all')"
           />
         </div>
       </div>
@@ -514,8 +547,10 @@ onMounted(() => {
           <h3 class="text-primary-700 text-2xl font-bold">
             {{
               pagination?.totalPeopleCount === 1
-                ? '1 Convidado'
-                : `${pagination ? pagination.totalPeopleCount : 0} Convidados`
+                ? t('guests.list_count_one')
+                : t('guests.list_count_other', {
+                    n: pagination ? pagination.totalPeopleCount : 0,
+                  })
             }}
           </h3>
         </div>
@@ -528,7 +563,7 @@ onMounted(() => {
             btn-type="primary"
             @click.prevent="showFormModal = true"
           >
-            Adicionar Convidado
+            {{ t('guests.list_add') }}
           </BaseButton>
           <BaseButton
             v-if="guests && guests.length > 0"
@@ -538,7 +573,7 @@ onMounted(() => {
             :disabled="isExporting"
             @click="showExportFormatModal = true"
             >{{
-              isExporting ? 'A exportar, aguarde...' : 'Exportar'
+              isExporting ? t('guests.list_exporting') : t('guests.list_export')
             }}</BaseButton
           >
         </div>
@@ -559,17 +594,17 @@ onMounted(() => {
         v-if="!isFirstTime && guests.length === 0"
         @fallback="refreshGuests({ force: true })"
       >
-        Infelizmente, não encontramos convidados para o filtro aplicado
+        {{ t('guests.list_not_found') }}
       </BaseSearchNotFound>
 
       <!-- No desk: first Time -->
       <LazyBaseFirstEmptyState
         v-if="isFirstTime"
         icon="icon-open-mail"
-        title="Ainda não criou nenhum convidado"
-        description="Crie o seu primeiro convidado para começar a organizar a lista de presenças do seu evento de forma mais eficiente"
+        :title="t('guests.list_empty_title')"
+        :description="t('guests.list_empty_desc')"
         :show-button="isAdministrator || isSuperAdministrator"
-        button-label="Criar primeiro convidado"
+        :button-label="t('guests.list_empty_button')"
         button-icon="add"
         @action="showFormModal = true"
       />
@@ -577,15 +612,15 @@ onMounted(() => {
       <!-- Data -->
       <BaseTable
         v-if="!isRefreshing && !isError && guests.length > 0"
-        summary="Tabela sobre a lista de convidados"
+        :summary="t('guests.list_table_summary')"
       >
         <template #thead>
           <tr>
-            <th scope="col">Nº</th>
-            <th scope="col">Nome</th>
-            <th scope="col">Pessoas</th>
-            <th scope="col">Mesa</th>
-            <th scope="col">Acções</th>
+            <th scope="col">{{ t('guests.list_col_number') }}</th>
+            <th scope="col">{{ t('guests.list_col_name') }}</th>
+            <th scope="col">{{ t('guests.list_col_people') }}</th>
+            <th scope="col">{{ t('guests.list_col_desk') }}</th>
+            <th scope="col">{{ t('guests.list_col_actions') }}</th>
           </tr>
         </template>
         <template #tbody>
@@ -611,23 +646,27 @@ onMounted(() => {
                 :disabled="guest.absence_Declared"
                 :title="
                   guest.absence_Declared
-                    ? 'Convidado marcado como ausente'
+                    ? t('guests.list_absent_tooltip')
                     : guest.arrived
-                      ? 'Cancelar chegada'
-                      : 'Confirmar chegada'
+                      ? t('guests.list_cancel_arrival_tooltip')
+                      : t('guests.list_confirm_arrival_tooltip')
                 "
                 @click.prevent="openArrivalAction(guest)"
               >
-                {{ guest.arrived ? 'Não chegou' : 'Chegou' }}
+                {{
+                  guest.arrived
+                    ? t('guests.list_cancel_arrival_btn')
+                    : t('guests.list_arrived')
+                }}
               </BaseButton>
 
-              <!-- Ver detalhes -->
+              <!-- RSVP -->
               <BaseButton
                 btn-size="sm"
                 btn-type="outline-primary"
                 @click.prevent="openConfirmModal(guest)"
               >
-                RSVP
+                {{ t('guests.list_rsvp') }}
               </BaseButton>
 
               <!-- Ver detalhes -->
@@ -636,7 +675,7 @@ onMounted(() => {
                 btn-type="primary"
                 btn-size="sm"
               >
-                Ver detalhes
+                {{ t('guests.list_view_details') }}
               </BaseButtonLink>
             </td>
           </tr>

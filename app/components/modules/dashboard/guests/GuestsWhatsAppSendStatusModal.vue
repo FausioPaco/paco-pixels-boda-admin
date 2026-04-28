@@ -18,21 +18,24 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits(['closeModal']);
+const { t } = useI18n();
 
 const messageLabel = computed(() => {
   return props.messageType === GuestWhatsAppOutboundType.Invitation
-    ? 'convites'
-    : 'QR Codes';
+    ? t('guests.send_status_inv_label')
+    : t('guests.send_status_qr_label');
 });
 
 const progressTitle = computed(() => {
   return props.messageType === GuestWhatsAppOutboundType.Invitation
-    ? 'A enviar convites via WhatsApp'
-    : 'A enviar QR Codes via WhatsApp';
+    ? t('guests.send_status_inv_progress_title')
+    : t('guests.send_status_qr_progress_title');
 });
 
 const finishButtonLabel = computed(() =>
-  props.summary ? 'Fechar' : 'Continuar a usar o sistema',
+  props.summary
+    ? t('guests.send_status_close')
+    : t('guests.send_status_continue'),
 );
 </script>
 
@@ -44,8 +47,8 @@ const finishButtonLabel = computed(() =>
   >
     <div class="space-y-3">
       <p class="text-grey-700 text-sm">
-        Processados
-        <b class="text-success-500">{{ exportProcessed }}</b> de
+        {{ t('guests.send_status_processed') }}
+        <b class="text-success-500">{{ exportProcessed }}</b> /
         {{ exportTotal }}
         <span class="text-grey-400 font-semibold">({{ exportPercent }}%)</span>
       </p>
@@ -58,55 +61,69 @@ const finishButtonLabel = computed(() =>
       </div>
 
       <div v-if="summary" class="bg-grey-50 rounded-lg p-3">
-        <p class="text-grey-700 mb-2 text-xs font-semibold">Resumo de envio</p>
+        <p class="text-grey-700 mb-2 text-xs font-semibold">
+          {{ t('guests.send_status_summary_title') }}
+        </p>
 
         <div class="grid grid-cols-2 gap-2 text-xs">
-          <p class="text-grey-700">Pendentes</p>
+          <p class="text-grey-700">{{ t('guests.send_status_pending') }}</p>
           <p class="text-grey-900 text-right font-semibold">
             {{ summary.pending }}
           </p>
 
-          <p class="text-grey-700">Aceites pela plataforma</p>
+          <p class="text-grey-700">{{ t('guests.send_status_accepted') }}</p>
           <p class="text-grey-900 text-right font-semibold">
             {{ summary.accepted }}
           </p>
 
-          <p class="text-grey-700">Entregues</p>
+          <p class="text-grey-700">{{ t('guests.send_status_delivered') }}</p>
           <p class="text-grey-900 text-right font-semibold">
             {{ summary.delivered }}
           </p>
 
-          <p class="text-grey-700">Visualizados</p>
+          <p class="text-grey-700">{{ t('guests.send_status_seen') }}</p>
           <p class="text-grey-900 text-right font-semibold">
             {{ summary.seen }}
           </p>
 
-          <p class="text-grey-700">Ignorados (telefone inválido)</p>
+          <p class="text-grey-700">
+            {{ t('guests.send_status_skipped_invalid_phone') }}
+          </p>
           <p class="text-grey-900 text-right font-semibold">
             {{ summary.skippedInvalidPhone }}
           </p>
 
-          <p class="text-grey-700">Ignorados (já entregue)</p>
+          <p class="text-grey-700">
+            {{ t('guests.send_status_skipped_delivered') }}
+          </p>
           <p class="text-grey-900 text-right font-semibold">
             {{ summary.skippedAlreadyDelivered }}
           </p>
 
-          <p class="text-grey-700">Falhas temporárias</p>
+          <p class="text-grey-700">
+            {{ t('guests.send_status_failed_temporary') }}
+          </p>
           <p class="text-grey-900 text-right font-semibold">
             {{ summary.failedTemporary }}
           </p>
 
-          <p class="text-grey-700">Falhas permanentes</p>
+          <p class="text-grey-700">
+            {{ t('guests.send_status_failed_permanent') }}
+          </p>
           <p class="text-grey-900 text-right font-semibold">
             {{ summary.failedPermanent }}
           </p>
 
-          <p class="text-grey-700">Entrega por confirmar</p>
+          <p class="text-grey-700">
+            {{ t('guests.send_status_delivery_unknown') }}
+          </p>
           <p class="text-grey-900 text-right font-semibold">
             {{ summary.deliveryUnknown }}
           </p>
 
-          <p class="text-grey-700">Precisa de verificação</p>
+          <p class="text-grey-700">
+            {{ t('guests.send_status_needs_review') }}
+          </p>
           <p class="text-grey-900 text-right font-semibold">
             {{ summary.needsReview }}
           </p>
@@ -114,9 +131,7 @@ const finishButtonLabel = computed(() =>
       </div>
 
       <p class="text-grey-500 text-xs">
-        Os processados incluem {{ messageLabel }} aceites pela plataforma,
-        falhas e convidados ignorados. A entrega final é confirmada
-        posteriormente.
+        {{ t('guests.send_status_note', { label: messageLabel }) }}
       </p>
 
       <div class="flex justify-end">

@@ -12,6 +12,7 @@ const emit = defineEmits<{
 }>();
 
 const isSubmitting = ref(false);
+const { t } = useI18n();
 
 const onSubmit = () => {
   isSubmitting.value = true;
@@ -26,21 +27,18 @@ const onSubmit = () => {
 
 <template>
   <BaseModal
-    title="Enviar convites via WhatsApp"
+    :title="t('guests.send_all_inv_title')"
     :show="show"
     @close-modal="emit('closeModal')"
   >
     <div class="my-2 animate-fadeIn">
       <form class="space-y-3" @submit.prevent="onSubmit">
         <p class="text-grey-400 text-left text-base md:text-lg">
-          Esta acção vai enviar o convite por WhatsApp para todos os convidados
-          elegíveis.
+          {{ t('guests.send_all_inv_desc') }}
         </p>
 
         <p class="text-grey-500 text-xs">
-          O envio inicial apenas confirma que a mensagem foi aceite pela
-          plataforma. A entrega e visualização serão actualizadas
-          posteriormente.
+          {{ t('guests.send_all_inv_note') }}
         </p>
 
         <div class="my-4 flex items-center justify-center gap-3">
@@ -52,7 +50,7 @@ const onSubmit = () => {
             :loading="isSubmitting"
             :disabled="isSubmitting"
           >
-            Enviar convites
+            {{ t('guests.send_all_inv_submit') }}
           </BaseButton>
 
           <BaseButton
@@ -62,7 +60,7 @@ const onSubmit = () => {
             size="md"
             @click="emit('closeModal')"
           >
-            Cancelar
+            {{ t('common.cancel') }}
           </BaseButton>
         </div>
       </form>
