@@ -17,6 +17,7 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 const nuxtApp = useNuxtApp();
 const beverageService = getBeverageService(nuxtApp.$api);
 
@@ -32,14 +33,14 @@ const onSubmit = async () => {
   try {
     isSubmiting.value = true;
     await beverageService.removeEventBeverage(props.eventId, props.beverage.id);
-    toast.success('Bebida removida com sucesso');
+    toast.success(t('beverages.toast_beverage_removed_success'));
     emit('success');
   } catch (e) {
     console.error(e);
     if (isFetchErrorLike(e)) {
       serverErrors.value.message = getServerErrors(e.data);
     } else {
-      serverErrors.value.message = 'Ocorreu um erro ao remover a bebida';
+      serverErrors.value.message = t('beverages.toast_beverage_removed_error');
     }
 
     serverErrors.value.hasErrors = true;
@@ -52,10 +53,14 @@ const close = () => emit('closeModal');
 </script>
 
 <template>
-  <BaseModal :show="props.show" title="Remover bebida" @close-modal="close">
+  <BaseModal
+    :show="props.show"
+    :title="t('beverages.remove_modal_title_beverage')"
+    @close-modal="close"
+  >
     <div class="space-y-4">
       <p class="text-grey-700">
-        Tem a certeza que pretende remover a bebida
+        {{ t('beverages.remove_confirm_beverage_prefix') }}
         <span class="text-grey-900 font-bold">{{
           props.beverage?.name ?? '-'
         }}</span
@@ -76,7 +81,7 @@ const close = () => emit('closeModal');
           :loading="isSubmiting"
           @click="onSubmit"
         >
-          Remover agora
+          {{ t('beverages.button_remove_now') }}
         </BaseButton>
 
         <BaseButton
@@ -87,7 +92,7 @@ const close = () => emit('closeModal');
           :disabled="isSubmiting"
           @click="$emit('closeModal')"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
       </div>
     </div>

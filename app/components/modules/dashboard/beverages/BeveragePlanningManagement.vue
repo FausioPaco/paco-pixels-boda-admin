@@ -7,6 +7,7 @@ defineProps<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 
 const { eventId } = useEventStore();
 const queryParameters = reactive<EventBeveragesParameters>({
@@ -59,16 +60,16 @@ function onPageSelected(newPage: number) {
 }
 
 const statusOptions = computed<SelectOption[]>(() => [
-  { id: '', name: 'Mostrar todos estados' },
-  { id: 'OK', name: 'OK' },
-  { id: 'LOW', name: 'Baixo' },
-  { id: 'OUTOFSTOCK', name: 'Sem stock' },
+  { id: '', name: t('beverages.status_all') },
+  { id: 'OK', name: t('beverages.status_ok') },
+  { id: 'LOW', name: t('beverages.status_low') },
+  { id: 'OUTOFSTOCK', name: t('beverages.status_out_of_stock') },
 ]);
 
 const categoryOptions = computed<SelectOption[]>(() => {
   const items = categories?.value ?? [];
   return [
-    { id: '', name: 'Mostrar todas categorias' },
+    { id: '', name: t('beverages.category_all') },
     ...items.map((c) => ({ id: String(c.id), name: c.name })),
   ];
 });
@@ -135,7 +136,7 @@ const onRefresh = async () => {
     await refreshEventBeverages({ force: true });
   } catch (e) {
     console.error(e);
-    toast.error('Ocorreu um erro ao carregar as bebidas');
+    toast.error(t('beverages.toast_load_error'));
   }
 };
 
@@ -162,7 +163,7 @@ const exportBeverages = async () => {
     window.URL.revokeObjectURL(url);
   } catch (err) {
     console.error('Erro ao exportar as bebidas:', err);
-    toast.error('Ocorreu um erro ao exportar as bebidas');
+    toast.error(t('beverages.toast_export_error'));
   } finally {
     isExporting.value = false;
   }
@@ -187,14 +188,14 @@ const exportBeverages = async () => {
             autocomplete="off"
             type="search"
             name="beverageSearch"
-            label="Pesquisa:"
-            placeholder="Filtre categorias ou itens..."
+            :label="t('beverages.search_label')"
+            :placeholder="t('beverages.search_placeholder')"
             :readonly="isRefreshing"
           />
 
           <BaseSelect
             id="beverageCategory"
-            label="Categoria:"
+            :label="t('beverages.form_category_label')"
             :options="categoryOptions"
             :disabled="isRefreshing"
             :model-value="
@@ -208,7 +209,7 @@ const exportBeverages = async () => {
 
           <BaseSelect
             id="beverageStatus"
-            label="Estado:"
+            :label="t('beverages.form_state_label')"
             :options="statusOptions"
             :disabled="isRefreshing"
             :model-value="queryParameters.stockStatus ?? ''"
@@ -225,8 +226,10 @@ const exportBeverages = async () => {
               <h3 class="text-primary-700 text-2xl font-bold">
                 {{
                   (pagination?.totalCount ?? 0) === 1
-                    ? '1 Bebida'
-                    : `${pagination ? pagination.totalCount : 0} Bebidas`
+                    ? t('beverages.count_one')
+                    : t('beverages.count_other', {
+                        n: pagination ? pagination.totalCount : 0,
+                      })
                 }}
               </h3>
             </div>
@@ -242,7 +245,7 @@ const exportBeverages = async () => {
             btn-type="primary"
             @click.prevent="openCreateModal"
           >
-            Adicionar bebida
+            {{ t('beverages.button_add_beverage') }}
           </BaseButton>
           <BaseButton
             v-if="(beverages?.length ?? 0) > 0"
@@ -252,7 +255,11 @@ const exportBeverages = async () => {
             :disabled="isExporting"
             @click="exportBeverages"
           >
-            {{ isExporting ? 'A exportar...' : 'Exportar' }}
+            {{
+              isExporting
+                ? t('beverages.button_export_loading')
+                : t('beverages.button_export')
+            }}
           </BaseButton>
         </div>
       </div>
@@ -263,22 +270,22 @@ const exportBeverages = async () => {
         class="mt-4 grid w-full grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
       >
         <BaseMiniStatCard
-          title="Total de bebidas"
+          :title="t('beverages.stat_total_beverages')"
           :value="pageStats.totalBeverages"
           icon="beverage"
         />
         <BaseMiniStatCard
-          title="Unidades em estoque"
+          :title="t('beverages.stat_units_in_stock')"
           :value="pageStats.unitsInStock"
           icon="beverage-stock"
         />
         <BaseMiniStatCard
-          title="Fora do estoque"
+          :title="t('beverages.stat_out_of_stock')"
           :value="pageStats.outOfStock"
           icon="warning"
         />
         <BaseMiniStatCard
-          title="Precisa de reabastecimento"
+          :title="t('beverages.stat_needs_restock')"
           :value="pageStats.needsRestock"
           icon="restock"
         />
@@ -299,17 +306,17 @@ const exportBeverages = async () => {
         v-if="!isFirstTime && (beverages?.length ?? 0) === 0 && !isRefreshing"
         @fallback="onRefresh"
       >
-        Infelizmente, não encontramos bebidas para o filtro aplicado
+        {{ t('beverages.search_not_found') }}
       </BaseSearchNotFound>
 
       <!-- First empty state -->
       <LazyBaseFirstEmptyState
         v-if="isFirstTime"
         icon="icon-beverage"
-        title="Ainda não registou bebidas"
-        description="Adicione bebidas para controlar o inventário e gerir o consumo no dia do evento."
+        :title="t('beverages.empty_title')"
+        :description="t('beverages.empty_description')"
         :show-button="true"
-        button-label="Adicionar primeira bebida"
+        :button-label="t('beverages.empty_button')"
         button-icon="add"
         @action="openCreateModal"
       />
@@ -317,18 +324,22 @@ const exportBeverages = async () => {
       <!-- Data table -->
       <BaseTable
         v-if="!isRefreshing && !isError && (beverages?.length ?? 0) > 0"
-        summary="Tabela sobre a lista de bebidas do evento"
+        :summary="t('beverages.table_summary')"
       >
         <template #thead>
           <tr>
-            <th scope="col">Bebida</th>
-            <th scope="col" class="hidden md:table-cell">Por caixa</th>
-            <th scope="col" class="hidden md:table-cell">Caixas</th>
-            <th scope="col">Estoque inicial</th>
-            <th scope="col">Disponível</th>
-            <th scope="col">Mínimo</th>
-            <th scope="col">Estado</th>
-            <th scope="col">Acções</th>
+            <th scope="col">{{ t('beverages.table_beverage') }}</th>
+            <th scope="col" class="hidden md:table-cell">
+              {{ t('beverages.table_units_per_box') }}
+            </th>
+            <th scope="col" class="hidden md:table-cell">
+              {{ t('beverages.table_boxes') }}
+            </th>
+            <th scope="col">{{ t('beverages.table_initial_stock') }}</th>
+            <th scope="col">{{ t('beverages.table_available') }}</th>
+            <th scope="col">{{ t('beverages.table_minimum') }}</th>
+            <th scope="col">{{ t('beverages.table_state') }}</th>
+            <th scope="col">{{ t('beverages.table_actions') }}</th>
           </tr>
         </template>
 
@@ -358,10 +369,10 @@ const exportBeverages = async () => {
                 "
                 :text="
                   bev.status === 'OK'
-                    ? 'OK'
+                    ? t('beverages.status_ok')
                     : bev.status === 'Low'
-                      ? 'Baixo'
-                      : 'Sem stock'
+                      ? t('beverages.status_low')
+                      : t('beverages.status_out_of_stock')
                 "
               />
             </td>
@@ -370,7 +381,7 @@ const exportBeverages = async () => {
                 <button
                   type="button"
                   class="text-grey-500 hover:text-primary-700 transition"
-                  title="Editar"
+                  :title="t('common.edit')"
                   @click.stop="openEditModal(bev)"
                 >
                   <IconPencil :font-controlled="false" class="size-4" />
@@ -379,7 +390,7 @@ const exportBeverages = async () => {
                 <button
                   type="button"
                   class="text-grey-500 transition hover:text-red-600"
-                  title="Remover"
+                  :title="t('common.delete')"
                   @click.stop="openRemoveModal(bev)"
                 >
                   <IconTrash :font-controlled="false" class="size-4" />

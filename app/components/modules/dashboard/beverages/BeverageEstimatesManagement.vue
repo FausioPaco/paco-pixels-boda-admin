@@ -7,6 +7,7 @@ const props = defineProps<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 const { eventId } = useEventStore();
 
 const nuxtApp = useNuxtApp();
@@ -49,7 +50,7 @@ watch(searchQuery, () => debouncedSearch());
 const categoryOptions = computed<SelectOption[]>(() => {
   const items = categories?.value ?? [];
   return [
-    { id: '', name: 'Mostrar todas categorias' },
+    { id: '', name: t('beverages.category_all') },
     ...items.map((c) => ({ id: String(c.id), name: c.name })),
   ];
 });
@@ -169,7 +170,7 @@ const exportEstimates = async () => {
     window.URL.revokeObjectURL(url);
   } catch (err) {
     console.error('Erro ao exportar as estimativas:', err);
-    toast.error('Ocorreu um erro ao exportar as estimativas');
+    toast.error(t('beverages.toast_export_estimates_error'));
   } finally {
     isExporting.value = false;
   }
@@ -178,7 +179,7 @@ const exportEstimates = async () => {
 const confirmSelected = async () => {
   if (isBlocked.value) return;
   if ((selectedIds.value?.length ?? 0) === 0) {
-    toast.info('Seleccione pelo menos uma estimativa.');
+    toast.info(t('beverages.toast_no_selection'));
     return;
   }
 
@@ -191,8 +192,10 @@ const confirmSelected = async () => {
 
     toast.success(
       res.createdCount === 1
-        ? '1 estimativa confirmada.'
-        : `${res.createdCount} estimativas confirmadas.`,
+        ? t('beverages.toast_estimate_confirmed_one')
+        : t('beverages.toast_estimate_confirmed_other', {
+            n: res.createdCount,
+          }),
     );
 
     // após confirmar, pode acontecer que desapareçam (se includeConfirmed=false)
@@ -200,7 +203,7 @@ const confirmSelected = async () => {
     await refreshEstimates({ force: true });
   } catch (e) {
     console.error(e);
-    toast.error('Não foi possível confirmar as estimativas seleccionadas.');
+    toast.error(t('beverages.toast_estimate_confirm_selected_error'));
   } finally {
     isBulkWorking.value = false;
   }
@@ -209,7 +212,7 @@ const confirmSelected = async () => {
 const unconfirmSelected = async () => {
   if (isBlocked.value) return;
   if ((selectedIds.value?.length ?? 0) === 0) {
-    toast.info('Seleccione pelo menos uma estimativa.');
+    toast.info(t('beverages.toast_no_selection'));
     return;
   }
 
@@ -223,18 +226,20 @@ const unconfirmSelected = async () => {
     if (res.unconfirmedCount > 0) {
       toast.success(
         res.unconfirmedCount === 1
-          ? '1 estimativa desconfirmada.'
-          : `${res.unconfirmedCount} estimativas desconfirmadas.`,
+          ? t('beverages.toast_estimate_unconfirmed_one')
+          : t('beverages.toast_estimate_unconfirmed_other', {
+              n: res.unconfirmedCount,
+            }),
       );
     } else {
-      toast.info('Nenhuma estimativa foi desconfirmada.');
+      toast.info(t('beverages.toast_estimate_unconfirmed_none'));
     }
 
     selectedIds.value = [];
     await refreshEstimates({ force: true });
   } catch (e) {
     console.error(e);
-    toast.error('Não foi possível desconfirmar as estimativas seleccionadas.');
+    toast.error(t('beverages.toast_estimate_unconfirm_selected_error'));
   } finally {
     isBulkWorking.value = false;
   }
@@ -250,11 +255,13 @@ const confirmSingle = async (item: EventBeverageEstimate) => {
       { estimateIds: [item.id] },
     );
 
-    if (res.createdCount > 0) toast.success('Estimativa confirmada.');
+    if (res.createdCount > 0) {
+      toast.success(t('beverages.toast_estimate_confirmed_single'));
+    }
     await refreshEstimates({ force: true });
   } catch (e) {
     console.error(e);
-    toast.error('Não foi possível confirmar a estimativa.');
+    toast.error(t('beverages.toast_estimate_confirm_error'));
   } finally {
     isBulkWorking.value = false;
   }
@@ -266,11 +273,11 @@ const unconfirmSingle = async (item: EventBeverageEstimate) => {
   try {
     isBulkWorking.value = true;
     await beverageService.unconfirmEventBeverageEstimate(eventId!, item.id);
-    toast.success('Estimativa desconfirmada.');
+    toast.success(t('beverages.toast_estimate_unconfirmed_single'));
     await refreshEstimates({ force: true });
   } catch (e) {
     console.error(e);
-    toast.error('Não foi possível desconfirmar a estimativa.');
+    toast.error(t('beverages.toast_estimate_unconfirm_error'));
   } finally {
     isBulkWorking.value = false;
   }
@@ -296,8 +303,8 @@ watch(isBlocked, (newVal) => {
       <BaseAlert
         v-if="isBlocked"
         :show="showEventDayAlert"
-        title="As estimativas estão em modo apenas leitura."
-        message="Para editar/confirmar/desconfirmar estimativas, altere o modo do módulo para 'Planeamento'."
+        :title="t('beverages.alert_estimates_readonly_title')"
+        :message="t('beverages.alert_estimates_readonly_message')"
         type="informative"
         @close="showEventDayAlert = !showEventDayAlert"
       />
@@ -313,15 +320,15 @@ watch(isBlocked, (newVal) => {
             autocomplete="off"
             type="search"
             name="estimateSearch"
-            label="Pesquisa:"
-            placeholder="Filtre categorias ou itens..."
+            :label="t('beverages.search_label')"
+            :placeholder="t('beverages.search_placeholder')"
             :readonly="isRefreshing"
           />
 
           <BaseSelect
             v-if="!isRefreshingCategories"
             id="estimateCategory"
-            label="Categoria:"
+            :label="t('beverages.form_category_label')"
             :options="categoryOptions"
             :disabled="isRefreshing"
             :model-value="
@@ -337,7 +344,7 @@ watch(isBlocked, (newVal) => {
             <BaseCheckbox
               id="toggleConfirmed"
               :model-value="showConfirmedToggle"
-              label="Mostrar confirmadas"
+              :label="t('beverages.show_confirmed')"
               :disabled="isRefreshing"
               @update:model-value="(v: boolean) => (showConfirmedToggle = v)"
             />
@@ -352,8 +359,10 @@ watch(isBlocked, (newVal) => {
               <h3 class="text-primary-700 text-2xl font-bold">
                 {{
                   (pagination?.totalCount ?? 0) === 1
-                    ? '1 Estimativa'
-                    : `${pagination ? pagination.totalCount : 0} Estimativas`
+                    ? t('beverages.count_estimate_one')
+                    : t('beverages.count_estimate_other', {
+                        n: pagination ? pagination.totalCount : 0,
+                      })
                 }}
               </h3>
             </div>
@@ -368,7 +377,11 @@ watch(isBlocked, (newVal) => {
             class="my-4 w-fit"
             @click="exportEstimates"
           >
-            {{ isExporting ? 'A exportar...' : 'Exportar estimativas' }}
+            {{
+              isExporting
+                ? t('beverages.button_export_loading')
+                : t('beverages.button_export_estimates')
+            }}
           </BaseButton>
         </div>
 
@@ -383,7 +396,7 @@ watch(isBlocked, (newVal) => {
             class="w-fit"
             @click.prevent="openCreateModal"
           >
-            Adicionar estimativa
+            {{ t('beverages.button_add_estimate') }}
           </BaseButton>
 
           <BaseButton
@@ -400,7 +413,7 @@ watch(isBlocked, (newVal) => {
             :loading="isBulkWorking"
             @click="confirmSelected"
           >
-            Confirmar seleccionadas
+            {{ t('beverages.button_confirm_selected') }}
           </BaseButton>
 
           <BaseButton
@@ -417,7 +430,7 @@ watch(isBlocked, (newVal) => {
             class="w-fit"
             @click="unconfirmSelected"
           >
-            Desconfirmar seleccionadas
+            {{ t('beverages.button_unconfirm_selected') }}
           </BaseButton>
         </div>
       </div>
@@ -436,17 +449,17 @@ watch(isBlocked, (newVal) => {
         v-if="!isFirstTime && (estimates?.length ?? 0) === 0 && !isRefreshing"
         @fallback="refreshEstimates({ force: true })"
       >
-        Infelizmente, não encontramos estimativas para o filtro aplicado
+        {{ t('beverages.estimates_search_not_found') }}
       </BaseSearchNotFound>
 
       <!-- First empty state -->
       <LazyBaseFirstEmptyState
         v-if="isFirstTime"
         icon="icon-beverage"
-        title="Ainda não criou estimativas"
-        description="Adicione estimativas para depois confirmar e gerar as bebidas no inventário."
+        :title="t('beverages.empty_estimates_title')"
+        :description="t('beverages.empty_estimates_description')"
         :show-button="true"
-        button-label="Adicionar primeira estimativa"
+        :button-label="t('beverages.empty_estimates_button')"
         button-icon="add"
         @action="openCreateModal"
       />
@@ -454,7 +467,7 @@ watch(isBlocked, (newVal) => {
       <!-- Data table -->
       <BaseTable
         v-if="!isRefreshing && !isError && (estimates?.length ?? 0) > 0"
-        summary="Tabela sobre a lista de estimativas do evento"
+        :summary="t('beverages.estimates_table_summary')"
       >
         <template #thead>
           <tr>
@@ -466,13 +479,17 @@ watch(isBlocked, (newVal) => {
                 @update:model-value="(v: boolean) => toggleSelectAllOnPage(v)"
               />
             </th>
-            <th scope="col">Bebida</th>
-            <th scope="col" class="hidden md:table-cell">Por caixa</th>
-            <th scope="col" class="hidden md:table-cell">Caixas</th>
-            <th scope="col">Qtd.</th>
-            <th scope="col">Mínimo</th>
-            <th scope="col">Estado</th>
-            <th scope="col">Acções</th>
+            <th scope="col">{{ t('beverages.table_beverage') }}</th>
+            <th scope="col" class="hidden md:table-cell">
+              {{ t('beverages.table_units_per_box') }}
+            </th>
+            <th scope="col" class="hidden md:table-cell">
+              {{ t('beverages.table_boxes') }}
+            </th>
+            <th scope="col">{{ t('beverages.table_qty') }}</th>
+            <th scope="col">{{ t('beverages.table_minimum') }}</th>
+            <th scope="col">{{ t('beverages.table_state') }}</th>
+            <th scope="col">{{ t('beverages.table_actions') }}</th>
           </tr>
         </template>
 
@@ -504,7 +521,11 @@ watch(isBlocked, (newVal) => {
             <td>
               <BaseBadge
                 :type="item.confirmed ? 'success' : 'default'"
-                :text="item.confirmed ? 'Confirmada' : 'Por confirmar'"
+                :text="
+                  item.confirmed
+                    ? t('beverages.badge_confirmed')
+                    : t('beverages.badge_pending')
+                "
                 :icon="item.confirmed ? 'checkmark' : undefined"
               />
             </td>
@@ -514,7 +535,7 @@ watch(isBlocked, (newVal) => {
                 <button
                   type="button"
                   class="text-grey-500 hover:text-primary-700 transition"
-                  title="Editar"
+                  :title="t('common.edit')"
                   :disabled="isBlocked || item.confirmed"
                   @click.stop="openEditModal(item)"
                 >
@@ -524,7 +545,7 @@ watch(isBlocked, (newVal) => {
                 <button
                   type="button"
                   class="text-grey-500 transition hover:text-red-600"
-                  title="Remover"
+                  :title="t('common.delete')"
                   :disabled="isBlocked"
                   @click.stop="openRemoveModal(item)"
                 >
@@ -535,7 +556,7 @@ watch(isBlocked, (newVal) => {
                   v-if="!item.confirmed"
                   type="button"
                   class="text-grey-500 hover:text-success-600 transition"
-                  title="Confirmar"
+                  :title="t('common.confirm')"
                   :disabled="isBlocked || isBulkWorking"
                   @click.stop="confirmSingle(item)"
                 >
@@ -546,7 +567,7 @@ watch(isBlocked, (newVal) => {
                   v-else
                   type="button"
                   class="text-grey-500 hover:text-primary-700 transition"
-                  title="Desconfirmar (rollback)"
+                  :title="t('beverages.tooltip_unconfirm')"
                   :disabled="isBlocked || isBulkWorking"
                   @click.stop="unconfirmSingle(item)"
                 >

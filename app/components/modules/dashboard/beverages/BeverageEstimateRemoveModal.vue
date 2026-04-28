@@ -20,6 +20,7 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 const nuxtApp = useNuxtApp();
 const beverageService = getBeverageService(nuxtApp.$api);
 
@@ -44,14 +45,14 @@ const onSubmit = async () => {
       props.estimate.id,
     );
 
-    toast.success('Estimativa removida com sucesso');
+    toast.success(t('beverages.toast_estimate_removed_success'));
     emit('success');
   } catch (e) {
     console.error(e);
     if (isFetchErrorLike(e)) {
       serverErrors.value.message = getServerErrors(e.data);
     } else {
-      serverErrors.value.message = 'Ocorreu um erro ao remover a estimativa';
+      serverErrors.value.message = t('beverages.toast_estimate_removed_error');
     }
     serverErrors.value.hasErrors = true;
   } finally {
@@ -63,18 +64,22 @@ const close = () => emit('closeModal');
 </script>
 
 <template>
-  <BaseModal :show="props.show" title="Remover estimativa" @close-modal="close">
+  <BaseModal
+    :show="props.show"
+    :title="t('beverages.remove_modal_title_estimate')"
+    @close-modal="close"
+  >
     <div class="space-y-4">
       <BaseAlert
         v-if="props.estimate?.confirmed"
         :show="props.estimate?.confirmed"
-        title="Atenção: esta estimativa está confirmada."
-        message="Ao remover, a bebida criada no inventário e os movimentos de stock  associados serão também removidos"
+        :title="t('beverages.estimate_remove_confirm_title')"
+        :message="t('beverages.estimate_remove_confirm_message')"
         type="informative"
       />
 
       <p class="text-grey-700">
-        Tem a certeza que pretende remover a estimativa
+        {{ t('beverages.remove_confirm_estimate_prefix') }}
         <span class="text-grey-900 font-bold">{{
           props.estimate?.name ?? '-'
         }}</span
@@ -95,7 +100,7 @@ const close = () => emit('closeModal');
           :loading="isSubmitting"
           @click="onSubmit"
         >
-          Remover agora
+          {{ t('beverages.button_remove_now') }}
         </BaseButton>
 
         <BaseButton
@@ -106,7 +111,7 @@ const close = () => emit('closeModal');
           :disabled="isSubmitting"
           @click="$emit('closeModal')"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
       </div>
     </div>

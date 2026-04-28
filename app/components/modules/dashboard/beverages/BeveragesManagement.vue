@@ -14,6 +14,7 @@ const moduleStatus = ref<EventBeverageStatus>('Planning');
 const isLoadingMode = ref(false);
 
 const toast = useToast();
+const { t } = useI18n();
 const nuxtApp = useNuxtApp();
 const beverageService = getBeverageService(nuxtApp.$api);
 
@@ -49,7 +50,7 @@ async function onToggleMode(next: boolean) {
     console.error(e);
     await loadMode();
 
-    toast.error('Não foi possível alterar o modo do módulo de bebidas.');
+    toast.error(t('beverages.toast_mode_change_error'));
   } finally {
     isLoadingMode.value = false;
   }
@@ -62,17 +63,23 @@ onMounted(async () => {
 
 <template>
   <BaseCard
-    title="Gestão de bebidas"
-    description="Registe as bebidas, controle o stock e faça a gestão do consumo no dia do evento."
+    :title="t('beverages.card_title')"
+    :description="t('beverages.card_description')"
   >
     <template #right-content>
       <div class="flex w-full items-center gap-4">
         <div class="flex min-w-fit flex-col gap-2 text-right">
-          <small class="text-grey-400 text-xs leading-tight">Modo</small>
+          <small class="text-grey-400 text-xs leading-tight">{{
+            t('beverages.mode_label')
+          }}</small>
           <p
             class="text-primary-700 mb-0 w-full text-base font-semibold leading-tight"
           >
-            {{ isEventDayMode ? 'Dia do evento' : 'Planeamento' }}
+            {{
+              isEventDayMode
+                ? t('beverages.mode_event_day')
+                : t('beverages.mode_planning')
+            }}
           </p>
         </div>
 
@@ -98,7 +105,7 @@ onMounted(async () => {
         class="w-full md:w-1/3"
         @click="activeTab = 'ESTIMATES'"
       >
-        Estimativas
+        {{ t('beverages.tab_estimates') }}
       </BaseTabItem>
 
       <BaseTabItem
@@ -110,7 +117,7 @@ onMounted(async () => {
         class="w-full md:w-1/3"
         @click="activeTab = 'PLANNING'"
       >
-        Registo e inventário
+        {{ t('beverages.tab_planning') }}
       </BaseTabItem>
 
       <BaseTabItem
@@ -122,7 +129,7 @@ onMounted(async () => {
         class="w-full md:w-1/3"
         @click="activeTab = 'EVENT_DAY'"
       >
-        Dia do evento
+        {{ t('beverages.tab_event_day') }}
       </BaseTabItem>
     </BaseTab>
 

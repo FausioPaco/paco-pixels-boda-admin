@@ -8,6 +8,7 @@ const props = defineProps<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 const nuxtApp = useNuxtApp();
 const beverageService = getBeverageService(nuxtApp.$api);
 
@@ -61,7 +62,7 @@ const applyOut = async (bev: EventBeverage, quantity: number) => {
       {
         type: BeverageStockMovementType.Out,
         quantity,
-        note: `Consumo rápido (-${quantity})`,
+        note: t('beverages.quick_consumption_note', { quantity }),
       },
     );
 
@@ -73,11 +74,11 @@ const applyOut = async (bev: EventBeverage, quantity: number) => {
         ? { ...x, currentUnits: result.currentUnits, status: result.status }
         : x,
     );
-    toast.success('Consumo registado com sucesso');
+    toast.success(t('beverages.toast_consumption_success'));
     refreshStockMovements({ force: true });
   } catch (e) {
     console.error(e);
-    toast.error('Ocorreu um erro ao registar o consumo');
+    toast.error(t('beverages.toast_consumption_error'));
   } finally {
     isUpdating.value[bev.id] = false;
   }
@@ -95,7 +96,7 @@ const markOutOfStock = async (bev: EventBeverage) => {
       {
         type: BeverageStockMovementType.MarkOutOfStock,
         quantity: 0,
-        note: 'Marcado como fora do estoque',
+        note: t('beverages.marked_out_of_stock_note'),
       },
     );
 
@@ -107,10 +108,10 @@ const markOutOfStock = async (bev: EventBeverage) => {
         : x,
     );
     refreshStockMovements({ force: true });
-    toast.success('Bebida marcada como fora do estoque com sucesso');
+    toast.success(t('beverages.toast_out_of_stock_success'));
   } catch (e) {
     console.error(e);
-    toast.error('Ocorreu um erro ao marcar fora do estoque');
+    toast.error(t('beverages.toast_out_of_stock_error'));
   } finally {
     isUpdating.value[bev.id] = false;
   }
@@ -152,9 +153,7 @@ const canRegisterMovements = computed(
 
 const ensureEventDayMode = () => {
   if (!canRegisterMovements.value) {
-    toast.info(
-      'Para registar movimentos, active o modo Dia do Evento no topo.',
-    );
+    toast.info(t('beverages.toast_enable_event_day_mode'));
     return false;
   }
   return true;
@@ -176,14 +175,13 @@ const isFirstTime = computed(
     class="relative flex min-h-[450px] w-full flex-col items-center px-4 py-5"
   >
     <p class="text-grey-400 my-4 font-medium">
-      Utilize esta secção para registar a saída de bebidas e manter o controlo
-      actualizado do stock.
+      {{ t('beverages.event_day_description') }}
     </p>
 
     <BaseAlert
       :show="showEventDayAlert"
-      title="Modo Planeamento Activo"
-      message=" Para registar movimentos (consumo, ajustes e abastecimentos), active o modo “Dia do evento” no topo."
+      :title="t('beverages.alert_planning_mode_title')"
+      :message="t('beverages.alert_planning_mode_message')"
       type="informative"
       @close="showEventDayAlert = !showEventDayAlert"
     />
@@ -202,8 +200,8 @@ const isFirstTime = computed(
             autocomplete="off"
             type="search"
             name="beverageSearchEventDay"
-            label="Pesquisa:"
-            placeholder="Filtre categorias ou itens..."
+            :label="t('beverages.search_label')"
+            :placeholder="t('beverages.search_placeholder')"
             :readonly="isRefreshing"
             :disabled="!canRegisterMovements"
             disable-margins
@@ -220,7 +218,7 @@ const isFirstTime = computed(
             :disabled="restockCount === 0 || !canRegisterMovements"
             @click="showRestockListModal = true"
           >
-            Ver lista de reposição ({{ restockCount }})
+            {{ t('beverages.button_restock_list', { count: restockCount }) }}
           </BaseButton>
 
           <BaseButton
@@ -229,7 +227,7 @@ const isFirstTime = computed(
             :disabled="!canRegisterMovements || beverages.length === 0"
             @click.prevent="showRestockModal = true"
           >
-            Abastecer
+            {{ t('beverages.button_restock') }}
           </BaseButton>
         </div>
       </div>
@@ -247,10 +245,10 @@ const isFirstTime = computed(
       <BaseFirstEmptyState
         v-if="isFirstTime"
         icon="icon-beverage-event"
-        title="Ainda não registou bebidas"
-        description="Adicione bebidas para controlar o inventário e gerir o consumo no dia do evento."
+        :title="t('beverages.empty_title')"
+        :description="t('beverages.empty_description')"
         :show-button="false"
-        button-label="Adicionar primeira bebida"
+        :button-label="t('beverages.empty_button')"
         button-icon="add"
       />
 
@@ -276,15 +274,15 @@ const isFirstTime = computed(
               "
               :text="
                 bev.status === 'OK'
-                  ? 'OK'
+                  ? t('beverages.status_ok')
                   : bev.status === 'Low'
-                    ? 'Baixo'
-                    : 'Sem stock'
+                    ? t('beverages.status_low')
+                    : t('beverages.status_out_of_stock')
               "
             />
 
             <p class="text-grey-500 text-sm">
-              Estoque actual:
+              {{ t('beverages.current_stock_label') }}
               <span class="text-grey-800 font-bold">{{
                 bev.currentUnits ?? 0
               }}</span>
@@ -329,7 +327,7 @@ const isFirstTime = computed(
               :disabled="!!isUpdating[bev.id] || !canRegisterMovements"
               @click="markOutOfStock(bev)"
             >
-              Marcar fora do estoque
+              {{ t('beverages.button_mark_out_of_stock') }}
             </BaseButton>
 
             <BaseButton
@@ -338,7 +336,7 @@ const isFirstTime = computed(
               :disabled="!!isUpdating[bev.id] || !canRegisterMovements"
               @click="openManual(bev)"
             >
-              Registro Manual
+              {{ t('beverages.button_manual_movement') }}
             </BaseButton>
           </div>
         </BaseCard>

@@ -20,6 +20,7 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t, locale } = useI18n();
 const nuxtApp = useNuxtApp();
 const beverageService = getBeverageService(nuxtApp.$api);
 
@@ -30,12 +31,15 @@ const serverErrors = ref<ServerError>({
 });
 
 const movementOptions = computed<SelectOption[]>(() => [
-  { id: BeverageStockMovementType.Out, name: 'Saída (consumo)' },
-  { id: BeverageStockMovementType.In, name: 'Entrada' },
-  { id: BeverageStockMovementType.Adjust, name: 'Ajuste' },
+  { id: BeverageStockMovementType.Out, name: t('beverages.movement_type_out') },
+  { id: BeverageStockMovementType.In, name: t('beverages.movement_type_in') },
+  {
+    id: BeverageStockMovementType.Adjust,
+    name: t('beverages.movement_type_adjust'),
+  },
   {
     id: BeverageStockMovementType.MarkOutOfStock,
-    name: 'Marcar fora do estoque',
+    name: t('beverages.movement_type_mark_out_of_stock'),
   },
 ]);
 
@@ -60,9 +64,9 @@ const schema = toTypedSchema(
           BeverageStockMovementType.Adjust,
           BeverageStockMovementType.MarkOutOfStock,
         ],
-        'O tipo de movimento é inválido.',
+        () => t('beverages.validation_movement_type_invalid'),
       )
-      .typeError('O tipo de movimento é obrigatório.')
+      .typeError(() => t('beverages.validation_movement_type_required'))
       .required(),
     quantity: number()
       .nullable()
@@ -71,15 +75,15 @@ const schema = toTypedSchema(
           v !== BeverageStockMovementType.MarkOutOfStock,
         then: (s) =>
           s
-            .required('A quantidade é obrigatória.')
-            .min(1, 'Tem de ser maior que 0.'),
+            .required(() => t('beverages.validation_quantity_required'))
+            .min(1, () => t('beverages.validation_positive_number')),
         otherwise: (s) => s.nullable(),
       }),
     note: string().nullable(),
   }),
 );
 
-const { handleSubmit, resetForm, defineField, errors } =
+const { handleSubmit, resetForm, defineField, errors, validate } =
   useForm<StockMovementCreateInput>({
     validationSchema: schema,
     initialValues: {
@@ -111,6 +115,10 @@ watch(
   { immediate: true },
 );
 
+watch(locale, () => {
+  if (props.show) validate();
+});
+
 const onSubmit = handleSubmit(async (form) => {
   if (!props.beverage) return;
 
@@ -126,14 +134,14 @@ const onSubmit = handleSubmit(async (form) => {
       note: form.note,
     });
 
-    toast.success('Movimento registado com sucesso');
+    toast.success(t('beverages.toast_movement_success'));
     emit('success');
   } catch (err: unknown) {
     console.error(err);
     if (isFetchErrorLike(err)) {
       serverErrors.value.message = getServerErrors(err.data);
     } else {
-      serverErrors.value.message = 'Ocorreu um erro ao registar o movimento';
+      serverErrors.value.message = t('beverages.toast_movement_error');
     }
 
     serverErrors.value.hasErrors = true;
@@ -146,10 +154,14 @@ const close = () => emit('closeModal');
 </script>
 
 <template>
-  <BaseModal :show="props.show" title="Movimento manual" @close-modal="close">
+  <BaseModal
+    :show="props.show"
+    :title="t('beverages.manual_movement_title')"
+    @close-modal="close"
+  >
     <form @submit.prevent="onSubmit">
       <p class="text-grey-700">
-        Bebida:
+        {{ t('beverages.form_beverage_label') }}
         <span class="text-grey-900 font-bold">{{
           props.beverage?.name ?? '-'
         }}</span>
@@ -161,7 +173,7 @@ const close = () => emit('closeModal');
         v-bind="typeAttrs"
         name="movementType"
         :error-message="errors.type"
-        label="Tipo:"
+        :label="t('beverages.form_movement_type_label')"
         :options="movementOptions"
         :disabled="isSubmitting"
       />
@@ -173,9 +185,9 @@ const close = () => emit('closeModal');
         v-bind="quantityAttrs"
         :error-message="errors.quantity"
         name="movementQty"
-        label="Quantidade:"
+        :label="t('beverages.form_quantity_label')"
         type="number"
-        placeholder="Ex: 12"
+        :placeholder="t('beverages.form_quantity_placeholder')"
         :readonly="isSubmitting"
       />
 
@@ -185,8 +197,8 @@ const close = () => emit('closeModal');
         v-bind="noteAttrs"
         :error-message="errors.note"
         name="movementNote"
-        label="Nota:"
-        placeholder="Opcional"
+        :label="t('beverages.form_notes_label')"
+        :placeholder="t('beverages.form_optional_placeholder')"
         :readonly="isSubmitting"
       />
 
@@ -201,7 +213,7 @@ const close = () => emit('closeModal');
           :disabled="isSubmitting"
           @click.prevent="close"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
         <BaseButton
           btn-type="primary"
@@ -210,7 +222,7 @@ const close = () => emit('closeModal');
           :loading="isSubmitting"
           type="submit"
         >
-          {{ isSubmitting ? 'A guardar...' : 'Guardar' }}
+          {{ isSubmitting ? t('common.saving') : t('common.save') }}
         </BaseButton>
       </div>
     </form>

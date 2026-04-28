@@ -11,21 +11,26 @@ const emit = defineEmits<{
   (e: 'closeModal'): void;
 }>();
 
+const { t } = useI18n();
 const close = () => emit('closeModal');
 </script>
 
 <template>
-  <BaseModal :show="props.show" title="Lista de reposição" @close-modal="close">
+  <BaseModal
+    :show="props.show"
+    :title="t('beverages.restock_list_title')"
+    @close-modal="close"
+  >
     <div class="space-y-4">
       <p class="text-grey-700 text-sm">
-        Bebidas com stock baixo ou sem stock (com base na listagem actual).
+        {{ t('beverages.restock_list_description') }}
       </p>
 
       <div
         v-if="props.candidates.length === 0"
         class="bg-grey-50 text-grey-700 rounded-md px-4 py-3"
       >
-        Não existem bebidas a precisar de reposição.
+        {{ t('beverages.restock_list_empty') }}
       </div>
 
       <ul v-else class="space-y-2">
@@ -42,7 +47,11 @@ const close = () => emit('closeModal');
           <div class="flex items-center gap-2">
             <BaseBadge
               :type="b.status === 'Low' ? 'warning' : 'error'"
-              :text="b.status === 'Low' ? 'Baixo' : 'Sem stock'"
+              :text="
+                b.status === 'Low'
+                  ? t('beverages.status_low')
+                  : t('beverages.status_out_of_stock')
+              "
             />
             <span class="text-grey-800 font-bold">{{
               b.currentUnits ?? 0
@@ -53,7 +62,7 @@ const close = () => emit('closeModal');
 
       <div class="mt-2 flex justify-end">
         <BaseButton btn-type="primary" btn-size="md" @click.prevent="close">
-          Fechar
+          {{ t('common.close') }}
         </BaseButton>
       </div>
     </div>

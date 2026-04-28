@@ -20,6 +20,7 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t, locale } = useI18n();
 const nuxtApp = useNuxtApp();
 const beverageService = getBeverageService(nuxtApp.$api);
 
@@ -32,8 +33,8 @@ onMounted(async () => {
 });
 
 const purchaseModeOptions = computed<SelectOption[]>(() => [
-  { id: BeveragePurchaseMode.Unit, name: 'Unidade' },
-  { id: BeveragePurchaseMode.Box, name: 'Caixa' },
+  { id: BeveragePurchaseMode.Unit, name: t('beverages.purchase_mode_unit') },
+  { id: BeveragePurchaseMode.Box, name: t('beverages.purchase_mode_box') },
 ]);
 
 const categoryOptions = computed<SelectOption[]>(() => {
@@ -43,10 +44,10 @@ const categoryOptions = computed<SelectOption[]>(() => {
 
 const schema = toTypedSchema(
   object({
-    name: string().required('O nome é obrigatório.'),
+    name: string().required(() => t('beverages.validation_name_required')),
     beverageCategoryId: number()
-      .required('A categoria é obrigatória.')
-      .typeError('A categoria é obrigatória.'),
+      .required(() => t('beverages.validation_category_required'))
+      .typeError(() => t('beverages.validation_category_required')),
     purchaseMode: number()
       .transform((_, originalValue) => {
         if (
@@ -59,65 +60,65 @@ const schema = toTypedSchema(
         const n = Number(originalValue);
         return Number.isNaN(n) ? undefined : n;
       })
-      .oneOf(
-        [BeveragePurchaseMode.Unit, BeveragePurchaseMode.Box],
-        'O modo de compra deve ser por unidade ou por caixa.',
+      .oneOf([BeveragePurchaseMode.Unit, BeveragePurchaseMode.Box], () =>
+        t('beverages.validation_purchase_mode_one_of'),
       )
-      .required('O modo de compra é obrigatório.')
-      .typeError('O modo de compra é obrigatório.'),
+      .required(() => t('beverages.validation_purchase_mode_required'))
+      .typeError(() => t('beverages.validation_purchase_mode_required')),
     unitsPerBox: number()
       .nullable()
-      .typeError('Unidades por caixa deve ser um número.')
+      .typeError(() => t('beverages.validation_units_per_box_number'))
       .when('purchaseMode', {
         is: (v: unknown) => Number(v) === BeveragePurchaseMode.Box,
         then: (s) =>
           s
-            .required('Unidades por caixa é obrigatório.')
-            .min(1, 'Tem de ser maior que 0.'),
+            .required(() => t('beverages.validation_units_per_box_required'))
+            .min(1, () => t('beverages.validation_positive_number')),
         otherwise: (s) => s.nullable(),
       }),
     boxesQty: number()
       .nullable()
-      .typeError('Número de caixas deve ser um número.')
+      .typeError(() => t('beverages.validation_boxes_qty_number'))
       .when('purchaseMode', {
         is: (v: unknown) => Number(v) === BeveragePurchaseMode.Box,
         then: (s) =>
           s
-            .required('Número de caixas é obrigatório.')
-            .min(1, 'Tem de ser maior que 0.'),
+            .required(() => t('beverages.validation_boxes_qty_required'))
+            .min(1, () => t('beverages.validation_positive_number')),
         otherwise: (s) => s.nullable(),
       }),
     initialUnits: number()
       .nullable()
-      .typeError('Estoque inicial deve ser um número.')
+      .typeError(() => t('beverages.validation_initial_stock_number'))
       .when('purchaseMode', {
         is: (v: unknown) => Number(v) === BeveragePurchaseMode.Unit,
         then: (s) =>
           s
-            .required('Estoque inicial é obrigatório.')
-            .min(0, 'Não pode ser negativo.'),
+            .required(() => t('beverages.validation_initial_stock_required'))
+            .min(0, () => t('beverages.validation_non_negative')),
         otherwise: (s) => s.nullable(),
       }),
     minimumUnits: number()
       .nullable()
-      .typeError('Estoque mínimo deve ser um número.')
+      .typeError(() => t('beverages.validation_minimum_stock_number'))
       .when('purchaseMode', {
         is: (v: unknown) => Number(v) === BeveragePurchaseMode.Box,
         then: (s) =>
           s
-            .required('Estoque mínimo é obrigatório.')
-            .min(0, 'Não pode ser negativo.'),
-        otherwise: (s) => s.nullable().min(0, 'Não pode ser negativo.'),
+            .required(() => t('beverages.validation_minimum_stock_required'))
+            .min(0, () => t('beverages.validation_non_negative')),
+        otherwise: (s) =>
+          s.nullable().min(0, () => t('beverages.validation_non_negative')),
       }),
     notes: string().nullable(),
     unitPrice: number()
       .nullable()
-      .typeError('Preço unitário deve ser um número.')
-      .min(0, 'Não pode ser negativo.'),
+      .typeError(() => t('beverages.validation_unit_price_number'))
+      .min(0, () => t('beverages.validation_non_negative')),
   }),
 );
 
-const { handleSubmit, resetForm, defineField, errors, isSubmitting } =
+const { handleSubmit, resetForm, defineField, errors, isSubmitting, validate } =
   useForm<EventBeverageCreateInput>({
     validationSchema: schema,
     initialValues: {
@@ -180,11 +181,11 @@ const onSubmit = handleSubmit(async (values) => {
         props.beverage.id,
         finalValues,
       );
-      toast.success('Bebida actualizada com sucesso.');
+      toast.success(t('beverages.toast_beverage_updated_success'));
     } else {
       // Create
       await beverageService.createEventBeverage(props.eventId, finalValues);
-      toast.success('Bebida criada com sucesso.');
+      toast.success(t('beverages.toast_beverage_created_success'));
     }
 
     emit('success');
@@ -194,7 +195,7 @@ const onSubmit = handleSubmit(async (values) => {
     if (isFetchErrorLike(err)) {
       serverErrors.value.message = getServerErrors(err.data);
     } else {
-      serverErrors.value.message = 'Ocorreu um erro ao abastecer';
+      serverErrors.value.message = t('beverages.toast_beverage_save_error');
     }
     serverErrors.value.hasErrors = true;
   }
@@ -348,6 +349,10 @@ watch(
   { immediate: true },
 );
 
+watch(locale, () => {
+  if (props.show) validate();
+});
+
 const pricePerUnit = computed(() => Number(unitPrice.value ?? 0));
 const upbNumber = computed(() => Number(unitsPerBox.value ?? 0));
 const boxesQtyNumber = computed(() => Number(boxesQty.value ?? 0));
@@ -379,7 +384,9 @@ const totalPrice = computed(() => {
 <template>
   <BaseModal
     :show="props.show"
-    :title="isEditing ? 'Editar bebida' : 'Adicionar bebida'"
+    :title="
+      isEditing ? t('beverages.form_edit_title') : t('beverages.form_add_title')
+    "
     @close-modal="close"
   >
     <form @submit.prevent="onSubmit">
@@ -388,8 +395,8 @@ const totalPrice = computed(() => {
         v-model="name"
         v-bind="nameAttrs"
         name="bevName"
-        label="Nome:"
-        placeholder="Ex: Coca-Cola"
+        :label="t('beverages.form_name_label')"
+        :placeholder="t('beverages.form_name_placeholder')"
         :readonly="isSubmitting"
         :disabled="isSubmitting"
         :error-message="errors.name"
@@ -397,7 +404,7 @@ const totalPrice = computed(() => {
         item-label="name"
         item-key="id"
         :loading="isSearchingCatalog"
-        no-results-text="Sem resultados no catálogo."
+        :no-results-text="t('beverages.form_no_results')"
         :min-chars="2"
         @search="onCatalogSearch"
         @select="onCatalogSelect"
@@ -409,7 +416,7 @@ const totalPrice = computed(() => {
         v-bind="beverageCategoryIdAttrs"
         :error-message="errors.beverageCategoryId"
         name="bevCategory"
-        label="Categoria:"
+        :label="t('beverages.form_category_label')"
         :options="categoryOptions"
         :disabled="isSubmitting"
       />
@@ -420,7 +427,7 @@ const totalPrice = computed(() => {
         v-bind="purchaseModeAttrs"
         :error-message="errors.purchaseMode"
         name="purchaseMode"
-        label="Modo de compra:"
+        :label="t('beverages.form_purchase_mode_label')"
         :options="purchaseModeOptions"
         :disabled="isSubmitting"
         disable-empty
@@ -435,7 +442,7 @@ const totalPrice = computed(() => {
             v-bind="unitsPerBoxAttrs"
             :error-message="errors.unitsPerBox"
             name="unitsPerBox"
-            label="Por caixa (unidades):"
+            :label="t('beverages.form_units_per_box_label')"
             type="number"
             :readonly="isSubmitting"
           />
@@ -446,12 +453,14 @@ const totalPrice = computed(() => {
             v-bind="boxesQtyAttrs"
             :error-message="errors.boxesQty"
             name="boxesQty"
-            label="Estoque inicial (caixas):"
+            :label="t('beverages.form_initial_boxes_label')"
             type="number"
             :readonly="isSubmitting"
             :helper-text="
               totalUnitsEquivalent
-                ? `Equivale a ${totalUnitsEquivalent} unidades.`
+                ? t('beverages.helper_equivalent_units', {
+                    n: totalUnitsEquivalent,
+                  })
                 : ''
             "
           />
@@ -462,12 +471,14 @@ const totalPrice = computed(() => {
           v-model="minimumBoxes"
           :error-message="errors.minimumUnits"
           name="minimumBoxes"
-          label="Estoque mínimo (caixas):"
+          :label="t('beverages.form_minimum_boxes_label')"
           type="number"
           :readonly="isSubmitting"
           :helper-text="
             minimumUnitsEquivalent
-              ? `Equivale a ${minimumUnitsEquivalent} unidades.`
+              ? t('beverages.helper_equivalent_units', {
+                  n: minimumUnitsEquivalent,
+                })
               : ''
           "
         />
@@ -480,7 +491,7 @@ const totalPrice = computed(() => {
           v-bind="initialUnitsAttrs"
           :error-message="errors.initialUnits"
           name="initialUnits"
-          label="Estoque inicial:"
+          :label="t('beverages.form_initial_stock_label')"
           type="number"
           :readonly="isSubmitting"
         />
@@ -491,7 +502,7 @@ const totalPrice = computed(() => {
           v-bind="minimumUnitsAttrs"
           :error-message="errors.minimumUnits"
           name="minimumUnits"
-          label="Estoque mínimo:"
+          :label="t('beverages.form_minimum_stock_label')"
           type="number"
           :readonly="isSubmitting"
         />
@@ -502,20 +513,24 @@ const totalPrice = computed(() => {
         v-model="unitPrice"
         v-bind="unitPriceAttrs"
         name="beverageUnitPrice"
-        label="Preço unitário (MZN):"
+        :label="t('beverages.form_unit_price_label')"
         type="number"
         :error-message="errors.unitPrice"
         :readonly="isSubmitting"
         :helper-text="
           isBoxMode
             ? [
-                pricePerBox != null ? `Por caixa: ${pricePerBox} MZN.` : '',
-                totalPrice != null ? `Total: ${totalPrice} MZN.` : '',
+                pricePerBox != null
+                  ? t('beverages.helper_price_per_box', { price: pricePerBox })
+                  : '',
+                totalPrice != null
+                  ? t('beverages.helper_total_price', { price: totalPrice })
+                  : '',
               ]
                 .filter(Boolean)
                 .join(' ')
             : totalPrice != null
-              ? `Total: ${totalPrice} MZN.`
+              ? t('beverages.helper_total_price', { price: totalPrice })
               : ''
         "
       />
@@ -526,8 +541,8 @@ const totalPrice = computed(() => {
         v-bind="notesAttrs"
         :error-message="errors.notes"
         name="notes"
-        label="Notas:"
-        placeholder="Opcional"
+        :label="t('beverages.form_notes_label')"
+        :placeholder="t('beverages.form_optional_placeholder')"
         :readonly="isSubmitting"
       />
 
@@ -542,7 +557,7 @@ const totalPrice = computed(() => {
           :disabled="isSubmitting"
           @click.prevent="close"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
         <BaseButton
           btn-type="primary"
@@ -551,7 +566,7 @@ const totalPrice = computed(() => {
           :loading="isSubmitting"
           type="submit"
         >
-          {{ isSubmitting ? 'A guardar...' : 'Guardar' }}
+          {{ isSubmitting ? t('common.saving') : t('common.save') }}
         </BaseButton>
       </div>
     </form>

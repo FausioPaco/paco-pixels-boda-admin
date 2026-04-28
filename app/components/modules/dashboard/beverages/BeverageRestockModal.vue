@@ -36,12 +36,13 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t, locale } = useI18n();
 const nuxtApp = useNuxtApp();
 const beverageService = getBeverageService(nuxtApp.$api);
 
 const modeOptions = computed<SelectOption[]>(() => [
-  { id: 'UNITS', name: 'Unidades' },
-  { id: 'BOXES', name: 'Caixas' },
+  { id: 'UNITS', name: t('beverages.restock_mode_units') },
+  { id: 'BOXES', name: t('beverages.restock_mode_boxes') },
 ]);
 
 // valida só "shape" do array (não valida regra qty vs mode)
@@ -50,10 +51,12 @@ const schema = toTypedSchema(
     items: array()
       .of(
         object({
-          eventBeverageId: number().required('Bebida é obrigatória'),
+          eventBeverageId: number().required(() =>
+            t('beverages.validation_beverage_required'),
+          ),
           mode: mixed<RestockMode>()
             .oneOf(['UNITS', 'BOXES'])
-            .required('Modo é obrigatório'),
+            .required(() => t('beverages.validation_mode_required')),
           quantity: number().nullable(),
           boxesQty: number().nullable(),
         }),
@@ -62,12 +65,13 @@ const schema = toTypedSchema(
   }),
 );
 
-const { handleSubmit, resetForm, defineField, isSubmitting } = useForm<{
-  items: RestockRow[];
-}>({
-  validationSchema: schema,
-  initialValues: { items: [] },
-});
+const { handleSubmit, resetForm, defineField, isSubmitting, validate } =
+  useForm<{
+    items: RestockRow[];
+  }>({
+    validationSchema: schema,
+    initialValues: { items: [] },
+  });
 
 const [items, itemsAttrs] = defineField('items');
 
@@ -116,6 +120,10 @@ watch(
   { immediate: true },
 );
 
+watch(locale, () => {
+  if (props.show) validate();
+});
+
 const close = () => emit('closeModal');
 
 // validação semântica: exige quantidade conforme o mode
@@ -127,7 +135,9 @@ const validateItems = (rows: RestockRow[]): boolean => {
   rows.forEach((r) => {
     // modo obrigatório (já vem do schema mas mantemos mensagem por item)
     if (!r.mode) {
-      setItemError(r.eventBeverageId, { mode: 'Modo é obrigatório.' });
+      setItemError(r.eventBeverageId, {
+        mode: t('beverages.validation_mode_required_with_dot'),
+      });
       return;
     }
 
@@ -135,7 +145,7 @@ const validateItems = (rows: RestockRow[]): boolean => {
       // deve preencher quantity > 0
       if (r.quantity === null || r.quantity === undefined || r.quantity <= 0) {
         setItemError(r.eventBeverageId, {
-          quantity: 'Indique uma quantidade válida em unidades.',
+          quantity: t('beverages.validation_restock_units_quantity'),
         });
       } else {
         hasAnyValid = true;
@@ -146,7 +156,7 @@ const validateItems = (rows: RestockRow[]): boolean => {
       // deve preencher boxesQty > 0
       if (r.boxesQty === null || r.boxesQty === undefined || r.boxesQty <= 0) {
         setItemError(r.eventBeverageId, {
-          boxesQty: 'Indique uma quantidade válida em caixas.',
+          boxesQty: t('beverages.validation_restock_boxes_quantity'),
         });
       } else {
         hasAnyValid = true;
@@ -158,7 +168,7 @@ const validateItems = (rows: RestockRow[]): boolean => {
   if (!hasAnyValid) {
     serverErrors.value = {
       hasErrors: true,
-      message: 'Indique pelo menos uma bebida com quantidade válida.',
+      message: t('beverages.validation_restock_at_least_one'),
     };
   }
 
@@ -184,11 +194,11 @@ const onSubmit = handleSubmit(async (values) => {
     }));
 
     await beverageService.restock(props.eventId, {
-      note: 'Abastecimento',
+      note: t('beverages.movement_activity_restock'),
       items: dtoItems,
     });
 
-    toast.success('Abastecimento registado com sucesso');
+    toast.success(t('beverages.toast_restock_success'));
     emit('success');
     close();
   } catch (err: unknown) {
@@ -196,7 +206,7 @@ const onSubmit = handleSubmit(async (values) => {
     if (isFetchErrorLike(err)) {
       serverErrors.value.message = getServerErrors(err.data);
     } else {
-      serverErrors.value.message = 'Ocorreu um erro ao abastecer';
+      serverErrors.value.message = t('beverages.toast_restock_error');
     }
     serverErrors.value.hasErrors = true;
   }
@@ -204,11 +214,14 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <BaseModal :show="props.show" title="Abastecer" @close-modal="close">
+  <BaseModal
+    :show="props.show"
+    :title="t('beverages.restock_modal_title')"
+    @close-modal="close"
+  >
     <form @submit.prevent="onSubmit">
       <p class="text-grey-700 text-sm">
-        Indique as quantidades a adicionar. Pode usar unidades ou caixas (quando
-        aplicável).
+        {{ t('beverages.restock_modal_description') }}
       </p>
 
       <div v-bind="itemsAttrs" class="mt-4 space-y-3">
@@ -238,11 +251,11 @@ const onSubmit = handleSubmit(async (values) => {
               :text="
                 (props.candidates?.find((x) => x.id === r.eventBeverageId)
                   ?.status ?? 'OK') === 'OK'
-                  ? 'OK'
+                  ? t('beverages.status_ok')
                   : (props.candidates?.find((x) => x.id === r.eventBeverageId)
                         ?.status ?? 'OK') === 'Low'
-                    ? 'Baixo'
-                    : 'Sem stock'
+                    ? t('beverages.status_low')
+                    : t('beverages.status_out_of_stock')
               "
             />
           </div>
@@ -252,7 +265,7 @@ const onSubmit = handleSubmit(async (values) => {
               <BaseSelect
                 :id="`mode-${r.eventBeverageId}`"
                 v-model="r.mode"
-                label="Modo:"
+                :label="t('beverages.form_mode_label')"
                 :options="modeOptions"
                 :disabled="isSubmitting"
               />
@@ -268,7 +281,7 @@ const onSubmit = handleSubmit(async (values) => {
               <BaseInput
                 :id="`qty-${r.eventBeverageId}`"
                 v-model.number="r.quantity"
-                label="Unidades:"
+                :label="t('beverages.restock_units_label')"
                 type="number"
                 :readonly="isSubmitting"
               />
@@ -284,7 +297,7 @@ const onSubmit = handleSubmit(async (values) => {
               <BaseInput
                 :id="`boxes-${r.eventBeverageId}`"
                 v-model.number="r.boxesQty"
-                label="Caixas:"
+                :label="t('beverages.restock_boxes_label')"
                 type="number"
                 :readonly="isSubmitting"
               />
@@ -310,7 +323,7 @@ const onSubmit = handleSubmit(async (values) => {
           :disabled="isSubmitting"
           @click.prevent="close"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
 
         <BaseButton
@@ -320,7 +333,11 @@ const onSubmit = handleSubmit(async (values) => {
           :loading="isSubmitting"
           type="submit"
         >
-          {{ isSubmitting ? 'A guardar...' : 'Confirmar abastecimento' }}
+          {{
+            isSubmitting
+              ? t('common.saving')
+              : t('beverages.button_confirm_restock')
+          }}
         </BaseButton>
       </div>
     </form>

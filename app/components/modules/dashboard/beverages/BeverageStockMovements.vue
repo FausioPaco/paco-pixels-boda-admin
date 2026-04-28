@@ -8,6 +8,8 @@ const props = defineProps<{
   eventId: number;
 }>();
 
+const { t } = useI18n();
+
 const movementParams = reactive({
   searchQuery: '',
   startDate: '',
@@ -59,9 +61,11 @@ function getMovementIcon(type: StockMovementType) {
   <div v-if="!isRefreshing && !isError" class="mt-20 w-full">
     <div class="border-primary-100 rounded-xl border p-4 md:p-5">
       <div class="mb-3 mt-2">
-        <h4 class="text-xl font-bold">Registo de actividades</h4>
+        <h4 class="text-xl font-bold">
+          {{ t('beverages.activity_log_title') }}
+        </h4>
         <p class="text-grey-600">
-          Movimentos recentes (consumo, ajustes e abastecimentos).
+          {{ t('beverages.activity_log_description') }}
         </p>
       </div>
 
@@ -72,8 +76,8 @@ function getMovementIcon(type: StockMovementType) {
           autocomplete="off"
           type="search"
           name="beverageSearchEventDay"
-          label="Pesquisa:"
-          placeholder="Filtre categorias ou itens..."
+          :label="t('beverages.search_label')"
+          :placeholder="t('beverages.search_placeholder')"
           :readonly="isRefreshing"
           disable-margins
         />
@@ -90,7 +94,7 @@ function getMovementIcon(type: StockMovementType) {
         v-else-if="isError"
         @fallback="refreshStockMovements({ force: true })"
       >
-        Não foi possível carregar o registo de actividades.
+        {{ t('beverages.toast_activity_log_error') }}
       </BaseSearchNotFound>
 
       <!-- Stock Movements List -->
@@ -118,10 +122,18 @@ function getMovementIcon(type: StockMovementType) {
                 :font-controlled="false"
                 class="h-4 w-4"
               />
-              <span v-if="m.type === 'Out'">Consumo</span>
-              <span v-else-if="m.type === 'In'">Abastecimento</span>
-              <span v-else-if="m.type === 'Adjust'">Ajuste</span>
-              <span v-else>Fora do stock</span>
+              <span v-if="m.type === 'Out'">{{
+                t('beverages.movement_activity_consumption')
+              }}</span>
+              <span v-else-if="m.type === 'In'">{{
+                t('beverages.movement_activity_restock')
+              }}</span>
+              <span v-else-if="m.type === 'Adjust'">{{
+                t('beverages.movement_activity_adjustment')
+              }}</span>
+              <span v-else>{{
+                t('beverages.movement_activity_out_of_stock')
+              }}</span>
 
               <span v-if="m.type === 'Out'"> (-{{ m.quantity }})</span>
               <span v-else-if="m.type === 'In'"> (+{{ m.quantity }})</span>
@@ -141,7 +153,7 @@ function getMovementIcon(type: StockMovementType) {
           v-if="(stockMovements?.length ?? 0) === 0"
           @fallback="refreshStockMovements({ force: true })"
         >
-          Ainda sem actividades registadas.
+          {{ t('beverages.activity_log_empty') }}
         </BaseSearchNotFound>
       </div>
 
