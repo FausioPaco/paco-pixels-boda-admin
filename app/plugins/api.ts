@@ -1,6 +1,9 @@
 export default defineNuxtPlugin((nuxtApp) => {
   const { apiBaseUrl } = useRuntimeConfig().public;
   const token = useCookie<string | null>('token');
+  const localeCookie = useCookie<string>('boda-admin-locale', {
+    default: () => 'pt',
+  });
 
   let isLoggingOut = false;
   let refreshPromise: Promise<boolean> | null = null;
@@ -43,6 +46,8 @@ export default defineNuxtPlugin((nuxtApp) => {
       if (token.value) {
         headers.set('Authorization', `Bearer ${token.value}`);
       }
+
+      headers.set('X-Language', localeCookie.value || 'pt');
 
       options.headers = headers;
     },

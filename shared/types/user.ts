@@ -10,6 +10,7 @@ export type User = {
   lastLoginAt?: string | Date | null;
   lastActivityAt?: string | Date | null;
   isOnline?: boolean;
+  preferredLanguage?: 'pt' | 'en';
   created_At: Date;
 };
 

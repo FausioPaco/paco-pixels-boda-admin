@@ -8,6 +8,9 @@ import { getEventService } from '~/services/eventService';
 import { isMultiEventStaffUser } from '~~/shared/constants/roles';
 import { isFetchErrorLike } from '~/utils/serverUtils';
 
+const { t } = useI18n();
+const { syncFromUser } = useLanguage();
+
 const isSubmiting = ref<boolean>(false);
 const serverErrors = ref<ServerError>({
   hasErrors: false,
@@ -20,16 +23,18 @@ const eventStore = useEventStore();
 
 const { siteConfig } = await useClientConfig();
 
-const { errors, handleSubmit, defineField } = useForm({
-  validationSchema: toTypedSchema(
+const validationSchema = computed(() =>
+  toTypedSchema(
     object({
       email: string()
-        .email('Deve ser um email válido')
-        .required('O seu email é obrigatório'),
-      password: string().required('A sua palavra passe é obrigatória'),
+        .email(t('auth.error_email_invalid'))
+        .required(t('auth.error_email_required')),
+      password: string().required(t('auth.error_password_required')),
     }),
   ),
-});
+);
+
+const { errors, handleSubmit, defineField } = useForm({ validationSchema });
 
 const [email, emailAttrs] = defineField('email');
 const [password, passwordAttrs] = defineField('password');
@@ -77,8 +82,7 @@ const handlePostLoginRedirect = async () => {
   // 3) fallback: user sem evento associado
   serverErrors.value = {
     hasErrors: true,
-    message:
-      'A sua conta não está associada a nenhum evento. Por favor, contacte a equipa de suporte.',
+    message: t('auth.error_no_event'),
   };
 };
 
@@ -99,6 +103,9 @@ const onSubmit = handleSubmit(async (values) => {
     const userData = await authService.authenticate(credentials);
     authStore.setUserData(userData);
 
+    // Sync locale from user preference if no device-level override exists
+    await syncFromUser(userData.user);
+
     setTimeout(async () => {
       await handlePostLoginRedirect();
     }, 100);
@@ -109,7 +116,7 @@ const onSubmit = handleSubmit(async (values) => {
       hasErrors: true,
       message: isFetchErrorLike(err)
         ? getServerErrors(err.data)
-        : 'Ocorreu um erro ao autenticar',
+        : t('auth.error_default'),
     };
 
     isSubmiting.value = false;
@@ -121,6 +128,11 @@ const onSubmit = handleSubmit(async (values) => {
     class="my-10 flex w-full animate-fadeIn flex-col items-center justify-center px-4"
   >
     <div class="w-full px-4 md:max-w-[700px]">
+      <!-- Language Picker -->
+      <div class="mb-4 flex justify-end">
+        <LanguagePicker variant="dark" />
+      </div>
+
       <h3 class="text-grey-700 mb-2 text-3xl font-bold md:text-4xl">
         {{ siteConfig.loginTitle }}
       </h3>
@@ -145,8 +157,8 @@ const onSubmit = handleSubmit(async (values) => {
           autocomplete="email"
           type="email"
           name="email"
-          label="Email:"
-          placeholder="Coloque o seu endereço eletrônico"
+          :label="t('auth.email_label')"
+          :placeholder="t('auth.email_placeholder')"
           :readonly="isSubmiting"
         />
 
@@ -158,8 +170,8 @@ const onSubmit = handleSubmit(async (values) => {
           :error-message="errors.password"
           type="password"
           name="password"
-          label="Password:"
-          placeholder="Coloque a sua palavra passe"
+          :label="t('auth.password_label')"
+          :placeholder="t('auth.password_placeholder')"
           :readonly="isSubmiting"
         />
 
@@ -167,7 +179,7 @@ const onSubmit = handleSubmit(async (values) => {
           v-if="isSubmiting"
           size="md"
           orientation="horizontal"
-          message="Por favor, espere um momento..."
+          :message="t('auth.loading')"
         />
         <BaseError v-if="serverErrors.hasErrors">{{
           serverErrors.message
@@ -182,7 +194,7 @@ const onSubmit = handleSubmit(async (values) => {
           size="md"
           @click="onSubmit"
         >
-          Entrar
+          {{ t('auth.submit') }}
         </BaseButton>
       </form>
     </div>

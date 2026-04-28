@@ -12,6 +12,7 @@
   "dependencies": {
     "@nuxt/eslint": "1.10.0",
     "@nuxt/image": "2.0.0",
+    "@nuxtjs/i18n": "^10.3.0",
     "@nuxtjs/robots": "^5.2.11",
     "@nuxtjs/sitemap": "^7.4.2",
     "@pinia/nuxt": "^0.11.3",

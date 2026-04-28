@@ -57,6 +57,7 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxt/image',
     '@nuxtjs/tailwindcss',
+    '@nuxtjs/i18n',
     '@vueuse/nuxt',
     '@pinia/nuxt',
     '@nuxt/fonts',
@@ -137,5 +138,17 @@ export default defineNuxtConfig({
 
   tiptap: {
     prefix: 'tiptap',
+  },
+
+  i18n: {
+    strategy: 'no_prefix',
+    defaultLocale: 'pt',
+    locales: [
+      { code: 'pt', name: 'Português', file: 'pt.json' },
+      { code: 'en', name: 'English', file: 'en.json' },
+    ],
+    lazy: true,
+    langDir: 'locales',
+    detectBrowserLanguage: false,
   },
 });

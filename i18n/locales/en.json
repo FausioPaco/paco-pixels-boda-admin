@@ -1,0 +1,53 @@
+{
+  "auth": {
+    "email_label": "Email:",
+    "email_placeholder": "Enter your email address",
+    "password_label": "Password:",
+    "password_placeholder": "Enter your password",
+    "submit": "Sign in",
+    "loading": "Please wait a moment...",
+    "error_email_required": "Your email is required",
+    "error_email_invalid": "Must be a valid email",
+    "error_password_required": "Your password is required",
+    "error_no_event": "Your account is not associated with any event. Please contact the support team.",
+    "error_default": "An error occurred while authenticating"
+  },
+  "common": {
+    "loading": "Please wait a moment...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "confirm": "Confirm",
+    "close": "Close",
+    "search": "Search",
+    "yes": "Yes",
+    "no": "No",
+    "back_to_events": "Back to events"
+  },
+  "nav": {
+    "event_management": "Event Management",
+    "content_experience": "Content & Experience",
+    "configuration": "Configuration",
+    "home": "Home",
+    "guests": "Guests",
+    "tables": "Tables",
+    "budget": "Budget",
+    "beverages": "Beverages",
+    "suppliers": "Suppliers",
+    "users": "Users",
+    "schedule": "Schedule",
+    "program": "Event Program",
+    "checklist": "Checklist",
+    "menu": "Menu",
+    "gifts": "Gift List",
+    "seating": "Seating Plan"
+  },
+  "toast": {
+    "success": "Operation completed successfully",
+    "error": "An error occurred. Please try again.",
+    "saved": "Saved successfully",
+    "deleted": "Deleted successfully",
+    "session_expired": "Session expired. Please sign in again."
+  }
+}

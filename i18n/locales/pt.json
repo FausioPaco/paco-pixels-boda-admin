@@ -1,0 +1,53 @@
+{
+  "auth": {
+    "email_label": "Email:",
+    "email_placeholder": "Coloque o seu endereço eletrónico",
+    "password_label": "Password:",
+    "password_placeholder": "Coloque a sua palavra passe",
+    "submit": "Entrar",
+    "loading": "Por favor, espere um momento...",
+    "error_email_required": "O seu email é obrigatório",
+    "error_email_invalid": "Deve ser um email válido",
+    "error_password_required": "A sua palavra passe é obrigatória",
+    "error_no_event": "A sua conta não está associada a nenhum evento. Por favor, contacte a equipa de suporte.",
+    "error_default": "Ocorreu um erro ao autenticar"
+  },
+  "common": {
+    "loading": "Por favor, espere um momento...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "confirm": "Confirmar",
+    "close": "Fechar",
+    "search": "Pesquisar",
+    "yes": "Sim",
+    "no": "Não",
+    "back_to_events": "Voltar para eventos"
+  },
+  "nav": {
+    "event_management": "Gestão do Evento",
+    "content_experience": "Conteúdo e Experiência",
+    "configuration": "Configuração",
+    "home": "Início",
+    "guests": "Convidados",
+    "tables": "Mesas",
+    "budget": "Orçamento",
+    "beverages": "Bebidas",
+    "suppliers": "Fornecedores",
+    "users": "Utilizadores",
+    "schedule": "Cronograma",
+    "program": "Programa do Evento",
+    "checklist": "Checklist",
+    "menu": "Ementa",
+    "gifts": "Lista de Presentes",
+    "seating": "Plano de Mesa"
+  },
+  "toast": {
+    "success": "Operação realizada com sucesso",
+    "error": "Ocorreu um erro. Tente novamente.",
+    "saved": "Guardado com sucesso",
+    "deleted": "Eliminado com sucesso",
+    "session_expired": "Sessão expirada. Por favor, inicie sessão novamente."
+  }
+}
