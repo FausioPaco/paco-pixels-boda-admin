@@ -46,91 +46,91 @@ const finishButtonLabel = computed(() =>
     @close-modal="emit('closeModal')"
   >
     <div class="space-y-3">
-      <p class="text-grey-700 text-sm">
+      <p class="text-sm text-grey-700">
         {{ t('guests.send_status_processed') }}
         <b class="text-success-500">{{ exportProcessed }}</b> /
         {{ exportTotal }}
-        <span class="text-grey-400 font-semibold">({{ exportPercent }}%)</span>
+        <span class="font-semibold text-grey-400">({{ exportPercent }}%)</span>
       </p>
 
-      <div class="bg-grey-50 h-2 w-full overflow-hidden rounded-full">
+      <div class="h-2 w-full overflow-hidden rounded-full bg-grey-50">
         <div
-          class="bg-success-500 h-2"
+          class="h-2 bg-success-500"
           :style="{ width: `${exportPercent}%` }"
         ></div>
       </div>
 
-      <div v-if="summary" class="bg-grey-50 rounded-lg p-3">
-        <p class="text-grey-700 mb-2 text-xs font-semibold">
+      <div v-if="summary" class="rounded-lg bg-grey-50 p-3">
+        <p class="mb-2 text-xs font-semibold text-grey-700">
           {{ t('guests.send_status_summary_title') }}
         </p>
 
         <div class="grid grid-cols-2 gap-2 text-xs">
           <p class="text-grey-700">{{ t('guests.send_status_pending') }}</p>
-          <p class="text-grey-900 text-right font-semibold">
+          <p class="text-right font-semibold text-grey-900">
             {{ summary.pending }}
           </p>
 
           <p class="text-grey-700">{{ t('guests.send_status_accepted') }}</p>
-          <p class="text-grey-900 text-right font-semibold">
+          <p class="text-right font-semibold text-grey-900">
             {{ summary.accepted }}
           </p>
 
           <p class="text-grey-700">{{ t('guests.send_status_delivered') }}</p>
-          <p class="text-grey-900 text-right font-semibold">
+          <p class="text-right font-semibold text-grey-900">
             {{ summary.delivered }}
           </p>
 
           <p class="text-grey-700">{{ t('guests.send_status_seen') }}</p>
-          <p class="text-grey-900 text-right font-semibold">
+          <p class="text-right font-semibold text-grey-900">
             {{ summary.seen }}
           </p>
 
           <p class="text-grey-700">
             {{ t('guests.send_status_skipped_invalid_phone') }}
           </p>
-          <p class="text-grey-900 text-right font-semibold">
+          <p class="text-right font-semibold text-grey-900">
             {{ summary.skippedInvalidPhone }}
           </p>
 
           <p class="text-grey-700">
-            {{ t('guests.send_status_skipped_delivered') }}
+            {{ t('guests.send_status_skipped_already_delivered') }}
           </p>
-          <p class="text-grey-900 text-right font-semibold">
+          <p class="text-right font-semibold text-grey-900">
             {{ summary.skippedAlreadyDelivered }}
           </p>
 
           <p class="text-grey-700">
             {{ t('guests.send_status_failed_temporary') }}
           </p>
-          <p class="text-grey-900 text-right font-semibold">
+          <p class="text-right font-semibold text-grey-900">
             {{ summary.failedTemporary }}
           </p>
 
           <p class="text-grey-700">
             {{ t('guests.send_status_failed_permanent') }}
           </p>
-          <p class="text-grey-900 text-right font-semibold">
+          <p class="text-right font-semibold text-grey-900">
             {{ summary.failedPermanent }}
           </p>
 
           <p class="text-grey-700">
             {{ t('guests.send_status_delivery_unknown') }}
           </p>
-          <p class="text-grey-900 text-right font-semibold">
+          <p class="text-right font-semibold text-grey-900">
             {{ summary.deliveryUnknown }}
           </p>
 
           <p class="text-grey-700">
             {{ t('guests.send_status_needs_review') }}
           </p>
-          <p class="text-grey-900 text-right font-semibold">
+          <p class="text-right font-semibold text-grey-900">
             {{ summary.needsReview }}
           </p>
         </div>
       </div>
 
-      <p class="text-grey-500 text-xs">
+      <p class="text-xs text-grey-500">
         {{ t('guests.send_status_note', { label: messageLabel }) }}
       </p>
 

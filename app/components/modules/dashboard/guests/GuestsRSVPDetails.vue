@@ -10,19 +10,28 @@ interface IConfirmationDetailsForm {
 
 const props = defineProps<IConfirmationDetailsForm>();
 const emit = defineEmits(['previousStep', 'nextStep']);
+const { t } = useI18n();
 
 const { defineField, setFieldValue, handleSubmit, errors } = useForm({
   validationSchema: toTypedSchema(
     object({
       peopleConfirmed: number()
-        .required('Selecione quantas pessoas irão')
-        .min(1, 'Deve ser no mínimo de 1 pessoa')
+        .required(t('guests.rsvp_people_required'))
+        .min(1, t('guests.rsvp_people_min'))
         .max(
           props.guest?.people_Count ?? 1,
-          `O número de pessoas é de ${props.guest?.people_Count ?? 1} ${props.guest?.people_Count === 1 ? 'Pessoa' : 'Pessoas'}`,
+          t('guests.rsvp_people_max', {
+            count: props.guest?.people_Count ?? 1,
+            label:
+              props.guest?.people_Count === 1
+                ? t('guests.rsvp_people_one')
+                : t('guests.rsvp_people_other', {
+                    n: props.guest?.people_Count ?? 1,
+                  }),
+          }),
         ),
       additional_Comments: string()
-        .max(250, 'A nota não pode exceder 250 caracteres')
+        .max(250, t('guests.rsvp_note_max'))
         .default(''),
       gift_Brought: boolean()
         .nullable()
@@ -48,7 +57,6 @@ const [giftBrought, giftBroughtAttrs] = defineField('gift_Brought');
 
 const nuxtApp = useNuxtApp();
 const guestService = getGuestService(nuxtApp.$api);
-const { t } = useI18n();
 
 const isSubmiting = ref<boolean>(false);
 const serverErrors = ref<ServerError>({

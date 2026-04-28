@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 
 const isProd = process.env.NODE_ENV === 'production';
 const clientCode = process.env.NUXT_PUBLIC_CLIENT_CODE || 'mariee';
+const siteLocale = process.env.NUXT_PUBLIC_SITE_LOCALE || 'pt';
 
 const sitePath = resolve(`./configs/${clientCode}/site.json`);
 const siteConfig = JSON.parse(readFileSync(sitePath, 'utf-8'));
@@ -20,7 +21,7 @@ export default defineNuxtConfig({
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
       htmlAttrs: {
-        lang: 'pt-MZ',
+        lang: siteLocale === 'en' ? 'en' : 'pt-MZ',
       },
       link: [
         {
@@ -105,6 +106,7 @@ export default defineNuxtConfig({
       apiBaseUrl: process.env.NUXT_API_BASE_URL,
       apiImageUrl: process.env.NUXT_API_IMAGE_BASE_URL,
       clientCode,
+      siteLocale,
     },
   },
 
@@ -142,12 +144,13 @@ export default defineNuxtConfig({
 
   i18n: {
     strategy: 'no_prefix',
-    defaultLocale: 'pt',
+    defaultLocale: siteLocale as 'pt' | 'en',
     locales: [
       { code: 'pt', name: 'Português', file: 'pt.json' },
       { code: 'en', name: 'English', file: 'en.json' },
     ],
     langDir: 'locales',
     detectBrowserLanguage: false,
+    vueI18n: './i18n/i18n.config.ts',
   },
 });

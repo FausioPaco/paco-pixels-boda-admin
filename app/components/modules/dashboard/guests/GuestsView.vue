@@ -218,7 +218,7 @@ const generateInvitationPng = async () => {
 
     const link = document.createElement('a');
     link.href = blobUrl;
-    link.download = `${eventStore.eventInitials}-${guestDetails.value.localId}-convite.png`;
+    link.download = `${eventStore.eventInitials}-${guestDetails.value.localId}-${t('guests.invitation_filename_suffix')}.png`;
 
     document.body.appendChild(link);
     link.click();
@@ -237,16 +237,18 @@ const sortedOutbounds = computed(() =>
   sortOutboundsByPriority(guestDetails.value?.whatsAppOutbounds),
 );
 
-const outboundTypeLabelMap: Record<GuestWhatsAppOutboundType, string> = {
-  [GuestWhatsAppOutboundType.Unknown]: 'Desconhecido',
-  [GuestWhatsAppOutboundType.QrCode]: 'QR Code',
-  [GuestWhatsAppOutboundType.Invitation]: 'Convite',
-  [GuestWhatsAppOutboundType.SaveTheDate]: 'Save the date',
-  [GuestWhatsAppOutboundType.Reminder]: 'Lembrete',
-};
+const outboundTypeLabelMap = computed<
+  Record<GuestWhatsAppOutboundType, string>
+>(() => ({
+  [GuestWhatsAppOutboundType.Unknown]: t('guests.wa_type_unknown'),
+  [GuestWhatsAppOutboundType.QrCode]: t('guests.wa_type_qrcode'),
+  [GuestWhatsAppOutboundType.Invitation]: t('guests.wa_type_invitation'),
+  [GuestWhatsAppOutboundType.SaveTheDate]: t('guests.wa_type_save_the_date'),
+  [GuestWhatsAppOutboundType.Reminder]: t('guests.wa_type_reminder'),
+}));
 
 const getOutboundTypeLabel = (type: GuestWhatsAppOutboundType) =>
-  outboundTypeLabelMap[type] ?? 'Desconhecido';
+  outboundTypeLabelMap.value[type] ?? t('guests.wa_type_unknown');
 
 const visibleOutbounds = computed(() =>
   (sortedOutbounds.value ?? []).filter((item) => {
@@ -297,7 +299,7 @@ const sendQrWhatsapp = async (force = false) => {
     await refreshGuest({ force: true });
 
     if (res.status?.toLowerCase().includes('skipped')) {
-      toast.info(res.reason || 'O envio foi ignorado.');
+      toast.info(res.reason || t('guests.send_qr_skipped'));
       return;
     }
 
@@ -308,14 +310,16 @@ const sendQrWhatsapp = async (force = false) => {
 
     if (res.status === 'accepted') {
       toast.success(
-        `${force ? 'QR reenviado' : 'QR enviado'} via WhatsApp com sucesso. A mensagem foi aceite pela plataforma e aguarda confirmação final.`,
+        force
+          ? t('guests.send_qr_resend_success')
+          : t('guests.send_qr_success'),
       );
 
       return;
     }
 
     toast.success(
-      `${force ? 'Reenvio' : 'Envio'} do QR Code via WhatsApp iniciado com sucesso. Acompanhe o status do envio para mais detalhes.`,
+      force ? t('guests.send_qr_resend_started') : t('guests.send_qr_started'),
     );
   } catch (err) {
     console.error(err);
@@ -342,19 +346,17 @@ const sendInvitationWhatsapp = async () => {
     const normalizedStatus = res.status?.toLowerCase();
 
     if (normalizedStatus === 'invalid_phone') {
-      toast.info(res.reason || 'O convidado não possui um número válido.');
+      toast.info(res.reason || t('guests.send_inv_invalid_phone'));
       return;
     }
 
     if (normalizedStatus === 'accepted') {
-      toast.success(
-        'Convite enviado via WhatsApp com sucesso. A mensagem foi aceite pela plataforma e aguarda confirmação final.',
-      );
+      toast.success(t('guests.send_inv_success'));
       return;
     }
 
     if (normalizedStatus === 'failed') {
-      toast.error(res.reason || 'Erro ao enviar o convite via WhatsApp.');
+      toast.error(res.reason || t('guests.send_inv_failed'));
       return;
     }
 
@@ -363,7 +365,7 @@ const sendInvitationWhatsapp = async () => {
       return;
     }
 
-    toast.success('Envio do convite via WhatsApp iniciado com sucesso.');
+    toast.success(t('guests.send_inv_started'));
   } catch (err) {
     console.error(err);
     toast.error(t('guests.error_send_invitation_whatsapp'));
@@ -573,13 +575,21 @@ onMounted(() => {
 
           <BaseDescriptionListItem
             v-if="guestDetails.whatsAppQrAcceptedAt"
-            title="WhatsApp - QR Code aceite em"
+            :title="
+              t('guests.wa_accepted_at', {
+                type: t('guests.wa_type_qrcode'),
+              })
+            "
             :description="formatDateWithTime(guestDetails.whatsAppQrAcceptedAt)"
           />
 
           <BaseDescriptionListItem
             v-if="guestDetails.whatsAppQrDeliveredAt"
-            title="WhatsApp - QR Code entregue em"
+            :title="
+              t('guests.wa_delivered_at', {
+                type: t('guests.wa_type_qrcode'),
+              })
+            "
             :description="
               formatDateWithTime(guestDetails.whatsAppQrDeliveredAt)
             "
@@ -587,25 +597,39 @@ onMounted(() => {
 
           <BaseDescriptionListItem
             v-if="guestDetails.whatsAppQrSeenAt"
-            title="WhatsApp - QR Code visualizado em"
+            :title="
+              t('guests.wa_seen_at', {
+                type: t('guests.wa_type_qrcode'),
+              })
+            "
             :description="formatDateWithTime(guestDetails.whatsAppQrSeenAt)"
           />
 
           <BaseDescriptionListItem
             v-if="guestDetails.whatsAppQrErrorMessage"
-            title="WhatsApp - Detalhe do QR Code"
+            :title="
+              t('guests.wa_detail', {
+                type: t('guests.wa_type_qrcode'),
+              })
+            "
             :description="guestDetails.whatsAppQrErrorMessage"
           />
 
           <BaseDescriptionListItem
             v-else-if="guestDetails.whatsAppQrSkipReason"
-            title="WhatsApp - Detalhe do QR Code"
+            :title="
+              t('guests.wa_detail', {
+                type: t('guests.wa_type_qrcode'),
+              })
+            "
             :description="guestDetails.whatsAppQrSkipReason"
           />
 
           <template v-for="item in visibleOutbounds" :key="item.type">
             <BaseDescriptionListItem
-              :title="`WhatsApp - ${getOutboundTypeLabel(item.type)}`"
+              :title="
+                t('guests.wa_title', { type: getOutboundTypeLabel(item.type) })
+              "
             >
               <GuestsWhatsAppStatusChip
                 :status="item.status"
@@ -615,31 +639,51 @@ onMounted(() => {
 
             <BaseDescriptionListItem
               v-if="item.acceptedAt"
-              :title="`WhatsApp - ${getOutboundTypeLabel(item.type)} aceite em`"
+              :title="
+                t('guests.wa_accepted_at', {
+                  type: getOutboundTypeLabel(item.type),
+                })
+              "
               :description="formatDateWithTime(item.acceptedAt)"
             />
 
             <BaseDescriptionListItem
               v-if="item.deliveredAt"
-              :title="`WhatsApp - ${getOutboundTypeLabel(item.type)} entregue em`"
+              :title="
+                t('guests.wa_delivered_at', {
+                  type: getOutboundTypeLabel(item.type),
+                })
+              "
               :description="formatDateWithTime(item.deliveredAt)"
             />
 
             <BaseDescriptionListItem
               v-if="item.seenAt"
-              :title="`WhatsApp - ${getOutboundTypeLabel(item.type)} visualizado em`"
+              :title="
+                t('guests.wa_seen_at', {
+                  type: getOutboundTypeLabel(item.type),
+                })
+              "
               :description="formatDateWithTime(item.seenAt)"
             />
 
             <BaseDescriptionListItem
               v-if="item.errorMessage"
-              :title="`WhatsApp - Detalhe do ${getOutboundTypeLabel(item.type)}`"
+              :title="
+                t('guests.wa_detail', {
+                  type: getOutboundTypeLabel(item.type),
+                })
+              "
               :description="item.errorMessage"
             />
 
             <BaseDescriptionListItem
               v-else-if="item.skipReason"
-              :title="`WhatsApp - Detalhe do ${getOutboundTypeLabel(item.type)}`"
+              :title="
+                t('guests.wa_detail', {
+                  type: getOutboundTypeLabel(item.type),
+                })
+              "
               :description="item.skipReason"
             />
           </template>

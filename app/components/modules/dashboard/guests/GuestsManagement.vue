@@ -94,7 +94,7 @@ const exportQRCodes = async () => {
   await backgroundJobs.startTrackedJob({
     key: qrJobKey.value,
     kind: 'qr-export',
-    title: 'Exportação de QR Codes',
+    title: t('guests.job_title_qr_export'),
     toastId: qrJobKey.value,
     eventId: eventStore.eventId!,
     eventSlug: eventStore.eventSlug ?? undefined,
@@ -124,7 +124,7 @@ const exportInvitations = async () => {
   await backgroundJobs.startTrackedJob({
     key: invitationJobKey.value,
     kind: 'invitation-export',
-    title: 'Exportação de convites',
+    title: t('guests.job_title_invitation_export'),
     toastId: invitationJobKey.value,
     eventId: eventStore.eventId!,
     eventSlug: eventStore.eventSlug ?? undefined,
@@ -180,7 +180,7 @@ const startBulkQRWhatsAppSend = async (payload: {
   await backgroundJobs.startTrackedJob({
     key: whatsAppJobKey.value,
     kind: 'whatsapp-send',
-    title: 'Envio de QR Codes via WhatsApp',
+    title: t('guests.job_title_qr_whatsapp_send'),
     toastId: whatsAppJobKey.value,
     eventId: eventStore.eventId!,
     eventSlug: eventStore.eventSlug ?? undefined,
@@ -230,7 +230,7 @@ const startBulkInvitationWhatsAppSend = async () => {
   await backgroundJobs.startTrackedJob({
     key: invitationWhatsAppJobKey.value,
     kind: 'whatsapp-send',
-    title: 'Envio de convites via WhatsApp',
+    title: t('guests.job_title_invitation_whatsapp_send'),
     toastId: invitationWhatsAppJobKey.value,
     eventId: eventStore.eventId!,
     eventSlug: eventStore.eventSlug ?? undefined,
@@ -320,7 +320,7 @@ const sendBulkOptions = computed(() => {
       id: 'send-qrs',
       label:
         waJob.value?.status === 'Pending' || waJob.value?.status === 'Running'
-          ? `QR Codes — ${t('guests.send_qrs_sending', { percent: waJob.value?.percent ?? 0 })}`
+          ? t('guests.send_qrs_sending', { percent: waJob.value?.percent ?? 0 })
           : t('guests.send_qrs'),
     });
   }
@@ -351,7 +351,9 @@ const exportBulkOptions = computed(() => {
       id: 'export-qrs',
       label:
         qrJob.value?.status === 'Pending' || qrJob.value?.status === 'Running'
-          ? `QR Codes — ${t('guests.export_qrs_exporting', { percent: qrJob.value?.percent ?? 0 })}`
+          ? t('guests.export_qrs_exporting', {
+              percent: qrJob.value?.percent ?? 0,
+            })
           : t('guests.export_qrs'),
     });
   }

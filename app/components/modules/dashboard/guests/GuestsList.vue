@@ -319,7 +319,7 @@ const exportGuestsToExcel = async () => {
     const link = document.createElement('a');
     link.href = url;
 
-    const fileName = `Convidados_${eventInitials}_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')}.xlsx`;
+    const fileName = `${t('guests.list_export_filename_prefix')}_${eventInitials}_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')}.xlsx`;
     link.setAttribute('download', fileName);
 
     document.body.appendChild(link);
@@ -343,7 +343,7 @@ const exportGuestsToPdf = async () => {
     const link = document.createElement('a');
     link.href = url;
 
-    const fileName = `Convidados_${eventInitials}_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')}.pdf`;
+    const fileName = `${t('guests.list_export_filename_prefix')}_${eventInitials}_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')}.pdf`;
     link.setAttribute('download', fileName);
 
     document.body.appendChild(link);
@@ -542,9 +542,9 @@ onMounted(() => {
         <div v-if="!isRefreshing" class="flex items-end justify-between gap-2">
           <icon-funnel
             :font-controlled="false"
-            class="text-primary-700 block h-7 w-7"
+            class="block h-7 w-7 text-primary-700"
           ></icon-funnel>
-          <h3 class="text-primary-700 text-2xl font-bold">
+          <h3 class="text-2xl font-bold text-primary-700">
             {{
               pagination?.totalPeopleCount === 1
                 ? t('guests.list_count_one')

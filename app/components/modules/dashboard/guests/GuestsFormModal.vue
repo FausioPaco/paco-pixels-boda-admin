@@ -36,34 +36,34 @@ const { errors, handleSubmit, defineField, resetForm } = useForm({
   validationSchema: toTypedSchema(
     object({
       name: string()
-        .matches(/[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+/, 'Deve ser um nome válido')
-        .required('O seu nome é obrigatório'),
+        .matches(/[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+/, t('guests.form_name_invalid'))
+        .required(t('guests.form_name_required')),
 
       desk: number()
         .transform((value, originalValue) =>
           String(originalValue).trim() === '' ? undefined : value,
         )
-        .typeError('Deves especificar a mesa')
-        .positive('O número de mesa deve ser um número positivo')
-        .integer('O número de mesa não pode conter vírgula'),
+        .typeError(t('guests.form_desk_required'))
+        .positive(t('guests.form_desk_positive'))
+        .integer(t('guests.form_desk_integer')),
 
-      phone: string().required('Deve colocar o contacto do convidado'),
+      phone: string().required(t('guests.form_phone_required')),
 
       people: number()
         .transform((value, originalValue) =>
           String(originalValue).trim() === '' ? undefined : value,
         )
-        .typeError('O número de pessoas deve ser um valor válido')
-        .positive('O número de pessoas deve ser um número positivo')
-        .integer('O número de pessoas não pode conter vírgula')
-        .required('Deve especificar o número de pessoas para este convidado'),
+        .typeError(t('guests.form_people_type'))
+        .positive(t('guests.form_people_positive'))
+        .integer(t('guests.form_people_integer'))
+        .required(t('guests.form_people_required')),
 
       category: number()
         .transform((value, originalValue) =>
           String(originalValue).trim() === '' ? undefined : value,
         )
-        .typeError('Deves especificar se vem da parte do noivo ou noiva')
-        .required('Categoria obrigatória'),
+        .typeError(t('guests.form_category_type'))
+        .required(t('guests.form_category_required')),
     }),
   ),
 });
@@ -176,7 +176,7 @@ watch(
         autocomplete="name"
         type="text"
         name="name"
-        label="Nome:"
+        :label="t('guests.form_name_label')"
         :placeholder="t('guests.form_name_placeholder')"
       />
 
@@ -188,7 +188,7 @@ watch(
         :readonly="isSubmiting"
         type="text"
         name="phone"
-        label="Telefone:"
+        :label="t('guests.form_phone_label')"
         :placeholder="t('guests.form_phone_placeholder')"
       />
 
@@ -200,7 +200,7 @@ watch(
         :readonly="isSubmiting"
         type="number"
         name="name"
-        label="Nº de pessoas:"
+        :label="t('guests.form_people_label')"
         :placeholder="t('guests.form_people_placeholder')"
       />
 
@@ -211,7 +211,7 @@ watch(
         v-bind="deskAttrs"
         :error-message="errors.desk"
         :readonly="isSubmiting"
-        label="Mesa: "
+        :label="t('guests.form_desk_label')"
         :options="
           desks.map((desk) => ({
             id: desk.id,
@@ -232,7 +232,7 @@ watch(
         v-bind="categoryAttrs"
         :error-message="errors.category"
         :readonly="isSubmiting"
-        label="Tipo de convidado: "
+        :label="t('guests.form_category_label')"
         :options="
           categories.map((category) => ({
             id: category.id,

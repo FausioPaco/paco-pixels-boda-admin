@@ -66,13 +66,13 @@ const onFileSelected = (event: Event) => {
 
   const maxSizeBytes = 20 * 1024 * 1024; // 20MB
   if (!file.type.startsWith('image/')) {
-    errorMessage.value = 'Por favor seleccione um ficheiro de imagem válido.';
+    errorMessage.value = t('guests.qr_invalid_file');
     target.value = '';
     return;
   }
 
   if (file.size > maxSizeBytes) {
-    errorMessage.value = 'O tamanho máximo permitido é 20MB.';
+    errorMessage.value = t('guests.qr_too_large');
     target.value = '';
     return;
   }
@@ -92,6 +92,7 @@ const onFileSelected = (event: Event) => {
  * e actualiza imediatamente a store do evento
  */
 const toast = useToast();
+const { t } = useI18n();
 const uploadImage = async () => {
   if (!fileToUpload.value) return;
 
@@ -127,11 +128,10 @@ const uploadImage = async () => {
       });
     }
 
-    toast.success('A imagem foi actualizada com sucesso!');
+    toast.success(t('guests.qr_upload_success'));
   } catch (err) {
     console.log(err);
-    errorMessage.value =
-      'Ocorreu um erro ao carregar a imagem. Por favor, tente novamente.';
+    errorMessage.value = t('guests.qr_upload_error');
   } finally {
     isUploading.value = false;
   }
@@ -147,44 +147,45 @@ const uploadImage = async () => {
       <div class="space-y-4">
         <div class="flex items-center gap-4">
           <div
-            class="bg-primary-50 text-primary-700 flex size-[80px] items-center justify-center rounded-full"
+            class="flex size-[80px] items-center justify-center rounded-full bg-primary-50 text-primary-700"
           >
             <IconUpload :font-controlled="false" class="block size-[40px]" />
           </div>
 
           <div>
             <p
-              class="text-primary-500 text-sm font-medium uppercase tracking-[0.16em]"
+              class="text-sm font-medium uppercase tracking-[0.16em] text-primary-500"
             >
-              QR Code
+              {{ t('guests.wa_type_qrcode') }}
             </p>
-            <h2 class="text-grey-900 mt-1 text-xl font-semibold md:text-2xl">
+            <h2 class="mt-1 text-xl font-semibold text-grey-900 md:text-2xl">
               {{
-                hasImage ? 'Imagem carregada' : 'Carregar imagem para o QRCode'
+                hasImage
+                  ? t('guests.qr_image_loaded')
+                  : t('guests.qr_image_upload_title')
               }}
             </h2>
           </div>
         </div>
 
-        <p class="text-grey-600 max-w-xl text-sm leading-relaxed md:text-base">
+        <p class="max-w-xl text-sm leading-relaxed text-grey-600 md:text-base">
           <span v-if="!hasImage">
-            Ainda não foi carregada a imagem que será utilizada na geração do QR
-            Code deste evento. Por favor, carregue uma imagem caso pretenda
-            distribuir os QR Codes das mesas aos seus convidados.
+            {{ t('guests.qr_no_image_desc') }}
           </span>
           <span v-else>
-            O ficheiro para geração do QR Code já foi carregado. Se desejar,
-            pode substituí-lo a qualquer momento, seleccionando uma nova imagem.
+            {{ t('guests.qr_has_image_desc') }}
           </span>
         </p>
 
-        <p class="text-grey-500 text-xs">
-          Formatos recomendados:
-          <b class="text-primary-800">JPG, PNG ou WEBP</b>
+        <p class="text-xs text-grey-500">
+          {{ t('guests.qr_formats_label') }}
+          <b class="text-primary-800">{{ t('guests.qr_formats_value') }}</b>
         </p>
         <p class="text-xs">
-          Tamanho máximo: <b class="text-primary-800">20MB</b> · Resolução
-          sugerida: <b class="text-primary-800">1000x1000px</b>
+          {{ t('guests.qr_max_size_label') }}
+          <b class="text-primary-800">{{ t('guests.qr_max_size_value') }}</b> ·
+          {{ t('guests.qr_resolution_label') }}
+          <b class="text-primary-800">{{ t('guests.qr_resolution_value') }}</b>
         </p>
 
         <div
@@ -193,11 +194,10 @@ const uploadImage = async () => {
         >
           <IconCheckmark
             :font-controlled="false"
-            class="text-primary-700 block size-[20px]"
+            class="block size-[20px] text-primary-700"
           />
-          <p class="text-primary-700 text-xs">
-            Pré-visualização pronta. Clica em <b>“Guardar imagem”</b> para
-            concluir o upload.
+          <p class="text-xs text-primary-700">
+            {{ t('guests.qr_preview_ready') }}
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-3 pt-2">
@@ -206,7 +206,11 @@ const uploadImage = async () => {
             :disabled="isUploading"
             @click="openFileDialog"
           >
-            {{ hasImage ? 'Alterar imagem' : 'Carregar imagem' }}
+            {{
+              hasImage
+                ? t('guests.qr_change_image')
+                : t('guests.qr_upload_image')
+            }}
           </BaseButton>
 
           <BaseButton
@@ -216,7 +220,7 @@ const uploadImage = async () => {
             :disabled="isUploading"
             @click="uploadImage"
           >
-            Guardar imagem
+            {{ t('guests.qr_save_image') }}
           </BaseButton>
         </div>
 
@@ -228,11 +232,11 @@ const uploadImage = async () => {
       <!-- Lado direito: área de pré-visualização / placeholder -->
       <button
         type="button"
-        class="hover:border-primary-200 hover:bg-primary-25 group flex items-center justify-center overflow-hidden rounded-3xl p-2 transition"
+        class="group flex items-center justify-center overflow-hidden rounded-3xl p-2 transition hover:border-primary-200 hover:bg-primary-25"
         :class="
           previewUrl || imageUrl
             ? undefined
-            : 'border-grey-200 bg-grey-100/30 border-2 border-dashed'
+            : 'border-2 border-dashed border-grey-200 bg-grey-100/30'
         "
         @click="openFileDialog"
       >
@@ -240,28 +244,28 @@ const uploadImage = async () => {
         <img
           v-if="previewUrl || imageUrl"
           :src="previewUrl || imageUrl || undefined"
-          alt="Imagem para geração do QR Code"
+          :alt="t('guests.qr_img_alt')"
           class="h-full w-full rounded-2xl object-cover md:h-[450px] md:w-[450px]"
         />
 
         <!-- Placeholder -->
         <div
           v-else
-          class="text-grey-400 flex h-full w-full flex-col items-center justify-center gap-3 py-8 md:h-[450px] md:w-[450px] md:py-0"
+          class="flex h-full w-full flex-col items-center justify-center gap-3 py-8 text-grey-400 md:h-[450px] md:w-[450px] md:py-0"
         >
           <IconMenuGallery
             :font-controlled="false"
-            class="text-grey-300 group-hover:text-primary-700 block size-[80px]"
+            class="block size-[80px] text-grey-300 group-hover:text-primary-700"
           />
           <p
-            class="text-grey-400 group-hover:text-primary-700 text-lg font-semibold"
+            class="text-lg font-semibold text-grey-400 group-hover:text-primary-700"
           >
-            Clique aqui para carregar a imagem
+            {{ t('guests.qr_placeholder_text') }}
           </p>
           <p
-            class="text-grey-400 group-hover:text-primary-700 text-xs font-medium"
+            class="text-xs font-medium text-grey-400 group-hover:text-primary-700"
           >
-            Tamanho recomendado: 1000x1000px
+            {{ t('guests.qr_placeholder_size') }}
           </p>
         </div>
       </button>

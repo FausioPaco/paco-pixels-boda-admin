@@ -17,13 +17,13 @@ const { t } = useI18n();
 <template>
   <div
     v-if="isPartner && blockingIssues.length"
-    class="border-warning-100 bg-warning-50 rounded-2xl border p-4"
+    class="rounded-2xl border border-warning-100 bg-warning-50 p-4"
   >
-    <p class="text-warning-800 text-sm font-semibold">
+    <p class="text-sm font-semibold text-warning-800">
       {{ t('guests.wa_prereq_blocking_title') }}
     </p>
 
-    <ul class="text-warning-800 mt-2 space-y-1 text-sm">
+    <ul class="mt-2 space-y-1 text-sm text-warning-800">
       <li v-for="issue in blockingIssues" :key="issue">{{ issue }}</li>
     </ul>
 
@@ -33,19 +33,19 @@ const { t } = useI18n();
       btn-type="outline-primary"
       class="my-2"
     >
-      Preencher agora
+      {{ t('guests.wa_prereq_fill_now') }}
     </BaseButtonLink>
   </div>
 
   <div
     v-else-if="isPartner && warnings.length"
-    class="border-primary-200 bg-primary-50 rounded-2xl border p-4"
+    class="rounded-2xl border border-primary-200 bg-primary-50 p-4"
   >
-    <p class="text-primary-700 text-sm font-semibold">
+    <p class="text-sm font-semibold text-primary-700">
       {{ t('guests.wa_prereq_warning_title') }}
     </p>
 
-    <ul class="text-primary-700 mt-2 space-y-1 text-sm">
+    <ul class="mt-2 space-y-1 text-sm text-primary-700">
       <li v-for="warning in warnings" :key="warning">• {{ warning }}</li>
     </ul>
   </div>
