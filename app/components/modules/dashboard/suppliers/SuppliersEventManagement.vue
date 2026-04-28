@@ -11,6 +11,7 @@ const actionLoading = ref<{
 const toast = useToast();
 const nuxtApp = useNuxtApp();
 const supplierService = getSupplierService(nuxtApp.$api);
+const { t } = useI18n();
 
 const { eventId } = useEventStore();
 
@@ -90,11 +91,11 @@ const onConfirm = async (s: Supplier) => {
   try {
     setLoading(s, 'confirm');
     await supplierService.confirmSupplier(s.id);
-    toast.success('Fornecedor confirmado com sucesso.');
+    toast.success(t('suppliers.confirmed_success'));
     await refreshSuppliers({ force: true });
   } catch (e) {
     console.error(e);
-    toast.error('Não foi possível confirmar o fornecedor.');
+    toast.error(t('suppliers.confirm_error'));
   } finally {
     clearLoading();
   }
@@ -104,11 +105,11 @@ const onArrive = async (s: Supplier) => {
   try {
     setLoading(s, 'arrive');
     await supplierService.arriveSupplier(s.id);
-    toast.success('Chegada registada com sucesso.');
+    toast.success(t('suppliers.arrival_registered'));
     await refreshSuppliers({ force: true });
   } catch (e) {
     console.error(e);
-    toast.error('Não foi possível registar a chegada.');
+    toast.error(t('suppliers.arrival_error'));
   } finally {
     clearLoading();
   }
@@ -118,11 +119,11 @@ const onAbsent = async (s: Supplier) => {
   try {
     setLoading(s, 'absent');
     await supplierService.absentSupplier(s.id);
-    toast.success('Ausência registada com sucesso.');
+    toast.success(t('suppliers.absent_registered'));
     await refreshSuppliers({ force: true });
   } catch (e) {
     console.error(e);
-    toast.error('Não foi possível declarar ausência.');
+    toast.error(t('suppliers.absent_error'));
   } finally {
     clearLoading();
   }
@@ -133,26 +134,25 @@ const onUnconfirm = async (s: Supplier) => {
     setLoading(s, 'unconfirm');
     await supplierService.unconfirmSupplier(s.id);
 
-    if (s.isArrived) toast.success('Chegada removida com sucesso.');
-    else if (s.isConfirmed)
-      toast.success('Fornecedor desconfirmado com sucesso.');
-    else if (s.isAbsent) toast.success('Ausência removida com sucesso.');
-    else toast.success('Actualizado com sucesso.');
+    if (s.isArrived) toast.success(t('suppliers.arrival_removed'));
+    else if (s.isConfirmed) toast.success(t('suppliers.unconfirmed_success'));
+    else if (s.isAbsent) toast.success(t('suppliers.absence_removed'));
+    else toast.success(t('suppliers.status_updated'));
 
     await refreshSuppliers({ force: true });
   } catch (e) {
     console.error(e);
-    toast.error('Não foi possível actualizar o estado do fornecedor.');
+    toast.error(t('suppliers.update_error'));
   } finally {
     clearLoading();
   }
 };
 
 const unconfirmTooltip = (s: Supplier) => {
-  if (s.isArrived) return 'Remover chegada';
-  if (s.isConfirmed) return 'Desconfirmar presença';
-  if (s.isAbsent) return 'Remover ausência';
-  return 'Actualizar estado';
+  if (s.isArrived) return t('suppliers.tooltip_remove_arrival');
+  if (s.isConfirmed) return t('suppliers.tooltip_unconfirm');
+  if (s.isAbsent) return t('suppliers.tooltip_remove_absence');
+  return t('suppliers.tooltip_update_status');
 };
 
 const absenceRowClass = (s: Supplier) => {
@@ -184,7 +184,7 @@ const exportSuppliersToPdf = async () => {
     isExporting.value = false;
   } catch (err) {
     console.error('Erro ao exportar os fornecedores:', err);
-    toast.error('Ocorreu um erro ao exportar os fornecedores');
+    toast.error(t('suppliers.export_error'));
     isExporting.value = false;
   }
 };
@@ -208,8 +208,8 @@ const exportSuppliersToPdf = async () => {
             autocomplete="off"
             type="search"
             name="supplierSearch"
-            label="Pesquisa:"
-            placeholder="Filtre por nome, papel ou contacto..."
+            :label="t('suppliers.search_label')"
+            :placeholder="t('suppliers.search_placeholder')"
             :readonly="isRefreshing"
           />
 
@@ -242,7 +242,7 @@ const exportSuppliersToPdf = async () => {
             :disabled="isExporting"
             @click="exportSuppliersToPdf"
           >
-            Exportar para PDF
+            {{ t('suppliers.export_pdf') }}
           </BaseButton>
 
           <BaseButton
@@ -251,7 +251,7 @@ const exportSuppliersToPdf = async () => {
             btn-type="primary"
             @click.prevent="openCreateModal"
           >
-            Adicionar fornecedor
+            {{ t('suppliers.add') }}
           </BaseButton>
         </div>
       </div>
@@ -270,17 +270,17 @@ const exportSuppliersToPdf = async () => {
         v-if="!isFirstTime && (suppliers?.length ?? 0) === 0 && !isRefreshing"
         @fallback="() => refreshSuppliers({ force: true })"
       >
-        Infelizmente, não encontramos fornecedores para o filtro aplicado
+        {{ t('suppliers.not_found') }}
       </BaseSearchNotFound>
 
       <!-- First empty state -->
       <LazyBaseFirstEmptyState
         v-if="isFirstTime"
         icon="icon-suppliers-event"
-        title="Ainda não registou fornecedores"
-        description="Adicione fornecedores para acompanhar os seus contactos e confirmar se o deal está fechado."
+        :title="t('suppliers.empty_title')"
+        :description="t('suppliers.empty_description')"
         :show-button="true"
-        button-label="Adicionar primeiro fornecedor"
+        :button-label="t('suppliers.empty_button')"
         button-icon="add"
         @action="openCreateModal"
       />
@@ -292,12 +292,16 @@ const exportSuppliersToPdf = async () => {
       >
         <template #thead>
           <tr>
-            <th scope="col">Fornecedor</th>
-            <th scope="col" class="hidden md:table-cell">Contacto</th>
-            <th scope="col" class="hidden lg:table-cell">Preço</th>
-            <th scope="col">Presença</th>
-            <th scope="col">Chegada</th>
-            <th scope="col">Acções</th>
+            <th scope="col">{{ t('suppliers.table_supplier') }}</th>
+            <th scope="col" class="hidden md:table-cell">
+              {{ t('suppliers.table_contact') }}
+            </th>
+            <th scope="col" class="hidden lg:table-cell">
+              {{ t('suppliers.table_price') }}
+            </th>
+            <th scope="col">{{ t('suppliers.table_presence') }}</th>
+            <th scope="col">{{ t('suppliers.table_arrival') }}</th>
+            <th scope="col">{{ t('suppliers.table_actions') }}</th>
           </tr>
         </template>
 
@@ -326,7 +330,7 @@ const exportSuppliersToPdf = async () => {
                 <!-- Confirmar presença -->
                 <BaseTooltip
                   v-if="!s.isConfirmed && !s.isAbsent"
-                  text="Confirmar presença"
+                  :text="t('suppliers.tooltip_confirm')"
                   placement="top"
                 >
                   <template #trigger>
@@ -347,7 +351,7 @@ const exportSuppliersToPdf = async () => {
                 <!-- Registar chegada -->
                 <BaseTooltip
                   v-if="!s.isArrived && !s.isAbsent"
-                  text="Registar chegada"
+                  :text="t('suppliers.tooltip_arrive')"
                   placement="top"
                 >
                   <template #trigger>
@@ -368,7 +372,7 @@ const exportSuppliersToPdf = async () => {
                 <!-- Declarar ausência -->
                 <BaseTooltip
                   v-if="!s.isAbsent"
-                  text="Declarar ausência"
+                  :text="t('suppliers.tooltip_absent')"
                   placement="top"
                 >
                   <template #trigger>
@@ -420,7 +424,7 @@ const exportSuppliersToPdf = async () => {
                   btn-size="sm"
                   :icon-size="12"
                   @click.stop="openEditModal(s)"
-                  >Editar
+                  >{{ t('suppliers.edit') }}
                 </BaseButton>
 
                 <BaseButton
@@ -429,7 +433,7 @@ const exportSuppliersToPdf = async () => {
                   btn-size="sm"
                   :icon-size="12"
                   @click.stop="openRemoveModal(s)"
-                  >Remover
+                  >{{ t('suppliers.remove') }}
                 </BaseButton>
               </div>
             </td>

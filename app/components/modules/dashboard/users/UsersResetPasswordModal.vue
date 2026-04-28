@@ -14,6 +14,7 @@ const emit = defineEmits(['closeModal', 'success']);
 
 const nuxtApp = useNuxtApp();
 const userService = getUserService(nuxtApp.$api);
+const { t } = useI18n();
 
 const props = withDefaults(defineProps<IUsersPasswordForm>(), {
   show: false,
@@ -55,7 +56,7 @@ const onSubmit = handleSubmit((values, _) => {
         },
       });
       emit('success');
-      toast.success('A palavra passe foi alterada com sucesso');
+      toast.success(t('users.password_changed_success'));
     })
     .catch((err) => {
       console.log(err.data);
@@ -94,7 +95,7 @@ watch(
 </script>
 <template>
   <BaseModal
-    title="Alterar palavra passe"
+    :title="t('users.reset_password_title')"
     :show="show"
     @close-modal="closeModal"
   >
@@ -111,8 +112,8 @@ watch(
         :error-message="errors.password"
         type="password"
         name="password"
-        label="Nova password:"
-        placeholder="Coloque a nova palavra-passe"
+        :label="t('users.new_password_label')"
+        :placeholder="t('users.new_password_placeholder')"
       />
 
       <BaseError v-if="serverErrors.hasErrors">{{
@@ -128,7 +129,7 @@ watch(
           :disabled="isSubmiting"
           :loading="isSubmiting"
           @click="onSubmit"
-          >Actualizar agora</BaseButton
+          >{{ t('users.submit_update') }}</BaseButton
         >
 
         <BaseButton
@@ -138,7 +139,7 @@ watch(
           size="md"
           :disabled="isSubmiting"
           @click="closeModal"
-          >Cancelar</BaseButton
+          >{{ t('common.cancel') }}</BaseButton
         >
       </div>
     </form>

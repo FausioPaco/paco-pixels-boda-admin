@@ -17,6 +17,7 @@ const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
 
 const toast = useToast();
+const { t } = useI18n();
 const serverErrors = ref<ServerError>({
   hasErrors: false,
   message: '',
@@ -98,10 +99,10 @@ const submit = handleSubmit(async (values) => {
 
     if (props.task?.id) {
       await checklistService.updateTemplateTask(props.task.id, payload);
-      toast.success('Tarefa actualizada com sucesso');
+      toast.success(t('checklist.task_updated'));
     } else {
       await checklistService.addTemplateTask(props.sectionId, payload);
-      toast.success('Tarefa criada com sucesso');
+      toast.success(t('checklist.task_created'));
     }
 
     emit('saved');
@@ -122,7 +123,9 @@ function close() {
 <template>
   <BaseModal
     :show="show"
-    :title="task ? 'Editar tarefa' : 'Nova tarefa'"
+    :title="
+      task ? t('checklist.task_edit_title') : t('checklist.task_create_title')
+    "
     icon="CheckSquare"
     @close-modal="close"
   >
@@ -136,7 +139,7 @@ function close() {
         autocomplete="off"
         type="text"
         name="title"
-        label="Título"
+        :label="t('checklist.task_form_title_label')"
         placeholder="Ex.: Confirmar catering"
         required
       />
@@ -148,7 +151,7 @@ function close() {
         :error-message="errors.notes"
         :readonly="isSubmitting"
         name="notes"
-        label="Notas (opcional)"
+        :label="t('checklist.task_form_notes_label')"
         placeholder="Notas adicionais…"
         rows="4"
       />
@@ -159,7 +162,7 @@ function close() {
         v-bind="hasIndefiniteDateAttrs"
         :error="errors.has_Indefinite_Date"
         :readonly="isSubmitting"
-        label="Data indefinida"
+        :label="t('checklist.task_form_indefinite_label')"
       />
 
       <BaseInput
@@ -170,7 +173,7 @@ function close() {
         :readonly="isSubmitting || has_Indefinite_Date"
         type="number"
         name="default_Offset_Days"
-        label="Dias antes do evento (dias)"
+        :label="t('checklist.task_form_offset_label')"
         placeholder="Ex.: 14"
         helper-text="Este valor define quantos dias antes do evento esta secção deve aparecer no cronograma."
       />
@@ -186,11 +189,11 @@ function close() {
           :disabled="isSubmitting"
           @click.prevent="close"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
 
         <BaseButton type="submit" :disabled="isSubmitting">
-          Guardar
+          {{ t('common.save') }}
         </BaseButton>
       </div>
     </form>

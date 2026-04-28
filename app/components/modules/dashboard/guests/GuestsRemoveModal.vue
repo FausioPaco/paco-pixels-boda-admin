@@ -16,6 +16,7 @@ const nuxtApp = useNuxtApp();
 const guestService = getGuestService(nuxtApp.$api);
 
 const toast = useToast();
+const { t } = useI18n();
 const isSubmiting = ref<boolean>(false);
 const serverErrors = ref<ServerError>({
   hasErrors: false,
@@ -30,7 +31,7 @@ const onSubmit = () => {
       .then(() => {
         emit('closeModal');
         emit('success');
-        toast.success('O convidado foi removido com sucesso');
+        toast.success(t('guests.removed_success'));
       })
       .catch((err) => {
         console.log(err.data);
@@ -45,15 +46,13 @@ const onSubmit = () => {
 </script>
 <template>
   <BaseModal
-    title="Remover Convidado"
+    :title="t('guests.remove_title')"
     :show="show"
     @close-modal="$emit('closeModal')"
   >
     <div v-if="guest" class="my-2 animate-fadeIn">
       <p class="text-grey-600 text-center text-base md:text-lg">
-        Tem certeza que pretende remover o convidado
-        <span class="font-bold">{{ guest.name }}</span
-        >?
+        {{ t('guests.remove_confirm', { name: guest.name }) }}
       </p>
 
       <BaseError v-if="serverErrors.hasErrors">{{
@@ -71,7 +70,7 @@ const onSubmit = () => {
           :disabled="isSubmiting"
           :loading="isSubmiting"
           @click="onSubmit"
-          >Sim, remover</BaseButton
+          >{{ t('guests.remove_button') }}</BaseButton
         >
 
         <BaseButton
@@ -81,7 +80,7 @@ const onSubmit = () => {
           size="md"
           :disabled="isSubmiting"
           @click="$emit('closeModal')"
-          >Cancelar</BaseButton
+          >{{ t('common.cancel') }}</BaseButton
         >
       </div>
     </div>

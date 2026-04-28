@@ -5,9 +5,10 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const { t } = useI18n();
 
 const lastSeenText = computed(() => {
-  if (!props.lastActivityAt) return 'Nunca online';
+  if (!props.lastActivityAt) return t('users.status_never_online');
 
   const date =
     typeof props.lastActivityAt === 'string'
@@ -17,22 +18,22 @@ const lastSeenText = computed(() => {
   const diffMs = Date.now() - date.getTime();
   const diffMin = Math.floor(diffMs / 60000);
 
-  if (diffMin < 1) return 'Online agora';
-  if (diffMin === 1) return 'Visto há 1 minuto';
-  if (diffMin < 60) return `Visto há ${diffMin} minutos`;
+  if (diffMin < 1) return t('users.status_online_now');
+  if (diffMin === 1) return t('users.status_seen_1_minute');
+  if (diffMin < 60) return t('users.status_seen_n_minutes', { n: diffMin });
 
   const diffHours = Math.floor(diffMin / 60);
-  if (diffHours === 1) return 'Visto há 1 hora';
-  if (diffHours < 24) return `Visto há ${diffHours} horas`;
+  if (diffHours === 1) return t('users.status_seen_1_hour');
+  if (diffHours < 24) return t('users.status_seen_n_hours', { n: diffHours });
 
   const diffDays = Math.floor(diffHours / 24);
-  if (diffDays === 1) return 'Visto há 1 dia';
+  if (diffDays === 1) return t('users.status_seen_1_day');
 
-  return `Visto há ${diffDays} dias`;
+  return t('users.status_seen_n_days', { n: diffDays });
 });
 
 const label = computed(() => {
-  if (props.isOnline) return 'Online';
+  if (props.isOnline) return t('users.status_online');
   return lastSeenText.value;
 });
 

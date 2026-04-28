@@ -21,6 +21,7 @@ const emit = defineEmits<{
 const nuxtApp = useNuxtApp();
 const userService = getUserService(nuxtApp.$api);
 const toast = useToast();
+const { t } = useI18n();
 const serverErrors = ref<ServerError>({
   hasErrors: false,
   message: '',
@@ -54,7 +55,7 @@ const onSubmit = handleSubmit(async (formValues) => {
     .then((userUpdated) => {
       emit('updated', userUpdated);
       resetForm();
-      toast.success('O nome do seu perfil foi alterado com sucesso!');
+      toast.success(t('users.name_changed_success'));
     })
     .catch((err) => {
       console.log(err);
@@ -80,9 +81,13 @@ watch(
 </script>
 
 <template>
-  <BaseModal title="Modificar nome" :show="show" @close-modal="closeModal">
+  <BaseModal
+    :title="t('users.edit_name_title')"
+    :show="show"
+    @close-modal="closeModal"
+  >
     <p class="text-grey-400 mt-1 text-xs font-medium">
-      Actualize o seu nome tal como pretende que apareça no sistema.
+      {{ t('users.edit_name_description') }}
     </p>
 
     <form
@@ -97,7 +102,7 @@ watch(
         :error-message="errors.name"
         name="name"
         type="text"
-        label="Nome"
+        :label="t('users.name_label')"
       />
 
       <BaseError v-if="serverErrors.hasErrors" class="mt-4">
@@ -113,7 +118,7 @@ watch(
           :disabled="isSubmitting"
           :loading="isSubmitting"
         >
-          Alterar agora
+          {{ t('users.change_now') }}
         </BaseButton>
 
         <BaseButton
@@ -124,7 +129,7 @@ watch(
           :disabled="isSubmitting"
           @click="$emit('close')"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
       </div>
     </form>

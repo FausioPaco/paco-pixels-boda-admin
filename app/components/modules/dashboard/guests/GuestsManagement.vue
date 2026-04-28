@@ -41,6 +41,7 @@ const activeWhatsAppMessageType = ref<GuestWhatsAppOutboundType>(
 const invitationWaSummary = ref<WhatsAppDeliverySummary | null>(null);
 
 const backgroundJobs = useBackgroundJobsStore();
+const { t } = useI18n();
 
 const qrJobKey = computed(
   () =>
@@ -319,8 +320,8 @@ const sendBulkOptions = computed(() => {
       id: 'send-qrs',
       label:
         waJob.value?.status === 'Pending' || waJob.value?.status === 'Running'
-          ? `QR Codes — A enviar... ${waJob.value?.percent ?? 0}%`
-          : 'Enviar QRs',
+          ? `QR Codes — ${t('guests.sending_progress', { percent: waJob.value?.percent ?? 0 })}`
+          : t('guests.send_qrs'),
     });
   }
 
@@ -334,8 +335,8 @@ const sendBulkOptions = computed(() => {
       label:
         invitationWhatsAppJob.value?.status === 'Pending' ||
         invitationWhatsAppJob.value?.status === 'Running'
-          ? `Convites — A enviar... ${invitationWhatsAppJob.value?.percent ?? 0}%`
-          : 'Enviar convites',
+          ? `${t('guests.invitations_label')} — ${t('guests.sending_progress', { percent: invitationWhatsAppJob.value?.percent ?? 0 })}`
+          : t('guests.send_invitations'),
     });
   }
 
@@ -350,8 +351,8 @@ const exportBulkOptions = computed(() => {
       id: 'export-qrs',
       label:
         qrJob.value?.status === 'Pending' || qrJob.value?.status === 'Running'
-          ? `QR Codes — A exportar... ${qrJob.value?.percent ?? 0}%`
-          : 'Exportar QR Codes',
+          ? `QR Codes — ${t('guests.exporting_progress', { percent: qrJob.value?.percent ?? 0 })}`
+          : t('guests.export_qrs'),
     });
   }
 
@@ -365,8 +366,8 @@ const exportBulkOptions = computed(() => {
       label:
         invitationJob.value?.status === 'Pending' ||
         invitationJob.value?.status === 'Running'
-          ? `Convites — A exportar... ${invitationJob.value?.percent ?? 0}%`
-          : 'Exportar Convites',
+          ? `${t('guests.invitations_label')} — ${t('guests.exporting_progress', { percent: invitationJob.value?.percent ?? 0 })}`
+          : t('guests.export_invitations'),
     });
   }
 
@@ -375,32 +376,32 @@ const exportBulkOptions = computed(() => {
 
 const sendBulkLabel = computed(() => {
   if (waJob.value?.status === 'Pending' || waJob.value?.status === 'Running') {
-    return `Enviar em massa... ${waJob.value?.percent ?? 0}%`;
+    return `${t('guests.send_bulk_progress', { percent: waJob.value?.percent ?? 0 })}`;
   }
 
   if (
     invitationWhatsAppJob.value?.status === 'Pending' ||
     invitationWhatsAppJob.value?.status === 'Running'
   ) {
-    return `Enviar em massa... ${invitationWhatsAppJob.value?.percent ?? 0}%`;
+    return `${t('guests.send_bulk_progress', { percent: invitationWhatsAppJob.value?.percent ?? 0 })}`;
   }
 
-  return 'Enviar em massa';
+  return t('guests.send_bulk');
 });
 
 const exportBulkLabel = computed(() => {
   if (qrJob.value?.status === 'Pending' || qrJob.value?.status === 'Running') {
-    return `Exportar em massa... ${qrJob.value?.percent ?? 0}%`;
+    return `${t('guests.export_bulk_progress', { percent: qrJob.value?.percent ?? 0 })}`;
   }
 
   if (
     invitationJob.value?.status === 'Pending' ||
     invitationJob.value?.status === 'Running'
   ) {
-    return `Exportar em massa... ${invitationJob.value?.percent ?? 0}%`;
+    return `${t('guests.export_bulk_progress', { percent: invitationJob.value?.percent ?? 0 })}`;
   }
 
-  return 'Exportar em massa';
+  return t('guests.export_bulk');
 });
 
 const handleSendBulkSelect = (option: { id: string }) => {
@@ -458,11 +459,11 @@ const activeExportModalJobTitle = computed(() => {
   if (!job) return null;
 
   if (job.kind === 'qr-export') {
-    return 'Exportação de QR Codes';
+    return t('guests.export_modal_qr_title');
   }
 
   if (job.kind === 'invitation-export') {
-    return 'Exportação de Convites';
+    return t('guests.export_modal_invitation_title');
   }
 
   return null;
@@ -470,8 +471,8 @@ const activeExportModalJobTitle = computed(() => {
 </script>
 <template>
   <BaseCard
-    title="Gestão de Convidados"
-    description="Faça a gestão dos convidados deste evento aqui"
+    :title="t('guests.card_title')"
+    :description="t('guests.card_description')"
   >
     <template #right-content>
       <div class="flex flex-wrap gap-2">
@@ -484,8 +485,8 @@ const activeExportModalJobTitle = computed(() => {
         >
           {{
             eventStore.eventModeView
-              ? 'Desactivar modo evento'
-              : 'Ver em modo evento'
+              ? t('guests.mode_deactivate')
+              : t('guests.mode_activate')
           }}
         </BaseButton>
 
@@ -526,7 +527,7 @@ const activeExportModalJobTitle = computed(() => {
         :is-active="activeTab === 'LIST'"
         class="w-full md:w-1/2"
         @click="activeTab = 'LIST'"
-        >Lista de Convidados</BaseTabItem
+        >{{ t('guests.tab_list') }}</BaseTabItem
       >
 
       <BaseTabItem
@@ -537,7 +538,7 @@ const activeExportModalJobTitle = computed(() => {
         :is-active="activeTab === 'QRCODE'"
         class="w-full md:w-1/2"
         @click="activeTab = 'QRCODE'"
-        >Modelo de QR Codes</BaseTabItem
+        >{{ t('guests.tab_qrcode') }}</BaseTabItem
       >
 
       <BaseTabItem
@@ -550,7 +551,7 @@ const activeExportModalJobTitle = computed(() => {
         class="w-full md:w-1/2"
         @click="activeTab = 'INVITATIONS'"
       >
-        Modelo de Convites
+        {{ t('guests.tab_invitations') }}
       </BaseTabItem>
     </BaseTab>
 

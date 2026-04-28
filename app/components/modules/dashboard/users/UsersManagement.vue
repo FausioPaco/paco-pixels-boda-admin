@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+const { t } = useI18n();
 const { eventId } = useEventStore();
 const queryParameters = reactive<UserParameters>({
   eventId: Number(eventId!),
@@ -79,8 +80,8 @@ onMounted(() => {
 </script>
 <template>
   <BaseCard
-    title="Gestão de Utilizadores"
-    description="Faça a gestão utilizadores deste evento aqui"
+    :title="t('users.card_title')"
+    :description="t('users.card_description')"
   >
     <section
       id="users"
@@ -100,8 +101,8 @@ onMounted(() => {
               autocomplete="name"
               type="search"
               name="userName"
-              label="Pesquisa:"
-              placeholder="Pesquise o nome do utilizador"
+              :label="t('users.search_label')"
+              :placeholder="t('users.search_placeholder')"
               :readonly="isRefreshing"
             />
 
@@ -115,8 +116,10 @@ onMounted(() => {
                 <h3 class="text-primary-700 text-2xl font-bold">
                   {{
                     pagination?.totalCount === 1
-                      ? '1 Utilizador'
-                      : `${pagination ? pagination.totalCount : 0} Utilizadores`
+                      ? t('users.count_one')
+                      : t('users.count_other', {
+                          n: pagination ? pagination.totalCount : 0,
+                        })
                   }}
                 </h3>
               </div>
@@ -132,7 +135,7 @@ onMounted(() => {
               btn-type="primary"
               @click.prevent="addUser"
             >
-              Adicionar Utilizador
+              {{ t('users.add') }}
             </BaseButton>
           </div>
         </div>
@@ -152,17 +155,17 @@ onMounted(() => {
           v-if="!isFirstTime && users.length === 0"
           @fallback="refreshUsers({ force: true })"
         >
-          Infelizmente, não encontramos fornecedores para o filtro aplicado
+          {{ t('users.not_found') }}
         </BaseSearchNotFound>
 
         <!-- No user: first Time -->
         <LazyBaseFirstEmptyState
           v-if="isFirstTime"
           icon="icon-account"
-          title="Ainda não adicionou nenhum utilizador"
-          description="Crie o seu primeiro utilizador para começar a gerir o acesso ao sistema de forma mais eficiente."
+          :title="t('users.empty_title')"
+          :description="t('users.empty_description')"
           :show-button="isAdministrator || isSuperAdministrator"
-          button-label="Criar primeiro utilizador"
+          :button-label="t('users.empty_button')"
           button-icon="add"
           @action="showFormModal = true"
         />
@@ -174,12 +177,12 @@ onMounted(() => {
         >
           <template #thead>
             <tr>
-              <th scope="col">Nome</th>
-              <th scope="col">Email</th>
-              <th scope="col">Papel</th>
-              <th scope="col">Estado</th>
-              <th scope="col">Palavra-passe</th>
-              <th scope="col">Acções</th>
+              <th scope="col">{{ t('users.table_name') }}</th>
+              <th scope="col">{{ t('users.table_email') }}</th>
+              <th scope="col">{{ t('users.table_role') }}</th>
+              <th scope="col">{{ t('users.table_status') }}</th>
+              <th scope="col">{{ t('users.table_password') }}</th>
+              <th scope="col">{{ t('users.table_actions') }}</th>
             </tr>
           </template>
           <template #tbody>
@@ -200,7 +203,7 @@ onMounted(() => {
                   btn-type="outline-primary"
                   @click.prevent="updatePassword(user)"
                 >
-                  Alterar password
+                  {{ t('users.change_password') }}
                 </BaseButton>
               </td>
               <td>
@@ -211,7 +214,7 @@ onMounted(() => {
                     btn-type="primary"
                     @click.prevent="updateUser(user)"
                   >
-                    Modificar
+                    {{ t('users.edit') }}
                   </BaseButton>
 
                   <BaseButton
@@ -220,7 +223,7 @@ onMounted(() => {
                     btn-type="outline-primary"
                     @click.prevent="removeUser(user)"
                   >
-                    Remover
+                    {{ t('users.remove') }}
                   </BaseButton>
                 </div>
               </td>

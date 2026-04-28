@@ -6,6 +6,7 @@ import { isFetchErrorLike } from '~/utils/serverUtils';
 const toast = useToast();
 const nuxtApp = useNuxtApp();
 const supplierService = getSupplierService(nuxtApp.$api);
+const { t } = useI18n();
 
 const queryParameters = reactive<SupplierCatalogParameters>({
   searchQuery: '',
@@ -51,9 +52,9 @@ function onPageSelected(newPage: number) {
 }
 
 const statusOptions = computed<SelectOption[]>(() => [
-  { id: '', name: 'Mostrar todos estados' },
-  { id: 'true', name: 'Activo' },
-  { id: 'false', name: 'Inactivo' },
+  { id: '', name: t('suppliers.catalog_status_all') },
+  { id: 'true', name: t('suppliers.catalog_status_active') },
+  { id: 'false', name: t('suppliers.catalog_status_inactive') },
 ]);
 
 const onStatusChanged = (val: string) => {
@@ -96,7 +97,7 @@ const onRefresh = async () => {
     await refreshCatalog({ force: true });
   } catch (e) {
     console.error(e);
-    toast.error('Ocorreu um erro ao carregar o catálogo de fornecedores');
+    toast.error(t('suppliers.catalog_load_error'));
   }
 };
 
@@ -104,7 +105,7 @@ const addingToEventId = ref<number | null>(null);
 
 const addToEvent = async (it: SupplierCatalogItem) => {
   if (!eventId) {
-    toast.error('Evento não encontrado na sessão.');
+    toast.error(t('suppliers.event_not_found'));
     return;
   }
 
@@ -117,7 +118,7 @@ const addToEvent = async (it: SupplierCatalogItem) => {
       new Set([...eventCatalogIds.value, it.id]),
     );
 
-    toast.success('Fornecedor adicionado ao evento com sucesso.');
+    toast.success(t('suppliers.catalog_added_success'));
   } catch (e) {
     console.error(e);
     toast.error(
@@ -130,11 +131,11 @@ const addToEvent = async (it: SupplierCatalogItem) => {
     const status = isFetchErrorLike(e) ? e?.statusCode : null;
 
     if (status === 409) {
-      toast.info('Este fornecedor já foi adicionado a este evento.');
+      toast.info(t('suppliers.catalog_duplicate'));
       return;
     }
 
-    toast.error('Não foi possível adicionar este fornecedor ao evento.');
+    toast.error(t('suppliers.catalog_add_error'));
   } finally {
     addingToEventId.value = null;
   }
@@ -159,8 +160,8 @@ const addToEvent = async (it: SupplierCatalogItem) => {
             autocomplete="off"
             type="search"
             name="catalogSearch"
-            label="Pesquisa:"
-            placeholder="Filtre por nome, papel ou contacto..."
+            :label="t('suppliers.search_label')"
+            :placeholder="t('suppliers.search_placeholder')"
             :readonly="isRefreshing"
           />
 
@@ -204,7 +205,7 @@ const addToEvent = async (it: SupplierCatalogItem) => {
             btn-type="primary"
             @click.prevent="openCreateModal"
           >
-            Adicionar ao catálogo
+            {{ t('suppliers.catalog_add') }}
           </BaseButton>
         </div>
       </div>
@@ -225,17 +226,17 @@ const addToEvent = async (it: SupplierCatalogItem) => {
         "
         @fallback="onRefresh"
       >
-        Infelizmente, não encontramos fornecedores para o filtro aplicado
+        {{ t('suppliers.catalog_not_found') }}
       </BaseSearchNotFound>
 
       <!-- First empty state -->
       <LazyBaseFirstEmptyState
         v-if="isFirstTime"
         icon="icon-suppliers-catalog"
-        title="Ainda não tem fornecedores no catálogo"
-        description="Adicione fornecedores ao catálogo para facilitar a criação de eventos futuros."
+        :title="t('suppliers.catalog_empty_title')"
+        :description="t('suppliers.catalog_empty_description')"
         :show-button="true"
-        button-label="Adicionar primeiro fornecedor"
+        :button-label="t('suppliers.catalog_empty_button')"
         button-icon="add"
         @action="openCreateModal"
       />
@@ -247,11 +248,15 @@ const addToEvent = async (it: SupplierCatalogItem) => {
       >
         <template #thead>
           <tr>
-            <th scope="col">Fornecedor</th>
-            <th scope="col" class="hidden md:table-cell">Contacto</th>
-            <th scope="col" class="hidden md:table-cell">Preço base</th>
-            <th scope="col">Estado</th>
-            <th scope="col">Acções</th>
+            <th scope="col">{{ t('suppliers.table_supplier') }}</th>
+            <th scope="col" class="hidden md:table-cell">
+              {{ t('suppliers.table_contact') }}
+            </th>
+            <th scope="col" class="hidden md:table-cell">
+              {{ t('suppliers.catalog_table_base_price') }}
+            </th>
+            <th scope="col">{{ t('suppliers.catalog_table_status') }}</th>
+            <th scope="col">{{ t('suppliers.table_actions') }}</th>
           </tr>
         </template>
 
@@ -271,7 +276,11 @@ const addToEvent = async (it: SupplierCatalogItem) => {
             <td>
               <BaseBadge
                 :type="it.isActive ? 'success' : 'default'"
-                :text="it.isActive ? 'Activo' : 'Inactivo'"
+                :text="
+                  it.isActive
+                    ? t('suppliers.catalog_active_badge')
+                    : t('suppliers.catalog_inactive_badge')
+                "
               />
             </td>
 
@@ -292,8 +301,8 @@ const addToEvent = async (it: SupplierCatalogItem) => {
                 >
                   {{
                     isAlreadyAdded(it.id)
-                      ? 'Já adicionado'
-                      : 'Adicionar ao evento'
+                      ? t('suppliers.catalog_already_added')
+                      : t('suppliers.catalog_add_to_event')
                   }}
                 </BaseButton>
 
@@ -303,7 +312,7 @@ const addToEvent = async (it: SupplierCatalogItem) => {
                   btn-size="sm"
                   :icon-size="12"
                   @click.stop="openEditModal(it)"
-                  >Editar
+                  >{{ t('suppliers.edit') }}
                 </BaseButton>
 
                 <BaseButton
@@ -312,7 +321,7 @@ const addToEvent = async (it: SupplierCatalogItem) => {
                   btn-size="sm"
                   :icon-size="12"
                   @click.stop="openRemoveModal(it)"
-                  >Remover
+                  >{{ t('suppliers.remove') }}
                 </BaseButton>
               </div>
             </td>

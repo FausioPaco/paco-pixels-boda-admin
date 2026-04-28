@@ -24,6 +24,7 @@ const serverErrors = ref<ServerError>({
 
 const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
+const { t } = useI18n();
 
 const onSubmit = () => {
   isSubmiting.value = true;
@@ -34,7 +35,7 @@ const onSubmit = () => {
       emit('removed');
       emit('closeModal');
 
-      toast.success('A tarefa foi removida com sucesso');
+      toast.success(t('checklist.task_removed'));
     })
     .catch((err) => {
       console.log(err?.data ?? err);
@@ -49,15 +50,13 @@ const onSubmit = () => {
 
 <template>
   <BaseModal
-    title="Remover tarefa"
+    :title="t('checklist.task_remove_title')"
     :show="show"
     @close-modal="$emit('closeModal')"
   >
     <div v-if="task" class="my-2">
       <p class="text-grey-600 mb-4 text-center text-base md:text-lg">
-        Tem certeza que pretende remover esta tarefa:
-        <span class="font-bold">{{ task.title }}</span
-        >?
+        {{ t('checklist.task_remove_confirm', { title: task.title }) }}
       </p>
 
       <div class="w-full">
@@ -81,7 +80,7 @@ const onSubmit = () => {
         :loading="isSubmiting"
         @click="onSubmit"
       >
-        Remover agora
+        {{ t('checklist.remove_now') }}
       </BaseButton>
 
       <BaseButton
@@ -92,7 +91,7 @@ const onSubmit = () => {
         :disabled="isSubmiting"
         @click="$emit('closeModal')"
       >
-        Cancelar
+        {{ t('common.cancel') }}
       </BaseButton>
     </div>
   </BaseModal>

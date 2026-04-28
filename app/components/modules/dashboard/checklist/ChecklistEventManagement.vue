@@ -36,13 +36,14 @@ const nuxtApp = useNuxtApp();
 const pdfPageRefs = ref<HTMLElement[]>([]);
 const isGeneratingPdf = ref(false);
 const tasksBySection = ref<Record<number, ChecklistTask[]>>({});
+const { t } = useI18n();
 
-const statusOptions = [
-  { id: '', name: 'Todas tarefas' },
-  { id: 'PENDING', name: 'Mostrar tarefas pendentes' },
-  { id: 'COMPLETED', name: 'Mostrar tarefas completadas' },
-  { id: 'OVERDUE', name: 'Mostrar tarefas atrasadas' },
-];
+const statusOptions = computed(() => [
+  { id: '', name: t('checklist.filter_all') },
+  { id: 'PENDING', name: t('checklist.filter_pending') },
+  { id: 'COMPLETED', name: t('checklist.filter_completed') },
+  { id: 'OVERDUE', name: t('checklist.filter_overdue') },
+]);
 
 // Filtros globais
 const sectionFilters = reactive<ChecklistSectionParameters>({
@@ -377,16 +378,14 @@ const pdfPages = computed<ChecklistPdfPage[]>(() => {
 
 const generatePdf = async () => {
   if (!sections.value.length) {
-    toast.info('Ainda não existem secções no checklist.');
+    toast.info(t('checklist.pdf_no_sections'));
     return;
   }
 
   const loadedSectionsCount = Object.keys(tasksBySection.value).length;
 
   if (loadedSectionsCount < sections.value.length) {
-    toast.info(
-      'A preparar os dados do checklist. Tente novamente em alguns instantes.',
-    );
+    toast.info(t('checklist.pdf_loading'));
     return;
   }
 
@@ -397,7 +396,7 @@ const generatePdf = async () => {
     await new Promise((resolve) => setTimeout(resolve, 150));
 
     if (!pdfPageRefs.value.length) {
-      toast.error('Não foi possível preparar as páginas do PDF.');
+      toast.error(t('checklist.pdf_pages_error'));
       return;
     }
 
@@ -432,7 +431,7 @@ const generatePdf = async () => {
     doc.save(`checklist-evento-${eventStore!.eventSlug ?? 'evento'}.pdf`);
   } catch (e) {
     console.error(e);
-    toast.error('Não foi possível gerar o PDF do checklist.');
+    toast.error(t('checklist.pdf_error'));
   } finally {
     isGeneratingPdf.value = false;
   }
@@ -460,12 +459,16 @@ watch(
           :icon="showFilters ? 'cancel' : 'filter'"
           @click="showFilters = !showFilters"
         >
-          {{ showFilters ? 'Esconder filtros' : 'Mostrar filtros' }}
+          {{
+            showFilters
+              ? t('checklist.hide_filters')
+              : t('checklist.show_filters')
+          }}
         </BaseButton>
 
-        <BaseButton icon="add" class="w-fit" @click="openCreateSection()"
-          >Adicionar secção</BaseButton
-        >
+        <BaseButton icon="add" class="w-fit" @click="openCreateSection()">{{
+          t('checklist.add_section')
+        }}</BaseButton>
       </div>
       <BaseButton
         btn-type="outline-primary"
@@ -475,7 +478,11 @@ watch(
         class="w-fit"
         @click="generatePdf"
       >
-        {{ isGeneratingPdf ? 'Gerando PDF...' : 'Exportar PDF' }}
+        {{
+          isGeneratingPdf
+            ? t('checklist.pdf_generating')
+            : t('checklist.pdf_export')
+        }}
       </BaseButton>
     </div>
 
@@ -491,7 +498,7 @@ watch(
           id="filter-checklist-status"
           v-model="taskFilters.status"
           :options="statusOptions"
-          label="Estado:"
+          :label="t('checklist.filter_status_label')"
           disable-margins
           disable-empty
         />
@@ -499,13 +506,15 @@ watch(
           id="filter-checklist-searchQuery"
           v-model="searchQuery"
           type="search"
-          placeholder="Pesquisar por título/nota…"
-          label="Pesquisa:"
+          :placeholder="t('checklist.filter_search_placeholder')"
+          :label="t('checklist.filter_search_label')"
           disable-margins
           disable-empty
         />
         <div>
-          <label class="mb-1 block text-sm font-medium">Datas:</label>
+          <label class="mb-1 block text-sm font-medium">{{
+            t('checklist.filter_dates_label')
+          }}</label>
           <DatePicker
             v-model="rangeDates"
             :range="true"
@@ -514,8 +523,8 @@ watch(
             placeholder="Filtre as tarefas pela data de conclusão"
             locale="pt-PT"
             :enable-time-picker="false"
-            select-text="Selecionar"
-            cancel-text="Cancelar"
+            :select-text="t('checklist.date_select')"
+            :cancel-text="t('checklist.date_cancel')"
             format="dd/MM/yyyy"
             :disabled="isRefreshing"
             @closed="handleCloseDateInput"
@@ -534,17 +543,16 @@ watch(
 
       <!-- Error -->
       <BaseSearchNotFound v-if="isError" @fallback="refreshSections">
-        Infelizmente, ocorreu um erro ao buscar as tarefas, contacte-nos para
-        resolução do problema
+        {{ t('checklist.error_message') }}
       </BaseSearchNotFound>
 
       <!-- No tasks: first Time -->
       <LazyBaseFirstEmptyState
         v-if="!isRefreshing && !isError && sections.length === 0"
         icon="icon-menu-checklist"
-        title="Ainda não criou nenhuma tarefa"
-        description="Crie a sua primeira secção para começar a organizar as tarefas devem ser cumpridas no evento."
-        button-label="Criar secção"
+        :title="t('checklist.empty_title')"
+        :description="t('checklist.empty_description')"
+        :button-label="t('checklist.empty_button')"
         button-icon="add"
         show-button
         @action="showSectionModal = true"

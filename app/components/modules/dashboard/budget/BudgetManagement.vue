@@ -6,12 +6,13 @@ type BudgetTab = 'EVENT' | 'TEMPLATE';
 
 const activeTab = ref<BudgetTab>('EVENT');
 const { isMultiEventStaffUser } = useAuthStore();
+const { t } = useI18n();
 </script>
 
 <template>
   <BaseCard
-    title="Orçamento"
-    description="Controla custos, pagamentos e categorias do orçamento do evento."
+    :title="t('budget.card_title')"
+    :description="t('budget.card_description')"
   >
     <BaseTab v-if="isMultiEventStaffUser">
       <BaseTabItem
@@ -23,7 +24,7 @@ const { isMultiEventStaffUser } = useAuthStore();
         class="w-full md:w-1/2"
         @click="activeTab = 'EVENT'"
       >
-        Custos gerais
+        {{ t('budget.tab_general') }}
       </BaseTabItem>
 
       <BaseTabItem
@@ -35,7 +36,7 @@ const { isMultiEventStaffUser } = useAuthStore();
         class="w-full md:w-1/2"
         @click="activeTab = 'TEMPLATE'"
       >
-        Modelo de orçamento
+        {{ t('budget.tab_template') }}
       </BaseTabItem>
     </BaseTab>
 

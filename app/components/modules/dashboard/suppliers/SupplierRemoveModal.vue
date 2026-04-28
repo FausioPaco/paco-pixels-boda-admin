@@ -19,6 +19,7 @@ const emit = defineEmits<{
 const toast = useToast();
 const nuxtApp = useNuxtApp();
 const supplierService = getSupplierService(nuxtApp.$api);
+const { t } = useI18n();
 const { refreshIds } = await useEventSupplierCatalogItemIds(props.eventId);
 
 const isSubmiting = ref(false);
@@ -31,13 +32,13 @@ const onSubmit = async () => {
     isSubmiting.value = true;
     await supplierService.removeSupplier(Number(props.supplier.id));
     refreshIds({ force: true });
-    toast.success('Fornecedor removido com sucesso');
+    toast.success(t('suppliers.removed_success'));
     emit('success');
   } catch (e) {
     console.error(e);
     serverErrors.value.message = isFetchErrorLike(e)
       ? getServerErrors(e.data)
-      : 'Ocorreu um erro ao remover o fornecedor';
+      : t('suppliers.remove_error');
     serverErrors.value.hasErrors = true;
   } finally {
     isSubmiting.value = false;
@@ -48,14 +49,16 @@ const close = () => emit('closeModal');
 </script>
 
 <template>
-  <BaseModal :show="props.show" title="Remover fornecedor" @close-modal="close">
+  <BaseModal
+    :show="props.show"
+    :title="t('suppliers.remove_title')"
+    @close-modal="close"
+  >
     <div class="space-y-4">
       <p class="text-grey-700">
-        Tem a certeza que pretende remover o fornecedor
-        <span class="text-grey-900 font-bold">{{
-          props.supplier?.name ?? '-'
-        }}</span
-        >?
+        {{
+          t('suppliers.remove_confirm', { name: props.supplier?.name ?? '-' })
+        }}
       </p>
 
       <BaseError v-if="serverErrors.hasErrors">{{
@@ -72,7 +75,7 @@ const close = () => emit('closeModal');
           :loading="isSubmiting"
           @click="onSubmit"
         >
-          Remover agora
+          {{ t('suppliers.remove_now') }}
         </BaseButton>
 
         <BaseButton
@@ -83,7 +86,7 @@ const close = () => emit('closeModal');
           :disabled="isSubmiting"
           @click="$emit('closeModal')"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
       </div>
     </div>

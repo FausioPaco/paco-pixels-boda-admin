@@ -2,6 +2,7 @@
 import { storeToRefs } from 'pinia';
 import { useToast } from 'vue-toastification';
 
+const { t } = useI18n();
 const auth = useAuthStore();
 const sessionGuard = useSessionGuardStore();
 const { showWarning, expiresAtMs } = storeToRefs(sessionGuard);
@@ -24,46 +25,43 @@ const onStay = async () => {
   const ok = await auth.tryRefresh();
 
   if (ok) {
-    toast.success('Sessão renovada.');
+    toast.success(t('auth.session_renewed'));
     sessionGuard.reset();
     return;
   }
 
-  toast.info('A sessão expirou.');
+  toast.info(t('auth.session_expired_info'));
   navigateTo('/?reason=session-expired');
 };
 
 const onLogout = async () => {
   await auth.logoutAsync();
   sessionGuard.reset();
-  toast.info('A sessão foi terminada.');
+  toast.info(t('auth.session_ended'));
   navigateTo('/?reason=session-expired');
 };
 </script>
 
 <template>
   <BaseModal
-    title="Sessão prestes a expirar"
+    :title="t('auth.session_expiry_title')"
     size="small"
     :show="showWarning"
     @close-modal="sessionGuard.closeWarning"
   >
     <div class="my-2">
       <p class="text-grey-600 mb-4 text-center text-base md:text-lg">
-        A sua sessão vai expirar em
-        <b>{{ formattedLeft }}</b
-        >.
-        <br />
+        {{ t('auth.session_expiry_message', { time: formattedLeft }) }}
       </p>
     </div>
 
     <div class="flex w-full justify-center gap-3">
       <BaseButton btn-type="primary" size="md" @click="onStay">
-        Continuar
+        {{ t('auth.session_stay') }}
       </BaseButton>
 
       <BaseButton btn-type="outline-primary" size="md" @click="onLogout">
-        Terminar sessão
+        {{ t('auth.session_logout') }}
       </BaseButton>
     </div>
   </BaseModal>

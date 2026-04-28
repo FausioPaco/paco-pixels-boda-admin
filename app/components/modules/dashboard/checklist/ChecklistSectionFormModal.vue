@@ -20,6 +20,7 @@ const emit = defineEmits<{ (e: 'close' | 'saved'): void }>();
 const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
 const toast = useToast();
+const { t } = useI18n();
 
 const schema = toTypedSchema(
   object({
@@ -88,10 +89,10 @@ const onSubmit = handleSubmit(async (values) => {
   try {
     if (props.section) {
       await checklistService.updateSection(props.section.id, payload);
-      toast.success('Secção actualizada com sucesso');
+      toast.success(t('checklist.section_updated'));
     } else {
       await checklistService.createSection(payload);
-      toast.success('Secção criada com sucesso');
+      toast.success(t('checklist.section_created'));
     }
     emit('saved');
     resetForm();
@@ -106,7 +107,11 @@ const onSubmit = handleSubmit(async (values) => {
 <template>
   <BaseModal
     :show="show"
-    :title="section ? 'Editar secção' : 'Nova secção'"
+    :title="
+      section
+        ? t('checklist.section_edit_title')
+        : t('checklist.section_create_title')
+    "
     @close-modal="$emit('close')"
   >
     <form @submit.prevent="onSubmit">
@@ -116,7 +121,7 @@ const onSubmit = handleSubmit(async (values) => {
         v-bind="titleAttrs"
         :error-message="errors.title"
         :readonly="isSubmitting"
-        label="Título"
+        :label="t('checklist.section_form_title_label')"
         placeholder="Ex.: Fase 1 - Preparação"
       />
 
@@ -126,7 +131,7 @@ const onSubmit = handleSubmit(async (values) => {
         v-bind="descriptionAttrs"
         :error-message="errors.description"
         :readonly="isSubmitting"
-        label="Descrição"
+        :label="t('checklist.section_form_description_label')"
         placeholder="Opcional"
       />
 
@@ -136,14 +141,18 @@ const onSubmit = handleSubmit(async (values) => {
           btn-type="outline-primary"
           :disabled="isSubmitting"
           @click="$emit('close')"
-          >Cancelar</BaseButton
+          >{{ t('common.cancel') }}</BaseButton
         >
         <BaseButton
           type="submit"
           :disabled="isSubmitting"
           :loading="isSubmitting"
         >
-          {{ section ? 'Modificar agora' : 'Criar secção' }}</BaseButton
+          {{
+            section
+              ? t('checklist.section_submit_edit')
+              : t('checklist.section_submit_create')
+          }}</BaseButton
         >
       </div>
     </form>

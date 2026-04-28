@@ -27,6 +27,7 @@ const serverErrors = ref<ServerError>({
 
 const nuxtApp = useNuxtApp();
 const budgetService = getBudgetService(nuxtApp.$api);
+const { t } = useI18n();
 
 const onSubmit = () => {
   if (!props.item?.id) return;
@@ -45,8 +46,8 @@ const onSubmit = () => {
       emit('success');
       toast.success(
         props.mode === 'EVENT'
-          ? 'O item foi removido com sucesso'
-          : 'O item foi removido do modelo com sucesso',
+          ? t('budget.removed_success')
+          : t('budget.template_removed_success'),
       );
     })
     .catch((err) => {
@@ -62,15 +63,13 @@ const onSubmit = () => {
 
 <template>
   <BaseModal
-    title="Remover item"
+    :title="t('budget.remove_title')"
     :show="show"
     @close-modal="$emit('closeModal')"
   >
     <div v-if="item" class="my-2">
       <p class="text-grey-600 mb-4 text-center text-base md:text-lg">
-        Tem certeza que pretende remover este item:
-        <span class="font-bold">{{ item.title }}</span
-        >?
+        {{ t('budget.remove_confirm', { title: item.title }) }}
       </p>
 
       <div class="w-full">
@@ -90,7 +89,7 @@ const onSubmit = () => {
         :loading="isSubmiting"
         @click="onSubmit"
       >
-        Remover agora
+        {{ t('budget.remove_now') }}
       </BaseButton>
 
       <BaseButton
@@ -101,7 +100,7 @@ const onSubmit = () => {
         :disabled="isSubmiting"
         @click="$emit('closeModal')"
       >
-        Cancelar
+        {{ t('common.cancel') }}
       </BaseButton>
     </div>
   </BaseModal>

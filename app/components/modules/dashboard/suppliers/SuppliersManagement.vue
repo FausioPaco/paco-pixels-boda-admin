@@ -2,14 +2,15 @@
 import SuppliersEventManagement from './SuppliersEventManagement.vue';
 import SuppliersCatalogManagement from './SuppliersCatalogManagement.vue';
 
+const { t } = useI18n();
 type SupplierTab = 'EVENT' | 'CATALOG';
 const activeTab = ref<SupplierTab>('EVENT');
 </script>
 
 <template>
   <BaseCard
-    title="Gestão de fornecedores"
-    description="Registe fornecedores no evento, confirme presença/deal e reutilize fornecedores através do catálogo."
+    :title="t('suppliers.card_title')"
+    :description="t('suppliers.card_description')"
   >
     <BaseTab>
       <BaseTabItem
@@ -21,7 +22,7 @@ const activeTab = ref<SupplierTab>('EVENT');
         class="w-full md:w-1/2"
         @click="activeTab = 'EVENT'"
       >
-        Fornecedores do evento
+        {{ t('suppliers.tab_event') }}
       </BaseTabItem>
 
       <BaseTabItem
@@ -33,7 +34,7 @@ const activeTab = ref<SupplierTab>('EVENT');
         class="w-full md:w-1/2"
         @click="activeTab = 'CATALOG'"
       >
-        Catálogo de fornecedores
+        {{ t('suppliers.tab_catalog') }}
       </BaseTabItem>
     </BaseTab>
 

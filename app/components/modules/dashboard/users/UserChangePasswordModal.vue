@@ -19,6 +19,7 @@ const emit = defineEmits<{
 const nuxtApp = useNuxtApp();
 const userService = getUserService(nuxtApp.$api);
 const toast = useToast();
+const { t } = useI18n();
 const serverErrors = ref<ServerError>({
   hasErrors: false,
   message: '',
@@ -67,7 +68,7 @@ const onSubmit = handleSubmit(async (formValues) => {
     .then(() => {
       emit('updated');
       resetForm();
-      toast.success('A sua palavra passe foi actualizada com sucesso');
+      toast.success(t('users.password_updated_success'));
     })
     .catch((err) => {
       console.log(err);
@@ -87,7 +88,7 @@ const closeModal = () => {
 
 <template>
   <BaseModal
-    title="Alterar minha palavra-passe"
+    :title="t('users.change_my_password_title')"
     :show="show"
     @close-modal="closeModal"
   >
@@ -103,8 +104,8 @@ const closeModal = () => {
         :error-message="errors.oldPassword"
         name="oldPassword"
         type="password"
-        label="Palavra-passe actual:"
-        placeholder="Coloque a sua palavra-passe actual"
+        :label="t('users.old_password_label')"
+        :placeholder="t('users.old_password_placeholder')"
       />
 
       <BaseInput
@@ -115,7 +116,7 @@ const closeModal = () => {
         name="newPassword"
         type="password"
         label="Nova palavra passe:"
-        placeholder="Coloque a sua nova palavra-passe"
+        :placeholder="t('users.password_confirm_placeholder')"
       />
 
       <BaseInput
@@ -125,8 +126,8 @@ const closeModal = () => {
         :error-message="errors.confirmPassword"
         name="confirmPassword"
         type="password"
-        label="Confirmar palavra-passe:"
-        placeholder="Confirme a sua nova palavra-passe"
+        :label="t('users.password_confirm_label')"
+        :placeholder="t('users.password_confirm_placeholder')"
       />
 
       <BaseError v-if="serverErrors.hasErrors" class="mt-4">
@@ -134,8 +135,7 @@ const closeModal = () => {
       </BaseError>
 
       <p class="text-grey-400 text-sm">
-        Por segurança, utiliza uma palavra-passe com pelo menos 8 caracteres,
-        combinando letras maiúsculas, minúsculas e números.
+        {{ t('users.password_security_hint') }}
       </p>
 
       <div class="mt-6 flex animate-fadeIn items-center space-x-3">
@@ -147,7 +147,7 @@ const closeModal = () => {
           :disabled="isSubmitting"
           :loading="isSubmitting"
         >
-          Alterar agora
+          {{ t('users.change_now') }}
         </BaseButton>
 
         <BaseButton
@@ -158,7 +158,7 @@ const closeModal = () => {
           :disabled="isSubmitting"
           @click="$emit('close')"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
       </div>
     </form>

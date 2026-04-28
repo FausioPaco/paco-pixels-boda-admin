@@ -26,6 +26,7 @@ const emit = defineEmits<{ (e: 'close' | 'saved'): void }>();
 const toast = useToast();
 const nuxtApp = useNuxtApp();
 const budgetService = getBudgetService(nuxtApp.$api);
+const { t } = useI18n();
 
 // ------------------------
 // Tabs
@@ -183,7 +184,7 @@ const saveInstallment = handleSubmitInst(async (values) => {
         receiptDate: normalizeDate(values.receiptDate),
         paidInDate: normalizeDate(values.paidInDate),
       });
-      toast.success('Prestação adicionada.');
+      toast.success(t('budget.installment_added'));
     } else {
       await budgetService.updateInstallment(editingInstallmentId.value, {
         ...values,
@@ -191,7 +192,7 @@ const saveInstallment = handleSubmitInst(async (values) => {
         receiptDate: normalizeDate(values.receiptDate),
         paidInDate: normalizeDate(values.paidInDate),
       });
-      toast.success('Prestação actualizada.');
+      toast.success(t('budget.installment_updated'));
     }
 
     await loadInstallments();
@@ -199,7 +200,7 @@ const saveInstallment = handleSubmitInst(async (values) => {
     showInstallmentForm.value = false;
   } catch (e) {
     console.log(e);
-    toast.error('Não foi possível guardar a prestação.');
+    toast.error(t('budget.installment_save_error'));
   }
 });
 
@@ -207,17 +208,17 @@ const removeInstallment = async (id: number) => {
   if (!showTabs.value) return;
 
   // confirmação simples (podemos depois trocar por BaseConfirm se tiveres)
-  const ok = window.confirm('Remover esta prestação?');
+  const ok = window.confirm(t('budget.installment_remove_confirm'));
   if (!ok) return;
 
   try {
     await budgetService.deleteInstallment(id);
-    toast.success('Prestação removida.');
+    toast.success(t('budget.installment_removed'));
     await loadInstallments();
     emit('saved');
   } catch (e) {
     console.log(e);
-    toast.error('Não foi possível remover a prestação.');
+    toast.error(t('budget.installment_remove_error'));
   }
 };
 
@@ -260,18 +261,18 @@ const onSubmitItem = handleSubmit(async (values) => {
     if (props.mode === 'EVENT') {
       if (!props.item) {
         await budgetService.addItem(props.categoryId!, values);
-        toast.success('Item criado.');
+        toast.success(t('budget.item_created'));
       } else {
         await budgetService.updateItem(props.item.id, values);
-        toast.success('Item actualizado.');
+        toast.success(t('budget.item_updated'));
       }
     } else {
       if (!props.item) {
         await budgetService.addTemplateItem(props.categoryId!, values);
-        toast.success('Item do modelo criado.');
+        toast.success(t('budget.template_item_created'));
       } else {
         await budgetService.updateTemplateItem(props.item.id, values);
-        toast.success('Item do modelo actualizado.');
+        toast.success(t('budget.template_item_updated'));
       }
     }
 
@@ -283,7 +284,7 @@ const onSubmitItem = handleSubmit(async (values) => {
     if (isFetchErrorLike(e)) {
       serverErrors.value.message = getServerErrors(e.data);
     } else {
-      serverErrors.value.message = 'Ocorreu um erro inesperado.';
+      serverErrors.value.message = t('budget.unexpected_error');
     }
   }
 });
@@ -292,7 +293,11 @@ const onSubmitItem = handleSubmit(async (values) => {
 <template>
   <BaseModal
     :show="show"
-    :title="item ? `Editar: ${item.title}` : 'Adicionar item'"
+    :title="
+      item
+        ? t('budget.form_edit_title', { title: item.title })
+        : t('budget.form_create_title')
+    "
     size="large"
     @close-modal="close"
   >
@@ -306,7 +311,7 @@ const onSubmitItem = handleSubmit(async (values) => {
         class="w-full md:w-1/2"
         @click="activeTab = 'DETAILS'"
       >
-        Detalhes do item
+        {{ t('budget.tab_item_details') }}
       </BaseTabItem>
 
       <BaseTabItem
@@ -318,7 +323,7 @@ const onSubmitItem = handleSubmit(async (values) => {
         class="w-full md:w-1/2"
         @click="activeTab = 'INSTALLMENTS'"
       >
-        Prestações
+        {{ t('budget.tab_installments') }}
       </BaseTabItem>
     </BaseTab>
 
@@ -331,7 +336,7 @@ const onSubmitItem = handleSubmit(async (values) => {
             v-bind="titleAttrs"
             :error-message="errors.title"
             :readonly="isSubmitting"
-            label="Título"
+            :label="t('budget.form_title_label')"
             placeholder="Ex: Organizador de casamento"
           />
 
@@ -341,7 +346,7 @@ const onSubmitItem = handleSubmit(async (values) => {
             v-bind="estimatedAmountAttrs"
             :error-message="errors.estimatedAmount"
             :readonly="isSubmitting"
-            label="Custo estimado"
+            :label="t('budget.form_estimated_label')"
             type="number"
             step="0.01"
           />
@@ -352,7 +357,7 @@ const onSubmitItem = handleSubmit(async (values) => {
             v-bind="actualCostAttrs"
             :error-message="errors.actualCost"
             :readonly="isSubmitting"
-            label="Custo actual"
+            :label="t('budget.form_actual_label')"
             type="number"
             step="0.01"
           />
@@ -362,8 +367,8 @@ const onSubmitItem = handleSubmit(async (values) => {
             v-model="paidAmount"
             v-bind="paidAmountAttrs"
             :error-message="errors.paidAmount"
-            helper-text="Calculado automaticamente a partir das prestações."
-            label="Montante pago"
+            :helper-text="t('budget.form_paid_helper')"
+            :label="t('budget.form_paid_label')"
             type="number"
             step="0.01"
             :disabled="mode === 'EVENT'"
@@ -375,7 +380,7 @@ const onSubmitItem = handleSubmit(async (values) => {
             v-bind="notesAttrs"
             :error-message="errors.notes"
             :readonly="isSubmitting"
-            label="Notas (opcional)"
+            :label="t('budget.form_notes_label')"
             placeholder="Notas internas..."
           />
 
@@ -390,7 +395,7 @@ const onSubmitItem = handleSubmit(async (values) => {
               :disabled="isSubmitting"
               @click="close"
             >
-              Cancelar
+              {{ t('common.cancel') }}
             </BaseButton>
 
             <BaseButton
@@ -398,7 +403,7 @@ const onSubmitItem = handleSubmit(async (values) => {
               :disabled="isSubmitting"
               :loading="isSubmitting"
             >
-              Guardar
+              {{ t('common.save') }}
             </BaseButton>
           </div>
         </form>
@@ -406,7 +411,7 @@ const onSubmitItem = handleSubmit(async (values) => {
         <div v-else>
           <div class="flex items-center justify-between">
             <p class="text-grey-400 text-lg font-semibold">
-              Lista de prestações
+              {{ t('budget.installment_list_title') }}
             </p>
 
             <BaseButton
@@ -417,7 +422,7 @@ const onSubmitItem = handleSubmit(async (values) => {
               :disabled="isSavingInstallment || isLoadingInstallments"
               @click="startCreateInstallment()"
             >
-              Nova prestação
+              {{ t('budget.installment_add') }}
             </BaseButton>
           </div>
 
@@ -432,19 +437,33 @@ const onSubmitItem = handleSubmit(async (values) => {
                 :font-controlled="false"
                 class="inline size-6"
               />
-              <span class="font-medium">Nenhuma prestação adicionada.</span>
+              <span class="font-medium">{{
+                t('budget.installment_empty')
+              }}</span>
             </div>
 
             <div v-else class="overflow-x-auto">
               <table class="w-full text-left text-sm">
                 <thead class="text-grey-500 text-xs">
                   <tr>
-                    <th class="py-2 text-sm">Descritivo</th>
-                    <th class="py-2 text-sm">Valor</th>
-                    <th class="py-2 text-sm">Data do comprovativo</th>
-                    <th class="py-2 text-sm">Data de entrada</th>
-                    <th class="py-2 text-sm">Forma</th>
-                    <th class="py-2 text-sm">Acções</th>
+                    <th class="py-2 text-sm">
+                      {{ t('budget.inst_col_descriptive') }}
+                    </th>
+                    <th class="py-2 text-sm">
+                      {{ t('budget.inst_col_amount') }}
+                    </th>
+                    <th class="py-2 text-sm">
+                      {{ t('budget.inst_col_receipt_date') }}
+                    </th>
+                    <th class="py-2 text-sm">
+                      {{ t('budget.inst_col_paid_date') }}
+                    </th>
+                    <th class="py-2 text-sm">
+                      {{ t('budget.inst_col_method') }}
+                    </th>
+                    <th class="py-2 text-sm">
+                      {{ t('budget.inst_col_actions') }}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -472,8 +491,8 @@ const onSubmitItem = handleSubmit(async (values) => {
                     <td class="py-2 text-sm">
                       {{
                         p.paymentMethod === BudgetPaymentMethod.Deposit
-                          ? 'Depósito'
-                          : 'Dinheiro'
+                          ? t('budget.payment_deposit')
+                          : t('budget.payment_cash')
                       }}
                     </td>
                     <td class="py-2 text-sm">
@@ -481,7 +500,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                         <button
                           type="button"
                           class="text-grey-500 hover:text-primary-700 transition"
-                          title="Editar prestação"
+                          :title="t('budget.inst_edit_title')"
                           @click="startEditInstallment(p)"
                         >
                           <IconPencil :font-controlled="false" class="size-4" />
@@ -490,7 +509,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                         <button
                           type="button"
                           class="text-grey-500 transition hover:text-red-600"
-                          title="Remover prestação"
+                          :title="t('budget.inst_remove_title')"
                           @click="removeInstallment(p.id)"
                         >
                           <IconTrash :font-controlled="false" class="size-4" />
@@ -510,8 +529,8 @@ const onSubmitItem = handleSubmit(async (values) => {
                 <p class="text-grey-900 text-sm font-semibold">
                   {{
                     editingInstallmentId
-                      ? 'Editar prestação'
-                      : 'Adicionar prestação'
+                      ? t('budget.inst_form_edit_header')
+                      : t('budget.inst_form_create_header')
                   }}
                 </p>
 
@@ -522,15 +541,15 @@ const onSubmitItem = handleSubmit(async (values) => {
                     v-bind="instAmountAttrs"
                     :error-message="instErrors.amount"
                     :readonly="isSavingInstallment"
-                    label="Valor"
+                    :label="t('budget.inst_amount_label')"
                     type="number"
                     step="0.01"
                   />
 
                   <div class="my-3">
-                    <label class="mb-1 block text-sm font-medium"
-                      >Data do comprovativo</label
-                    >
+                    <label class="mb-1 block text-sm font-medium">{{
+                      t('budget.inst_receipt_date_label')
+                    }}</label>
                     <DatePicker
                       v-model="instReceiptDate"
                       v-bind="instReceiptDateAttrs"
@@ -541,13 +560,12 @@ const onSubmitItem = handleSubmit(async (values) => {
                       :format="'dd/MM/yyyy'"
                       model-type="yyyy-MM-dd"
                       :auto-apply="true"
-                      select-text="Selecionar"
-                      cancel-text="Cancelar"
-                      placeholder="Seleccione a data"
+                      :select-text="t('budget.date_select')"
+                      :cancel-text="t('budget.date_cancel')"
+                      :placeholder="t('budget.date_placeholder')"
                     />
                     <small class="text-grey-400 my-2 text-xs font-medium">
-                      Data que consta no comprovativo de pagamento (quando o
-                      cliente efectuou o pagamento).
+                      {{ t('budget.inst_receipt_date_hint') }}
                     </small>
                     <p
                       v-if="instErrors.receiptDate"
@@ -558,9 +576,9 @@ const onSubmitItem = handleSubmit(async (values) => {
                   </div>
 
                   <div class="my-3">
-                    <label class="mb-1 block text-sm font-medium"
-                      >Data de entrada</label
-                    >
+                    <label class="mb-1 block text-sm font-medium">{{
+                      t('budget.inst_paid_date_label')
+                    }}</label>
                     <DatePicker
                       v-model="instPaidInDate"
                       v-bind="instPaidInDateAttrs"
@@ -571,12 +589,12 @@ const onSubmitItem = handleSubmit(async (values) => {
                       :format="'dd/MM/yyyy'"
                       model-type="yyyy-MM-dd"
                       :auto-apply="true"
-                      select-text="Selecionar"
-                      cancel-text="Cancelar"
-                      placeholder="Seleccione a data"
+                      :select-text="t('budget.date_select')"
+                      :cancel-text="t('budget.date_cancel')"
+                      :placeholder="t('budget.date_placeholder')"
                     />
                     <small class="text-grey-400 my-2 text-xs font-medium">
-                      Data em que o valor entrou ou foi confirmado na conta.
+                      {{ t('budget.inst_paid_date_hint') }}
                     </small>
                     <p
                       v-if="instErrors.paidInDate"
@@ -592,7 +610,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                     v-bind="instPaymentMethodAttrs"
                     :error-message="instErrors.paymentMethod"
                     :disabled="isSavingInstallment"
-                    label="Forma de pagamento"
+                    :label="t('budget.inst_payment_method_label')"
                     :options="BUDGET_PAYMENT_METHODS"
                   />
 
@@ -602,7 +620,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                     v-bind="instDescriptiveAttrs"
                     :error-message="instErrors.descriptive"
                     :readonly="isSavingInstallment"
-                    label="Descritivo:"
+                    :label="t('budget.inst_descriptive_label')"
                     type="text"
                   />
 
@@ -613,7 +631,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                       :disabled="isSavingInstallment"
                       @click="cancelInstallmentEdit"
                     >
-                      Cancelar
+                      {{ t('common.cancel') }}
                     </BaseButton>
 
                     <BaseButton
@@ -621,7 +639,7 @@ const onSubmitItem = handleSubmit(async (values) => {
                       :disabled="isSavingInstallment"
                       :loading="isSavingInstallment"
                     >
-                      Guardar prestação
+                      {{ t('budget.installment_save') }}
                     </BaseButton>
                   </div>
                 </form>
@@ -631,7 +649,7 @@ const onSubmitItem = handleSubmit(async (values) => {
 
           <div class="mt-5 flex w-full justify-center">
             <BaseButton type="button" btn-type="outline-primary" @click="close">
-              Fechar
+              {{ t('common.close') }}
             </BaseButton>
           </div>
         </div>

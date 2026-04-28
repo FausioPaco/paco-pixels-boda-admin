@@ -14,6 +14,7 @@ const emit = defineEmits<{
 
 const nuxtApp = useNuxtApp();
 const userService = getUserService(nuxtApp.$api);
+const { t } = useI18n();
 
 const isUploading = ref(false);
 const isRemoving = ref(false);
@@ -85,10 +86,10 @@ const handleFileChange = async (event: Event) => {
     localUser.value = result.user;
 
     emit('updated', result.user);
-    toast.success('A sua foto de perfil foi actualizada com sucesso!');
+    toast.success(t('users.profile_photo_updated'));
   } catch (error) {
     console.error('Erro ao carregar foto de perfil', error);
-    toast.error('Não foi possível carregar a foto de perfil. Contacte suporte');
+    toast.error(t('users.profile_photo_upload_error'));
   } finally {
     isUploading.value = false;
     if (fileInputRef.value) {
@@ -110,7 +111,7 @@ const handleRemovePhoto = async () => {
     };
 
     emit('updated', localUser.value);
-    toast.success('A sua foto de perfil foi removida com sucesso!');
+    toast.success(t('users.profile_photo_removed'));
   } catch (error) {
     console.error('Erro ao remover foto de perfil', error);
   } finally {
@@ -127,8 +128,8 @@ const refreshCurrentUser = (userUpdated: User) => {
 
 <template>
   <BaseCard
-    title="O meu perfil"
-    description="Revê os teus dados e actualiza a tua foto de perfil."
+    :title="t('users.profile_card_title')"
+    :description="t('users.profile_card_description')"
   >
     <div
       class="grid items-start gap-8 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
@@ -136,35 +137,39 @@ const refreshCurrentUser = (userUpdated: User) => {
       <!-- Coluna esquerda: dados gerais -->
       <div class="flex flex-col gap-4">
         <h2 class="text-grey-200 text-sm font-semibold uppercase tracking-wide">
-          Dados gerais
+          {{ t('users.profile_general_data') }}
         </h2>
 
         <dl
           class="divide-y divide-gray-100 rounded-lg border border-gray-100 bg-white"
         >
           <div class="flex items-center justify-between px-4 py-3">
-            <dt class="text-grey-300 text-sm">Nome</dt>
+            <dt class="text-grey-300 text-sm">{{ t('users.profile_name') }}</dt>
             <dd class="text-sm font-medium text-gray-900">
               {{ localUser.name }}
             </dd>
           </div>
 
           <div class="flex items-center justify-between px-4 py-3">
-            <dt class="text-grey-300 text-sm">Email</dt>
+            <dt class="text-grey-300 text-sm">
+              {{ t('users.profile_email') }}
+            </dt>
             <dd class="text-sm font-medium text-gray-900">
               {{ localUser.email }}
             </dd>
           </div>
 
           <div class="flex items-center justify-between px-4 py-3">
-            <dt class="text-grey-300 text-sm">Perfil</dt>
+            <dt class="text-grey-300 text-sm">{{ t('users.profile_role') }}</dt>
             <dd class="text-sm font-medium text-gray-900">
               {{ localUser.roleName }}
             </dd>
           </div>
 
           <div class="flex items-center justify-between px-4 py-3">
-            <dt class="text-grey-300 text-sm">Último acesso</dt>
+            <dt class="text-grey-300 text-sm">
+              {{ t('users.profile_last_login') }}
+            </dt>
             <dd class="text-sm font-medium text-gray-900">
               {{ lastLoginText }}
             </dd>
@@ -177,10 +182,10 @@ const refreshCurrentUser = (userUpdated: User) => {
             btn-size="sm"
             @click="showChangePasswordModal = true"
           >
-            Alterar password
+            {{ t('users.profile_change_password') }}
           </BaseButton>
           <BaseButton btn-size="sm" @click="showUpdateProfileName = true">
-            Alterar nome
+            {{ t('users.profile_change_name') }}
           </BaseButton>
         </div>
       </div>
@@ -188,7 +193,7 @@ const refreshCurrentUser = (userUpdated: User) => {
       <!-- Coluna direita: foto de perfil -->
       <div class="space-y-4">
         <h2 class="text-grey-300 text-sm font-semibold uppercase tracking-wide">
-          Foto de perfil
+          {{ t('users.profile_photo_title') }}
         </h2>
 
         <div class="flex flex-col items-center justify-center gap-4">
@@ -219,7 +224,11 @@ const refreshCurrentUser = (userUpdated: User) => {
                 :disabled="isUploading"
                 @click="openFileDialog"
               >
-                {{ isUploading ? 'A carregar...' : 'Carregar nova foto' }}
+                {{
+                  isUploading
+                    ? t('users.profile_uploading')
+                    : t('users.profile_upload_photo')
+                }}
               </BaseButton>
 
               <BaseButton
@@ -229,12 +238,16 @@ const refreshCurrentUser = (userUpdated: User) => {
                 :disabled="isRemoving"
                 @click="handleRemovePhoto"
               >
-                {{ isRemoving ? 'A remover...' : 'Remover foto' }}
+                {{
+                  isRemoving
+                    ? t('users.profile_removing')
+                    : t('users.profile_remove_photo')
+                }}
               </BaseButton>
             </div>
 
             <p class="text-grey-300 text-center text-xs">
-              Formatos suportados: JPG, PNG, WEBP. Tamanho máximo 20MB.
+              {{ t('users.profile_photo_hint') }}
             </p>
           </div>
 

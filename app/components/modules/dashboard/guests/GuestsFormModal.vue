@@ -25,6 +25,7 @@ const { categories, isRefreshing: isRefreshingCategories } =
   await useGuestCategories();
 
 const toast = useToast();
+const { t } = useI18n();
 const isSubmiting = ref<boolean>(false);
 const serverErrors = ref<ServerError>({
   hasErrors: false,
@@ -93,7 +94,7 @@ const onSubmit = handleSubmit((values, _) => {
         emit('success');
         emit('closeModal');
         resetForm();
-        toast.success('O convidado foi adicionado com sucesso');
+        toast.success(t('guests.added_success'));
       })
       .catch((err) => {
         console.log(err.data);
@@ -111,7 +112,7 @@ const onSubmit = handleSubmit((values, _) => {
         emit('closeModal');
         resetForm();
 
-        toast.success('O convidado foi actualizado com sucesso');
+        toast.success(t('guests.updated_success'));
       })
       .catch((err) => {
         console.log(err);
@@ -149,7 +150,7 @@ watch(
 </script>
 <template>
   <BaseModal
-    :title="guest ? 'Actualizar Convidado' : 'Adicionar Convidado'"
+    :title="guest ? t('guests.form_edit_title') : t('guests.form_create_title')"
     :show="show"
     @close-modal="closeModal"
   >
@@ -174,7 +175,7 @@ watch(
         type="text"
         name="name"
         label="Nome:"
-        placeholder="Coloque o nome do convidado"
+        :placeholder="t('guests.form_name_placeholder')"
       />
 
       <BaseInput
@@ -186,7 +187,7 @@ watch(
         type="text"
         name="phone"
         label="Telefone:"
-        placeholder="Coloque o contacto do convidado"
+        :placeholder="t('guests.form_phone_placeholder')"
       />
 
       <BaseInput
@@ -198,7 +199,7 @@ watch(
         type="number"
         name="name"
         label="Nº de pessoas:"
-        placeholder="Coloque o número de pessoas"
+        :placeholder="t('guests.form_people_placeholder')"
       />
 
       <BaseSelect
@@ -219,7 +220,7 @@ watch(
         :disabled="props.guest?.absence_Declared"
         :helper-text="
           props.guest?.absence_Declared
-            ? 'Não é possível atribuir mesa a um convidado ausente'
+            ? t('guests.form_desk_disabled_hint')
             : ''
         "
       />
@@ -255,7 +256,7 @@ watch(
           :loading="isSubmiting"
           @click="onSubmit"
           >{{
-            props.guest ? 'Actualizar agora' : 'Adicionar agora'
+            props.guest ? t('guests.form_submit_edit') : t('guests.form_submit_create')
           }}</BaseButton
         >
 
@@ -266,7 +267,7 @@ watch(
           size="md"
           :disabled="isSubmiting"
           @click="$emit('closeModal')"
-          >Cancelar</BaseButton
+          >{{ t('common.cancel') }}</BaseButton
         >
       </div>
     </form>

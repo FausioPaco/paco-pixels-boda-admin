@@ -6,11 +6,12 @@ type ChecklistTab = 'EVENT' | 'TEMPLATE';
 
 const activeTab = ref<ChecklistTab>('EVENT');
 const { isMultiEventStaffUser } = useAuthStore();
+const { t } = useI18n();
 </script>
 <template>
   <BaseCard
-    title="Cronograma do Evento"
-    description="Organize e actualize facilmente todas as actividades e horários importantes deste evento."
+    :title="t('checklist.card_title')"
+    :description="t('checklist.card_description')"
   >
     <!-- Tabs -->
     <BaseTab v-if="isMultiEventStaffUser">
@@ -22,7 +23,7 @@ const { isMultiEventStaffUser } = useAuthStore();
         :is-active="activeTab === 'EVENT'"
         class="w-full md:w-1/2"
         @click="activeTab = 'EVENT'"
-        >Cronograma</BaseTabItem
+        >{{ t('checklist.tab_event') }}</BaseTabItem
       >
 
       <BaseTabItem
@@ -33,7 +34,7 @@ const { isMultiEventStaffUser } = useAuthStore();
         :is-active="activeTab === 'TEMPLATE'"
         class="w-full md:w-1/2"
         @click="activeTab = 'TEMPLATE'"
-        >Modelo de Cronograma</BaseTabItem
+        >{{ t('checklist.tab_template') }}</BaseTabItem
       >
     </BaseTab>
 

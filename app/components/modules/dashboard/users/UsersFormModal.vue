@@ -18,6 +18,8 @@ const props = withDefaults(defineProps<IUsersForm>(), {
   user: undefined,
 });
 
+const { t } = useI18n();
+
 const nuxtApp = useNuxtApp();
 const userService = getUserService(nuxtApp.$api);
 const eventStore = useEventStore();
@@ -96,7 +98,7 @@ const onSubmit = handleSubmit((values, _) => {
         resetForm();
         emit('closeModal');
         emit('success');
-        toast.success('O utilizador foi criado com sucesso!');
+        toast.success(t('users.created_success'));
       })
       .catch((err) => {
         console.log(err.data);
@@ -113,7 +115,7 @@ const onSubmit = handleSubmit((values, _) => {
         resetForm();
         emit('closeModal');
         emit('success');
-        toast.success('O utilizador foi actualizado com sucesso');
+        toast.success(t('users.updated_success'));
       })
       .catch((err) => {
         console.log(err);
@@ -156,7 +158,7 @@ onMounted(() => {
 </script>
 <template>
   <BaseModal
-    :title="user ? 'Actualizar Utilizador' : 'Criar Utilizador'"
+    :title="user ? t('users.form_update_title') : t('users.form_create_title')"
     :show="show"
     @close-modal="closeModal"
   >
@@ -174,8 +176,8 @@ onMounted(() => {
         autocomplete="name"
         type="text"
         name="name"
-        label="Nome:"
-        placeholder="Coloque o nome do utilizador"
+        :label="t('users.form_name_label')"
+        :placeholder="t('users.form_name_placeholder')"
       />
       <BaseSelect
         v-if="roles"
@@ -202,8 +204,8 @@ onMounted(() => {
         autocomplete="email"
         type="email"
         name="userEmail"
-        label="Email:"
-        placeholder="Coloque endereço eletrônico"
+        :label="t('users.form_email_label')"
+        placeholder="Coloque endereço eletrónico"
       />
 
       <BaseInput
@@ -215,8 +217,8 @@ onMounted(() => {
         :error-message="errors.password"
         type="password"
         name="password"
-        label="Password:"
-        placeholder="Coloque a palavra passe"
+        :label="t('users.form_password_label')"
+        :placeholder="t('users.form_password_placeholder')"
       />
 
       <BaseInput
@@ -228,8 +230,8 @@ onMounted(() => {
         :error-message="errors.passwordConfirm"
         type="password"
         name="passwordConfirm"
-        label="Confirmar password:"
-        placeholder="Confirme a palavra-passe"
+        :label="t('users.form_password_confirm_label')"
+        :placeholder="t('users.form_password_confirm_placeholder')"
       />
 
       <BaseError v-if="serverErrors.hasErrors">{{
@@ -245,7 +247,9 @@ onMounted(() => {
           :disabled="isSubmiting"
           :loading="isSubmiting"
           @click="onSubmit"
-          >{{ user ? 'Actualizar agora' : 'Adicionar agora' }}</BaseButton
+          >{{
+            user ? t('users.submit_update') : t('users.submit_add')
+          }}</BaseButton
         >
 
         <BaseButton

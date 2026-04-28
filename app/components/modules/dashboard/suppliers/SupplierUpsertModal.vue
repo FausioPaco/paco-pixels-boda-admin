@@ -23,6 +23,7 @@ const toast = useToast();
 const nuxtApp = useNuxtApp();
 const supplierService = getSupplierService(nuxtApp.$api);
 const { refreshIds } = await useEventSupplierCatalogItemIds(props.eventId);
+const { t } = useI18n();
 
 const isEditing = computed(() => !!props.supplier?.id);
 
@@ -140,11 +141,11 @@ const onSubmit = handleSubmit(async (values) => {
     if (props.supplier?.id) {
       await supplierService.updateSupplier(Number(props.supplier.id), payload);
       refreshIds({ force: true });
-      toast.success('Fornecedor actualizado com sucesso.');
+      toast.success(t('suppliers.updated_success'));
     } else {
       await supplierService.createSupplier(payload);
       refreshIds({ force: true });
-      toast.success('Fornecedor criado com sucesso.');
+      toast.success(t('suppliers.created_success'));
     }
 
     emit('success');
@@ -153,7 +154,7 @@ const onSubmit = handleSubmit(async (values) => {
     console.error(e);
     serverErrors.value.message = isFetchErrorLike(e)
       ? getServerErrors(e.data)
-      : 'Ocorreu um erro ao guardar o fornecedor';
+      : t('suppliers.save_error');
     serverErrors.value.hasErrors = true;
   }
 });
@@ -176,7 +177,11 @@ watch(
 <template>
   <BaseModal
     :show="props.show"
-    :title="isEditing ? 'Editar fornecedor' : 'Adicionar fornecedor'"
+    :title="
+      isEditing
+        ? t('suppliers.form_edit_title')
+        : t('suppliers.form_create_title')
+    "
     @close-modal="close"
   >
     <form @submit.prevent="onSubmit">
@@ -194,7 +199,7 @@ watch(
         item-label="name"
         item-key="id"
         :loading="isSearchingCatalog"
-        no-results-text="Sem resultados no catálogo."
+        :no-results-text="t('suppliers.form_no_results')"
         :min-chars="2"
         @search="onCatalogSearch"
         @select="onCatalogSelect"
@@ -252,7 +257,7 @@ watch(
           :disabled="isSubmitting"
           @click.prevent="close"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
         <BaseButton
           btn-type="primary"
@@ -262,7 +267,7 @@ watch(
           type="submit"
           @click.prevent="onSubmit"
         >
-          {{ isSubmitting ? 'A guardar...' : 'Guardar' }}
+          {{ isSubmitting ? t('suppliers.saving') : t('suppliers.save') }}
         </BaseButton>
       </div>
     </form>

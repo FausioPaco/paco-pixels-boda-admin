@@ -12,6 +12,7 @@ const props = withDefaults(defineProps<IUserRemoveProps>(), {
   user: undefined,
 });
 
+const { t } = useI18n();
 const toast = useToast();
 const emit = defineEmits(['closeModal', 'success']);
 
@@ -31,7 +32,7 @@ const onSubmit = () => {
     .then(() => {
       emit('closeModal');
       emit('success');
-      toast.success('O utilizador foi removido com sucesso');
+      toast.success(t('users.removed_success'));
     })
     .catch((err) => {
       console.log(err.data);
@@ -46,15 +47,13 @@ const onSubmit = () => {
 </script>
 <template>
   <BaseModal
-    title="Remover Mesa"
+    :title="t('users.remove_title')"
     :show="show"
     @close-modal="$emit('closeModal')"
   >
     <div v-if="user" class="my-2">
       <p class="text-grey-600 mb-4 text-center text-base md:text-lg">
-        Tem certeza que pretende remover o utilizador
-        <span class="font-bold">{{ user.name }}</span
-        >?
+        {{ t('users.remove_confirm', { name: user.name }) }}
       </p>
 
       <div class="w-full">
@@ -76,7 +75,7 @@ const onSubmit = () => {
         :disabled="isSubmiting"
         :loading="isSubmiting"
         @click="onSubmit"
-        >Remover agora</BaseButton
+        >{{ t('users.remove_now') }}</BaseButton
       >
 
       <BaseButton
@@ -86,7 +85,7 @@ const onSubmit = () => {
         size="md"
         :disabled="isSubmiting"
         @click="$emit('closeModal')"
-        >Cancelar</BaseButton
+        >{{ t('common.cancel') }}</BaseButton
       >
     </div>
   </BaseModal>
