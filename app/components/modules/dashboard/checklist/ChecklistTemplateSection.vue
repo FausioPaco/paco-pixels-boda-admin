@@ -19,6 +19,7 @@ const emit = defineEmits<{
 
 const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
+const { t } = useI18n();
 
 const localTasks = ref<ChecklistTemplateTask[]>([]);
 
@@ -101,7 +102,7 @@ function onDragStart(evt: SortableEvent) {
         </div>
 
         <div v-if="sectionPrazo !== null" class="text-xs opacity-70">
-          Prazo por defeito: {{ sectionPrazo }} dia(s) antes do evento
+          {{ t('checklist.template_section_default_deadline', { n: sectionPrazo }) }}
         </div>
       </div>
 
@@ -113,7 +114,9 @@ function onDragStart(evt: SortableEvent) {
       />
     </div>
 
-    <p class="text-grey-400 text-sm font-semibold">Tarefas</p>
+    <p class="text-grey-400 text-sm font-semibold">
+      {{ t('checklist.tasks_title') }}
+    </p>
 
     <!-- DRAGGABLE TASKS -->
     <div v-if="localTasks.length > 0" class="animate-fadeIn">
@@ -157,7 +160,7 @@ function onDragStart(evt: SortableEvent) {
           icon="add"
           btn-size="sm"
           @click="openAddTask"
-          >Adicionar tarefa</BaseButton
+          >{{ t('checklist.add_task') }}</BaseButton
         >
       </div>
     </div>
@@ -165,9 +168,9 @@ function onDragStart(evt: SortableEvent) {
     <LazyBaseFirstEmptyState
       v-else
       icon="icon-menu-checklist"
-      :title="`Sem tarefas para '${section.title}'`"
-      description="Adiciona a primeira tarefa desta secção para este modelo"
-      button-label="Criar primeira tarefa"
+      :title="t('checklist.section_empty_tasks_title', { title: section.title })"
+      :description="t('checklist.template_section_empty_tasks_description')"
+      :button-label="t('checklist.section_empty_tasks_button')"
       button-icon="add"
       show-button
       @action="openAddTask"

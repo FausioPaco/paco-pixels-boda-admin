@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const emit = defineEmits(['edit', 'remove']);
 const open = ref(false);
+const { t } = useI18n();
 
 function edit() {
   open.value = false;
@@ -15,7 +16,7 @@ function remove() {
   <div class="relative">
     <button
       class="hover:bg-primary-600 text-primary-600 mr-2 rounded-full p-1.5 transition-colors duration-300 ease-in hover:text-white"
-      aria-label="Mais opções"
+      :aria-label="t('checklist.more_options')"
       @click="open = !open"
     >
       <IconDots :font-controlled="false" class="size-[20px]" />
@@ -29,13 +30,13 @@ function remove() {
           class="hover:bg-grey-50 block w-full rounded-lg px-3 py-2 text-left text-sm transition-colors duration-300 ease-in"
           @click="edit"
         >
-          Editar
+          {{ t('common.edit') }}
         </button>
         <button
           class="block w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 transition-colors duration-300 ease-in hover:bg-red-50"
           @click="remove"
         >
-          Remover
+          {{ t('common.remove') }}
         </button>
       </div>
     </transition>

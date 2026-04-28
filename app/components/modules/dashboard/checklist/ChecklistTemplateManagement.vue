@@ -15,6 +15,7 @@ const iconName = computed(() => eventStore.eventTypeIcon || 'event-wedding');
 const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
 const { siteConfig } = await useClientConfig();
+const { t } = useI18n();
 
 const { template, isRefreshing, refreshCurrentTemplate } =
   await useChecklistCurrentTemplate(siteConfig.partnerId ?? null);
@@ -65,9 +66,9 @@ const openCreateSection = () => {
   <div class="my-8 flex animate-fadeIn flex-col gap-4">
     <div class="flex flex-col gap-2">
       <!-- Event badge -->
-      <span class="text-primary-700/40 font-semibold"
-        >Modelo de cronograma</span
-      >
+      <span class="text-primary-700/40 font-semibold">
+        {{ t('checklist.template_title') }}
+      </span>
       <div
         class="bg-primary-50 flex w-fit items-end gap-2 rounded-full px-4 py-2"
       >
@@ -81,13 +82,13 @@ const openCreateSection = () => {
 
       <div class="my-4">
         <p class="text-grey-500 mb-3 text-sm">
-          Aqui podes actualizar o modelo de cronograma para eventos do tipo
+          {{ t('checklist.template_description_prefix') }}
           <span class="text-primary-700 font-bold"> {{ eventTypeName }}</span>
         </p>
         <p class="text-grey-500 text-sm">
-          As alterações feitas neste modelo serão
-          <b>usadas como base nos próximos eventos</b> deste tipo, ajudando a
-          manter o cronograma consistente e rápido de preparar.
+          {{ t('checklist.template_description_before') }}
+          <b>{{ t('checklist.template_description_bold') }}</b>
+          {{ t('checklist.template_description_after') }}
         </p>
       </div>
     </div>
@@ -95,16 +96,17 @@ const openCreateSection = () => {
     <BaseLoading v-if="isRefreshing && !template" />
 
     <BaseSearchNotFound v-else-if="!template"
-      >Não foi possível carregar o modelo para este tipo de
-      evento.</BaseSearchNotFound
+      >{{ t('checklist.template_load_error') }}</BaseSearchNotFound
     >
 
     <div v-else class="flex flex-col gap-4">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="text-primary-700/50 text-base font-semibold">
-          Secções deste modelo
+          {{ t('checklist.template_sections_title') }}
         </div>
-        <BaseButton @click="openCreateSection">Adicionar secção</BaseButton>
+        <BaseButton @click="openCreateSection">
+          {{ t('checklist.add_section') }}
+        </BaseButton>
       </div>
 
       <!-- DRAGGABLE SECTIONS -->

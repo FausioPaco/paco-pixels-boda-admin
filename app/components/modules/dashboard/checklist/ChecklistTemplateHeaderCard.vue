@@ -2,6 +2,8 @@
 defineProps<{
   template: ChecklistTemplateDetail;
 }>();
+
+const { t } = useI18n();
 </script>
 
 <template>
@@ -13,8 +15,12 @@ defineProps<{
       </div>
 
       <div class="text-xs opacity-70">
-        <span v-if="template.isDefault">Padrão</span>
-        <span v-if="template.isActive === false"> • inactivo</span>
+        <span v-if="template.isDefault">{{
+          t('checklist.template_default')
+        }}</span>
+        <span v-if="template.isActive === false">
+          {{ t('checklist.template_inactive') }}
+        </span>
       </div>
     </div>
   </div>

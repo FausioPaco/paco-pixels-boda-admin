@@ -23,22 +23,25 @@ const serverErrors = ref<ServerError>({
 const { eventId } = useEventStore();
 const EVENT_ID = eventId;
 const toast = useToast();
+const { t, locale } = useI18n();
 
 const schema = toTypedSchema(
   object({
     title: string()
       .trim()
-      .min(2, 'O título deve ter pelo menos 2 caracteres')
-      .max(200, 'O título é demasiado longo')
-      .required('O título é obrigatório'),
-    notes: string().max(2000, 'As notas são demasiado longas').optional(),
+      .min(2, () => t('checklist.task_title_min'))
+      .max(200, () => t('checklist.task_title_max'))
+      .required(() => t('checklist.task_title_required')),
+    notes: string()
+      .max(2000, () => t('checklist.task_notes_max'))
+      .optional(),
     has_Indefinite_Date: boolean().default(false),
     due_Date: date()
       .nullable()
       .when('has_Indefinite_Date', {
         is: false,
         then: (s) =>
-          s.required('A data limite é obrigatória (ou marque “Sem data”)'),
+          s.required(() => t('checklist.task_due_date_required')),
         otherwise: (s) => s.nullable(),
       }),
   }),
@@ -51,6 +54,7 @@ const {
   setValues,
   isSubmitting,
   resetForm,
+  validate,
 } = useForm<ChecklistTaskInput>({
   validationSchema: schema,
   initialValues: {
@@ -86,6 +90,10 @@ watch(
   { immediate: true },
 );
 
+watch(locale, () => {
+  if (props.show) validate();
+});
+
 const submit = handleSubmit(async (values) => {
   try {
     const currentCount = props.tasksCount || 0;
@@ -93,10 +101,10 @@ const submit = handleSubmit(async (values) => {
 
     if (props.task?.id) {
       await checklistService.updateTask(props.task.id, payload);
-      toast.success('Tarefa actualizada com sucesso');
+      toast.success(t('checklist.task_updated'));
     } else {
       await checklistService.createTask(payload, currentCount);
-      toast.success('Tarefa criada com sucesso');
+      toast.success(t('checklist.task_created'));
     }
     emit('saved');
     close();
@@ -116,7 +124,9 @@ function close() {
 <template>
   <BaseModal
     :show="show"
-    :title="task ? 'Editar tarefa' : 'Nova tarefa'"
+    :title="
+      task ? t('checklist.task_edit_title') : t('checklist.task_create_title')
+    "
     icon="CheckSquare"
     @close-modal="close"
   >
@@ -131,8 +141,8 @@ function close() {
         autocomplete="off"
         type="text"
         name="title"
-        label="Título"
-        placeholder="Ex.: Confirmar catering"
+        :label="t('checklist.task_title_label')"
+        :placeholder="t('checklist.task_title_placeholder')"
         required
       />
 
@@ -144,27 +154,29 @@ function close() {
         :error-message="errors.notes"
         :readonly="isSubmitting"
         name="notes"
-        label="Notas (opcional)"
-        placeholder="Notas adicionais…"
+        :label="t('checklist.task_notes_label')"
+        :placeholder="t('checklist.task_notes_placeholder')"
         rows="4"
       />
 
       <!-- Data limite -->
       <div>
-        <label class="mb-1 block text-sm font-medium">Data de vencimento</label>
+        <label class="mb-1 block text-sm font-medium">{{
+          t('checklist.task_due_date_label')
+        }}</label>
         <DatePicker
           v-model="due_Date"
           v-bind="dueDateAttrs"
-          locale="pt-PT"
+          :locale="String(locale).startsWith('pt') ? 'pt-PT' : 'en-US'"
           :enable-time-picker="false"
           :clearable="true"
           :disabled="has_Indefinite_Date"
           :teleport="true"
           :format="'dd/MM/yyyy'"
           :auto-apply="true"
-          placeholder="Selecione a data"
-          select-text="Selecionar"
-          cancel-text="Cancelar"
+          :placeholder="t('checklist.date_placeholder')"
+          :select-text="t('checklist.date_select')"
+          :cancel-text="t('checklist.date_cancel')"
         />
         <p
           v-if="errors.due_Date"
@@ -191,7 +203,7 @@ function close() {
         v-bind="hasIndefiniteDateAttrs"
         :error="errors.has_Indefinite_Date"
         :readonly="isSubmitting"
-        label="A tarefa não possui data"
+        :label="t('checklist.task_no_date')"
       />
 
       <BaseError v-if="serverErrors.hasErrors">{{
@@ -204,9 +216,11 @@ function close() {
           btn-type="outline-primary"
           :disabled="isSubmitting"
           @click.prevent="close"
-          >Cancelar</BaseButton
+          >{{ t('common.cancel') }}</BaseButton
         >
-        <BaseButton type="submit" :disabled="isSubmitting">Guardar</BaseButton>
+        <BaseButton type="submit" :disabled="isSubmitting">
+          {{ t('common.save') }}
+        </BaseButton>
       </div>
     </form>
   </BaseModal>

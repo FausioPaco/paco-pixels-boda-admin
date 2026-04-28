@@ -20,21 +20,23 @@ const emit = defineEmits<{ (e: 'close' | 'saved'): void }>();
 const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
 const toast = useToast();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const schema = toTypedSchema(
   object({
     title: string()
       .trim()
-      .min(2, 'O título deve ter pelo menos 2 caracteres')
-      .max(150, 'O título é demasiado longo')
-      .required('O título é obrigatório'),
-    description: string().max(500, 'A descrição é demasiado longa').optional(),
+      .min(2, () => t('checklist.section_title_min'))
+      .max(150, () => t('checklist.section_title_max'))
+      .required(() => t('checklist.section_title_required')),
+    description: string()
+      .max(500, () => t('checklist.section_description_max'))
+      .optional(),
     order: number()
-      .typeError('A ordem deve ser um número')
-      .integer('A ordem deve ser um número inteiro')
-      .min(0, 'A ordem não pode ser negativa')
-      .required('A ordem é obrigatória'),
+      .typeError(() => t('checklist.section_order_type'))
+      .integer(() => t('checklist.section_order_invalid'))
+      .min(0, () => t('checklist.section_order_negative'))
+      .required(() => t('checklist.section_order_required')),
   }),
 );
 
@@ -45,6 +47,7 @@ const {
   isSubmitting,
   setValues,
   resetForm,
+  validate,
 } = useForm<ChecklistSectionInput>({
   validationSchema: schema,
   initialValues: {
@@ -72,6 +75,10 @@ watch(
   },
   { immediate: true },
 );
+
+watch(locale, () => {
+  if (props.show) validate();
+});
 
 const serverErrors = ref<ServerError>({
   hasErrors: false,
@@ -122,7 +129,7 @@ const onSubmit = handleSubmit(async (values) => {
         :error-message="errors.title"
         :readonly="isSubmitting"
         :label="t('checklist.section_form_title_label')"
-        placeholder="Ex.: Fase 1 - Preparação"
+        :placeholder="t('checklist.section_title_placeholder')"
       />
 
       <BaseInput
@@ -132,7 +139,7 @@ const onSubmit = handleSubmit(async (values) => {
         :error-message="errors.description"
         :readonly="isSubmitting"
         :label="t('checklist.section_form_description_label')"
-        placeholder="Opcional"
+        :placeholder="t('checklist.section_description_placeholder')"
       />
 
       <div class="flex w-full justify-center gap-3">

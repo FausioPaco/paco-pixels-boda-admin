@@ -25,6 +25,7 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
 
@@ -62,7 +63,7 @@ const onReorder = async () => {
     emit('reordered');
   } catch (e) {
     console.log(e);
-    toast.error('Não foi possível reordenar a sua lista.');
+    toast.error(t('checklist.task_reorder_error'));
     localTasks.value = [...tasks.value];
   }
 };
@@ -165,7 +166,9 @@ watch(
 // }
 
 const getTaskCount = computed(() => {
-  return tasksCount.value === 1 ? `1 tarefa` : `${tasksCount.value} tarefas`;
+  return tasksCount.value === 1
+    ? t('checklist.task_count_one')
+    : t('checklist.task_count_other', { n: tasksCount.value ?? 0 });
 });
 
 onMounted(() => {
@@ -196,7 +199,7 @@ onMounted(() => {
         <BaseBadge
           v-if="tasksCount"
           :text="getTaskCount"
-          :label="`Quantidade ${tasksCount}`"
+          :label="t('checklist.task_quantity_label', { n: tasksCount })"
           type="primary"
         />
       </div>
@@ -251,9 +254,11 @@ onMounted(() => {
         <LazyBaseFirstEmptyState
           v-if="!isRefreshingTasks && !isErrorTasks && tasks.length === 0"
           icon="icon-menu-checklist"
-          :title="`Sem tarefas para ${section.title}`"
-          description="Adiciona a tua primeira tarefa nesta secção para começares a organizar o evento."
-          button-label="Criar primeira tarefa"
+          :title="t('checklist.section_empty_tasks_title', {
+            title: section.title,
+          })"
+          :description="t('checklist.section_empty_tasks_description')"
+          :button-label="t('checklist.section_empty_tasks_button')"
           button-icon="add"
           show-button
           @action="showTaskModal = true"
@@ -270,7 +275,7 @@ onMounted(() => {
               showTaskModal = true;
             "
           >
-            + Nova tarefa
+            {{ t('checklist.add_task') }}
           </BaseButton>
         </div>
       </div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 defineProps<{ task: ChecklistTemplateTaskUpdateInput }>();
 defineEmits(['edit', 'remove', 'moveUp', 'moveDown']);
+const { t } = useI18n();
 </script>
 
 <template>
@@ -12,7 +13,7 @@ defineEmits(['edit', 'remove', 'moveUp', 'moveDown']);
 
         <div class="text-xs opacity-70">
           <span v-if="task.has_Indefinite_Date ?? task.has_Indefinite_Date"
-            >Data indefinida</span
+            >{{ t('checklist.task_indefinite_date') }}</span
           >
           <span
             v-else-if="
@@ -21,11 +22,11 @@ defineEmits(['edit', 'remove', 'moveUp', 'moveDown']);
                 undefined
             "
           >
-            Dias antes do evento:
+            {{ t('checklist.task_offset_short_label') }}
             {{
               task.default_Offset_Days === 1
-                ? '1 dia'
-                : `${task.default_Offset_Days} dias`
+                ? t('checklist.day_one')
+                : t('checklist.day_other', { n: task.default_Offset_Days })
             }}
           </span>
         </div>
@@ -39,7 +40,7 @@ defineEmits(['edit', 'remove', 'moveUp', 'moveDown']);
           :icon-size="14"
           only-icon
           @click="$emit('edit')"
-          ><span class="hidden md:inline">Editar</span></BaseButton
+          ><span class="hidden md:inline">{{ t('common.edit') }}</span></BaseButton
         >
         <BaseButton
           btn-type="outline-primary"
@@ -48,7 +49,7 @@ defineEmits(['edit', 'remove', 'moveUp', 'moveDown']);
           :icon-size="14"
           only-icon
           @click="$emit('remove')"
-          ><span class="hidden md:inline">Remover</span></BaseButton
+          ><span class="hidden md:inline">{{ t('common.remove') }}</span></BaseButton
         >
       </div>
     </div>

@@ -2,6 +2,7 @@
 const props = defineProps<{ task: ChecklistTask }>();
 
 defineEmits(['toggle', 'edit', 'remove']);
+const { t } = useI18n();
 
 const isOverdue = computed(() => {
   if (props.task.is_Completed) return false;
@@ -32,8 +33,8 @@ const isOverdue = computed(() => {
           </h3>
           <BaseBadge
             v-if="isOverdue"
-            label="Em atraso"
-            text="Em atraso"
+            :label="t('checklist.task_overdue')"
+            :text="t('checklist.task_overdue')"
             type="error"
           />
         </div>
@@ -45,9 +46,10 @@ const isOverdue = computed(() => {
         >
           <IconCalendar :font-controlled="false" class="size-[14px]" />
           <span v-if="task.due_Date && !task.has_Indefinite_Date"
-            >Limite: {{ formatDate(task.due_Date) }}</span
+            >{{ t('checklist.task_due_prefix') }}
+            {{ formatDate(task.due_Date) }}</span
           >
-          <span v-else>Sem data definida</span>
+          <span v-else>{{ t('checklist.task_no_date_defined') }}</span>
         </p>
       </div>
     </div>
@@ -63,7 +65,7 @@ const isOverdue = computed(() => {
         :icon-size="14"
         only-icon
         @click="$emit('edit')"
-        ><span class="hidden md:inline">Editar</span></BaseButton
+        ><span class="hidden md:inline">{{ t('common.edit') }}</span></BaseButton
       >
       <BaseButton
         btn-type="outline-primary"
@@ -72,7 +74,7 @@ const isOverdue = computed(() => {
         :icon-size="14"
         only-icon
         @click="$emit('remove')"
-        ><span class="hidden md:inline">Remover</span></BaseButton
+        ><span class="hidden md:inline">{{ t('common.remove') }}</span></BaseButton
       >
     </div>
   </div>

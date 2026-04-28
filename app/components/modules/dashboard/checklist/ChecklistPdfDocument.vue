@@ -16,14 +16,16 @@ defineProps<{
   }[];
 }>();
 
+const { t } = useI18n();
+
 const getTaskStatusLabel = (task: {
   is_Completed: boolean;
   due_Date?: string | null;
   has_Indefinite_Date?: boolean;
 }) => {
-  if (task.is_Completed) return 'Concluída';
-  if (task.has_Indefinite_Date) return 'Sem data limite';
-  if (!task.due_Date) return 'Pendente';
+  if (task.is_Completed) return t('checklist.pdf_status_completed');
+  if (task.has_Indefinite_Date) return t('checklist.pdf_no_due_date');
+  if (!task.due_Date) return t('checklist.pdf_status_pending');
 
   const dueDate = new Date(task.due_Date);
   const today = new Date();
@@ -31,9 +33,9 @@ const getTaskStatusLabel = (task: {
   dueDate.setHours(0, 0, 0, 0);
   today.setHours(0, 0, 0, 0);
 
-  if (dueDate < today) return 'Atrasada';
+  if (dueDate < today) return t('checklist.pdf_status_overdue');
 
-  return 'Pendente';
+  return t('checklist.pdf_status_pending');
 };
 </script>
 
@@ -56,7 +58,7 @@ const getTaskStatusLabel = (task: {
         v-if="sections.length === 0"
         class="text-grey-500 font-sans text-base"
       >
-        Sem secções para apresentar.
+        {{ t('checklist.pdf_no_sections_to_show') }}
       </div>
 
       <div v-for="section in sections" :key="section.id" class="mb-7 last:mb-0">
@@ -70,7 +72,7 @@ const getTaskStatusLabel = (task: {
           v-if="section.tasks.length === 0"
           class="text-grey-400 font-sans text-sm italic"
         >
-          Sem tarefas nesta secção.
+          {{ t('checklist.pdf_no_tasks_in_section') }}
         </div>
 
         <ul v-else class="space-y-3">
@@ -115,14 +117,15 @@ const getTaskStatusLabel = (task: {
                   v-if="task.due_Date && !task.has_Indefinite_Date"
                   class="text-grey-500 mt-1.5 font-sans text-sm leading-5"
                 >
-                  Data limite: {{ formatDate(task.due_Date) }}
+                  {{ t('checklist.pdf_due_date_prefix') }}
+                  {{ formatDate(task.due_Date) }}
                 </div>
 
                 <div
                   v-else-if="task.has_Indefinite_Date"
                   class="text-grey-500 mt-1.5 font-sans text-sm leading-5"
                 >
-                  Sem data limite
+                  {{ t('checklist.pdf_no_due_date') }}
                 </div>
 
                 <div

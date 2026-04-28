@@ -21,15 +21,18 @@ const emit = defineEmits<{ (e: 'close' | 'saved'): void }>();
 const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
 const toast = useToast();
+const { t, locale } = useI18n();
 
 const schema = toTypedSchema(
   object({
     name: string()
       .trim()
-      .min(2, 'O nome deve ter pelo menos 2 caracteres')
-      .max(200, 'O nome é demasiado longo')
-      .required('O nome é obrigatório'),
-    description: string().max(2000, 'A descrição é demasiado longa').optional(),
+      .min(2, () => t('checklist.template_name_min'))
+      .max(200, () => t('checklist.template_name_max'))
+      .required(() => t('checklist.template_name_required')),
+    description: string()
+      .max(2000, () => t('checklist.section_description_max'))
+      .optional(),
     isActive: boolean().default(true),
   }),
 );
@@ -41,6 +44,7 @@ const {
   isSubmitting,
   setValues,
   resetForm,
+  validate,
 } = useForm<ChecklistTemplateUpdateInput>({
   validationSchema: schema,
   initialValues: {
@@ -66,6 +70,10 @@ watch(
   { immediate: true },
 );
 
+watch(locale, () => {
+  if (props.show) validate();
+});
+
 const serverErrors = ref<ServerError>({
   hasErrors: false,
   message: '',
@@ -82,7 +90,7 @@ const submit = handleSubmit(async (values) => {
     };
 
     await checklistService.updateTemplate(props.template.id, payload);
-    toast.success('Template actualizado com sucesso');
+    toast.success(t('checklist.template_updated'));
     emit('saved');
     close();
   } catch (e) {
@@ -98,7 +106,11 @@ function close() {
 }
 </script>
 <template>
-  <BaseModal :show="show" title="Editar template" @close-modal="close">
+  <BaseModal
+    :show="show"
+    :title="t('checklist.template_edit_title')"
+    @close-modal="close"
+  >
     <form class="space-y-4" @submit.prevent="submit">
       <BaseInput
         id="template-name"
@@ -106,8 +118,8 @@ function close() {
         v-bind="nameAttrs"
         :error-message="errors.name"
         :readonly="isSubmitting"
-        label="Nome"
-        placeholder="Ex.: Template padrão (Casamento)"
+        :label="t('checklist.template_name_label')"
+        :placeholder="t('checklist.template_name_placeholder')"
         required
       />
 
@@ -117,8 +129,8 @@ function close() {
         v-bind="descriptionAttrs"
         :error-message="errors.description"
         :readonly="isSubmitting"
-        label="Descrição (opcional)"
-        placeholder="Breve descrição do template…"
+        :label="t('checklist.section_description_label')"
+        :placeholder="t('checklist.template_description_placeholder')"
         rows="4"
       />
 
@@ -128,7 +140,7 @@ function close() {
         v-bind="isActiveAttrs"
         :error="errors.isActive"
         :readonly="isSubmitting"
-        label="Activo"
+        :label="t('checklist.template_active')"
       />
 
       <BaseError v-if="serverErrors.hasErrors">{{
@@ -142,7 +154,7 @@ function close() {
           :disabled="isSubmitting"
           @click.prevent="close"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
 
         <BaseButton
@@ -150,7 +162,7 @@ function close() {
           :disabled="isSubmitting"
           :loading="isSubmitting"
         >
-          Guardar
+          {{ t('common.save') }}
         </BaseButton>
       </div>
     </form>

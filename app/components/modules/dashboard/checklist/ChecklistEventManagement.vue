@@ -36,7 +36,7 @@ const nuxtApp = useNuxtApp();
 const pdfPageRefs = ref<HTMLElement[]>([]);
 const isGeneratingPdf = ref(false);
 const tasksBySection = ref<Record<number, ChecklistTask[]>>({});
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const statusOptions = computed(() => [
   { id: '', name: t('checklist.filter_all') },
@@ -173,7 +173,7 @@ async function applySectionsReorder(newOrder: ChecklistSection[]) {
     await checklistService.reorderSections(EVENT_ID, payload);
     await refreshSections({ force: true });
   } catch (error) {
-    console.error('Erro ao reordenar secções', error);
+    console.error('Error reordering sections', error);
     // opcional: mostrar toast
   } finally {
     isReorderingSections.value = false;
@@ -239,7 +239,7 @@ const pdfSections = computed<ChecklistPdfSection[]>(() => {
 });
 
 const getCoupleName = () => {
-  return eventStore!.eventName ?? 'Noivos';
+  return eventStore!.eventName ?? t('checklist.pdf_couple_fallback');
 };
 
 const PDF_PAGE_CAPACITY = 46;
@@ -520,8 +520,8 @@ watch(
             :range="true"
             :min-date="today"
             uid="datesChecklistFilters"
-            placeholder="Filtre as tarefas pela data de conclusão"
-            locale="pt-PT"
+            :placeholder="t('checklist.filter_dates_placeholder')"
+            :locale="String(locale).startsWith('pt') ? 'pt-PT' : 'en-US'"
             :enable-time-picker="false"
             :select-text="t('checklist.date_select')"
             :cancel-text="t('checklist.date_cancel')"
@@ -600,9 +600,9 @@ watch(
         <BaseAlert
           v-if="!sections.length"
           type="informative"
-          title="Ainda sem secções"
+          :title="t('checklist.no_sections_alert')"
         >
-          Cria a tua primeira secção para começares o checklist.
+          {{ t('checklist.no_sections_alert_message') }}
         </BaseAlert>
       </div>
 
@@ -631,7 +631,7 @@ watch(
         >
           <ChecklistPdfDocument
             :couple-name="getCoupleName()"
-            document-title="Cronograma do Evento"
+            :document-title="t('checklist.pdf_document_title')"
             :sections="page.sections"
           />
         </div>

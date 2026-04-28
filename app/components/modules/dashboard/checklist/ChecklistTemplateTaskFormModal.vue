@@ -17,7 +17,7 @@ const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
 
 const toast = useToast();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const serverErrors = ref<ServerError>({
   hasErrors: false,
   message: '',
@@ -27,10 +27,12 @@ const schema = toTypedSchema(
   object({
     title: string()
       .trim()
-      .min(2, 'O título deve ter pelo menos 2 caracteres')
-      .max(200, 'O título é demasiado longo')
-      .required('O título é obrigatório'),
-    notes: string().max(2000, 'As notas são demasiado longas').optional(),
+      .min(2, () => t('checklist.task_title_min'))
+      .max(200, () => t('checklist.task_title_max'))
+      .required(() => t('checklist.task_title_required')),
+    notes: string()
+      .max(2000, () => t('checklist.task_notes_max'))
+      .optional(),
     has_Indefinite_Date: boolean().default(false),
     default_Offset_Days: number()
       .nullable()
@@ -38,12 +40,10 @@ const schema = toTypedSchema(
         is: false,
         then: (s) =>
           s
-            .typeError('Os dias antes do evento devem ser um número')
-            .integer('Os dias antes do evento devem ser um número inteiro')
-            .min(0, 'Os dias antes do evento não podem ser negativos')
-            .required(
-              'Os dias antes do evento são obrigatórios (ou marque “Data indefinida”)',
-            ),
+            .typeError(() => t('checklist.task_offset_type'))
+            .integer(() => t('checklist.task_offset_integer'))
+            .min(0, () => t('checklist.task_offset_min'))
+            .required(() => t('checklist.task_offset_required')),
         otherwise: (s) => s.nullable(),
       }),
   }),
@@ -56,6 +56,7 @@ const {
   setValues,
   isSubmitting,
   resetForm,
+  validate,
 } = useForm<ChecklistTemplateTaskInput>({
   validationSchema: schema,
   initialValues: {
@@ -85,6 +86,10 @@ watch(
   },
   { immediate: true },
 );
+
+watch(locale, () => {
+  if (props.show) validate();
+});
 
 const submit = handleSubmit(async (values) => {
   try {
@@ -140,7 +145,7 @@ function close() {
         type="text"
         name="title"
         :label="t('checklist.task_form_title_label')"
-        placeholder="Ex.: Confirmar catering"
+        :placeholder="t('checklist.task_title_placeholder')"
         required
       />
 
@@ -152,7 +157,7 @@ function close() {
         :readonly="isSubmitting"
         name="notes"
         :label="t('checklist.task_form_notes_label')"
-        placeholder="Notas adicionais…"
+        :placeholder="t('checklist.task_notes_placeholder')"
         rows="4"
       />
 
@@ -174,8 +179,8 @@ function close() {
         type="number"
         name="default_Offset_Days"
         :label="t('checklist.task_form_offset_label')"
-        placeholder="Ex.: 14"
-        helper-text="Este valor define quantos dias antes do evento esta secção deve aparecer no cronograma."
+        :placeholder="t('checklist.task_offset_placeholder')"
+        :helper-text="t('checklist.task_offset_helper')"
       />
 
       <BaseError v-if="serverErrors.hasErrors">{{

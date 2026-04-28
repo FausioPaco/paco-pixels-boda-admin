@@ -22,20 +22,23 @@ const emit = defineEmits<{ (e: 'close' | 'saved'): void }>();
 const nuxtApp = useNuxtApp();
 const checklistService = getChecklistService(nuxtApp.$api);
 const toast = useToast();
+const { t, locale } = useI18n();
 
 const schema = toTypedSchema(
   object({
     title: string()
       .trim()
-      .min(2, 'O título deve ter pelo menos 2 caracteres')
-      .max(150, 'O título é demasiado longo')
-      .required('O título é obrigatório'),
-    description: string().max(2000, 'As notas são demasiado longas').optional(),
+      .min(2, () => t('checklist.section_title_min'))
+      .max(150, () => t('checklist.section_title_max'))
+      .required(() => t('checklist.section_title_required')),
+    description: string()
+      .max(2000, () => t('checklist.task_notes_max'))
+      .optional(),
     default_Offset_Days: number()
       .nullable()
-      .typeError('O offset deve ser um número')
-      .integer('O offset deve ser um número inteiro')
-      .min(0, 'O offset não pode ser negativo')
+      .typeError(() => t('checklist.task_offset_type'))
+      .integer(() => t('checklist.task_offset_integer'))
+      .min(0, () => t('checklist.task_offset_min'))
       .optional(),
   }),
 );
@@ -47,6 +50,7 @@ const {
   isSubmitting,
   setValues,
   resetForm,
+  validate,
 } = useForm<ChecklistTemplateSectionInput>({
   validationSchema: schema,
   initialValues: {
@@ -72,6 +76,10 @@ watch(
   { immediate: true },
 );
 
+watch(locale, () => {
+  if (props.show) validate();
+});
+
 const serverErrors = ref<ServerError>({
   hasErrors: false,
   message: '',
@@ -87,10 +95,10 @@ const submit = handleSubmit(async (values) => {
 
     if (props.section?.id) {
       await checklistService.updateTemplateSection(props.section.id, payload);
-      toast.success('Secção actualizada com sucesso');
+      toast.success(t('checklist.section_updated'));
     } else {
       await checklistService.addTemplateSection(props.templateId, payload);
-      toast.success('Secção criada com sucesso');
+      toast.success(t('checklist.section_created'));
     }
 
     close();
@@ -111,7 +119,11 @@ function close() {
 <template>
   <BaseModal
     :show="show"
-    :title="section ? 'Editar secção' : 'Nova secção'"
+    :title="
+      section
+        ? t('checklist.section_form_edit_title')
+        : t('checklist.section_form_create_title')
+    "
     @close-modal="close"
   >
     <form class="space-y-4" @submit.prevent="submit">
@@ -121,8 +133,8 @@ function close() {
         v-bind="titleAttrs"
         :error-message="errors.title"
         :readonly="isSubmitting"
-        label="Título"
-        placeholder="Ex.: Preparação"
+        :label="t('checklist.section_title_label')"
+        :placeholder="t('checklist.section_title_placeholder')"
         required
       />
 
@@ -132,8 +144,8 @@ function close() {
         v-bind="descriptionAttrs"
         :error-message="errors.description"
         :readonly="isSubmitting"
-        label="Notas (opcional)"
-        placeholder="Notas adicionais…"
+        :label="t('checklist.task_notes_label')"
+        :placeholder="t('checklist.task_notes_placeholder')"
         rows="4"
       />
 
@@ -143,10 +155,10 @@ function close() {
         v-bind="offsetAttrs"
         :error-message="errors.default_Offset_Days"
         :readonly="isSubmitting"
-        label="Dias antes do evento (dias)"
-        placeholder="Ex.: 30"
+        :label="t('checklist.task_offset_label')"
+        :placeholder="t('checklist.task_offset_placeholder')"
         type="number"
-        helper-text="Este valor define quantos dias antes do evento esta secção deve aparecer no cronograma."
+        :helper-text="t('checklist.task_offset_helper')"
       />
 
       <BaseError v-if="serverErrors.hasErrors">{{
@@ -160,7 +172,7 @@ function close() {
           :disabled="isSubmitting"
           @click.prevent="close"
         >
-          Cancelar
+          {{ t('common.cancel') }}
         </BaseButton>
 
         <BaseButton
@@ -169,7 +181,7 @@ function close() {
           :loading="isSubmitting"
           @click.prevent="submit"
         >
-          {{ section ? 'Modificar agora' : 'Criar secção' }}
+          {{ section ? t('checklist.section_update') : t('checklist.section_save') }}
         </BaseButton>
       </div>
     </form>
